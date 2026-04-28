@@ -578,3 +578,125 @@ class TestSuggestConfiguration:
             suggest_configuration("testco", "/abs/pricelist.xlsx", provider=fake)
 
         assert fake.calls[0]["max_tokens"] >= 8192
+
+
+# ---------------------------------------------------------------------------
+# Memory integration into analyse_pricelist + suggest_configuration
+# ---------------------------------------------------------------------------
+
+
+class TestMemoryIntegration:
+    """Tasks read TenantMemory.inject_into_prompt() into the system prompt."""
+
+    def test_analyse_pricelist_threads_tenant_profile(self, patched_client, tmp_path):
+        from rattle_api.tasks import analyse_pricelist
+
+        mem_root = tmp_path / "memory"
+        (mem_root / "testco").mkdir(parents=True)
+        (mem_root / "testco" / "profile.md").write_text(
+            "# testco — tenant preferences\n\n- custom-keys: never\n",
+            encoding="utf-8",
+        )
+
+        fake = FakeAIProvider(json_response={"products": []})
+        with (
+            patch("rattle_api.memory.DEFAULT_MEMORY_ROOT", mem_root),
+            patch("rattle_api.source.read_source") as mock_read,
+        ):
+            mock_read.return_value = {
+                "type": "excel",
+                "data": [],
+                "filename": "pricelist.xlsx",
+            }
+            analyse_pricelist("testco", "/abs/pricelist.xlsx", provider=fake)
+
+        system = fake.calls[0]["system"]
+        assert "## Tenant preferences" in system
+        assert "custom-keys" in system
+
+    def test_analyse_pricelist_without_memory_still_works(self, patched_client, tmp_path):
+        """Absent tenant memory must not break existing behaviour."""
+        from rattle_api.tasks import analyse_pricelist
+
+        mem_root = tmp_path / "memory-empty"  # nothing inside
+
+        fake = FakeAIProvider(json_response={"products": []})
+        with (
+            patch("rattle_api.memory.DEFAULT_MEMORY_ROOT", mem_root),
+            patch("rattle_api.source.read_source") as mock_read,
+        ):
+            mock_read.return_value = {
+                "type": "excel",
+                "data": [],
+                "filename": "pricelist.xlsx",
+            }
+            result = analyse_pricelist("testco", "/abs/pricelist.xlsx", provider=fake)
+
+        assert "ai_analysis" in result
+        system = fake.calls[0]["system"]
+        assert "## Tenant preferences" not in system
+
+    def test_suggest_configuration_threads_tenant_profile(self, patched_client, tmp_path):
+        from rattle_api.tasks import suggest_configuration
+
+        mem_root = tmp_path / "memory"
+        (mem_root / "testco").mkdir(parents=True)
+        (mem_root / "testco" / "profile.md").write_text(
+            "# testco — tenant preferences\n"
+            "\n"
+            "- custom-keys: never\n"
+            "- area-without-groups: forbidden\n",
+            encoding="utf-8",
+        )
+
+        patched_client.list_all.return_value = []
+        fake = FakeAIProvider(json_response={"products": []})
+        with (
+            patch("rattle_api.memory.DEFAULT_MEMORY_ROOT", mem_root),
+            patch("rattle_api.source.read_source") as mock_read,
+        ):
+            mock_read.return_value = {
+                "type": "excel",
+                "data": [],
+                "filename": "pricelist.xlsx",
+            }
+            suggest_configuration("testco", "/abs/pricelist.xlsx", provider=fake)
+
+        system = fake.calls[0]["system"]
+        assert "## Tenant preferences" in system
+        assert "custom-keys" in system
+        assert "area-without-groups" in system
+
+    def test_tasks_do_not_write_to_memory(self, patched_client, tmp_path):
+        """Explicit-only writes: task invocations must not touch memory files."""
+        from rattle_api.tasks import analyse_pricelist, suggest_configuration
+
+        mem_root = tmp_path / "memory"
+        (mem_root / "testco").mkdir(parents=True)
+        profile_path = mem_root / "testco" / "profile.md"
+        profile_path.write_text("# testco\n\nprior content\n", encoding="utf-8")
+        profile_mtime = profile_path.stat().st_mtime
+
+        decisions_path = mem_root / "testco" / "decisions.jsonl"
+        audit_path = mem_root / "testco" / "audit_history.jsonl"
+
+        patched_client.list_all.return_value = []
+        fake = FakeAIProvider(json_response={"products": []})
+        with (
+            patch("rattle_api.memory.DEFAULT_MEMORY_ROOT", mem_root),
+            patch("rattle_api.source.read_source") as mock_read,
+        ):
+            mock_read.return_value = {
+                "type": "excel",
+                "data": [],
+                "filename": "pricelist.xlsx",
+            }
+            analyse_pricelist("testco", "/abs/pricelist.xlsx", provider=fake)
+            suggest_configuration("testco", "/abs/pricelist.xlsx", provider=fake)
+
+        # Profile must be untouched
+        assert profile_path.stat().st_mtime == profile_mtime
+        assert profile_path.read_text(encoding="utf-8") == "# testco\n\nprior content\n"
+        # No decisions or audit files created by the tasks themselves
+        assert not decisions_path.exists()
+        assert not audit_path.exists()

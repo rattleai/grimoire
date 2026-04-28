@@ -115,6 +115,79 @@ def cmd_ai_providers(tenant, args):
 
 
 # ---------------------------------------------------------------------------
+# Tenant memory commands
+# ---------------------------------------------------------------------------
+
+
+def cmd_memory(tenant, args):
+    """Dispatch `memory <action>` subcommands."""
+    from .memory import TenantMemory
+
+    mem = TenantMemory(tenant)
+    action = args.memory_action
+
+    if action == "show":
+        profile = mem.profile
+        if profile:
+            print(profile.rstrip())
+        else:
+            print(f"(no profile.md for tenant '{tenant}' at {mem.profile_path})")
+
+        decisions = mem.load_decisions(limit=5)
+        if decisions:
+            print("\n## Recent decisions")
+            for entry in decisions:
+                ts = entry.get("timestamp", "")
+                date = ts.split("T", 1)[0] if ts else ""
+                text = (
+                    entry.get("text")
+                    or entry.get("message")
+                    or json.dumps(
+                        {k: v for k, v in entry.items() if k != "timestamp"},
+                        ensure_ascii=False,
+                    )
+                )
+                prefix = f"- {date} " if date else "- "
+                print(f"{prefix}{text}")
+
+        audit = mem.load_audit_history(limit=3)
+        if audit:
+            print("\n## Recent audit runs")
+            for entry in audit:
+                ts = entry.get("timestamp", "")
+                n = len(entry.get("findings", []))
+                print(f"- {ts}: {n} finding(s)")
+        return
+
+    if action == "edit":
+        path = mem.profile_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.exists():
+            path.write_text(f"# {tenant} — tenant preferences\n\n", encoding="utf-8")
+        editor = os.environ.get("EDITOR")
+        if not editor:
+            print(str(path))
+            return
+        import subprocess
+
+        subprocess.call([editor, str(path)])
+        return
+
+    if action == "set-preference":
+        mem.set_preference(args.key, args.value)
+        print(f"preference set: {args.key}={args.value}")
+        print(f"  -> {mem.profile_path}")
+        return
+
+    if action == "record-decision":
+        record = mem.append_decision({"text": args.text})
+        print(json.dumps(record, ensure_ascii=False))
+        return
+
+    raise SystemExit(f"unknown memory action: {action}")
+
+
+# ---------------------------------------------------------------------------
 # CLI setup
 # ---------------------------------------------------------------------------
 
@@ -195,6 +268,32 @@ def main():
 
     sub.add_parser("ai-providers", help="List available AI providers")
 
+    # -- tenant memory commands ---------------------------------------------
+    p_mem = sub.add_parser(
+        "memory",
+        help="Read or update per-tenant consulting memory (profile + decisions)",
+    )
+    mem_sub = p_mem.add_subparsers(
+        dest="memory_action",
+        required=True,
+        help="Memory action",
+    )
+    mem_sub.add_parser("show", help="Print profile.md and recent decisions / audits")
+    mem_sub.add_parser("edit", help="Open profile.md in $EDITOR (or print its path)")
+
+    p_set = mem_sub.add_parser(
+        "set-preference",
+        help="Upsert a preference under ## Preferences in profile.md",
+    )
+    p_set.add_argument("key", help="Preference key (e.g. custom-keys)")
+    p_set.add_argument("value", help="Preference value (e.g. never)")
+
+    p_dec = mem_sub.add_parser(
+        "record-decision",
+        help="Append a decision entry to decisions.jsonl (with UTC timestamp)",
+    )
+    p_dec.add_argument("text", help="Free-text decision description")
+
     # -- dispatch ------------------------------------------------------------
     args = parser.parse_args()
 
@@ -208,6 +307,7 @@ def main():
         "ai-analyse-pricelist": cmd_ai_analyse_pricelist,
         "ai-suggest-config": cmd_ai_suggest_config,
         "ai-providers": cmd_ai_providers,
+        "memory": cmd_memory,
     }
     commands[args.command](args.tenant, args)
 

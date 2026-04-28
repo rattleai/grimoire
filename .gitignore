@@ -46,3 +46,10 @@ Thumbs.db
 
 # Project-specific
 source/
+
+# Tenant memory — ALL per-tenant content stays private.
+# Only the memory/ docs themselves (README, .gitkeep) are committed.
+# NEVER commit memory/<tenant>/* — this repo is public.
+memory/*
+!memory/README.md
+!memory/.gitkeep

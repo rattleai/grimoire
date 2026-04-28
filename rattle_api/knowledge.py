@@ -125,6 +125,107 @@ RATTLE_DATA_MODEL: dict = {
         "api_endpoint": "/options/{id}/area-config?area_id=X",
         "relationships": ["option", "area"],
     },
+    # -- documents system (replaces the deprecated offer-sections) ------
+    "document_template": {
+        "description": (
+            "A reusable template that defines the structure of a document "
+            "(offer, quote, datasheet, …). Each template has a doc_type "
+            "(e.g. 'offer'), an optional product_id binding, a tree of "
+            "structure blocks, and an is_published / status lifecycle. "
+            "The 'offer' doc_type has requires_configuration=true — its "
+            "structure MUST contain an attachment referencing the system "
+            "dynamic content block 'dynamic:document_configuration'. "
+            "Assigned to products via /documents/templates/{id}/assign-products."
+        ),
+        "key_fields": [
+            "id",
+            "doc_type",
+            "name",
+            "product_id",
+            "is_published",
+            "status",
+            "inheritance_mode",
+        ],
+        "api_endpoint": "/documents/templates",
+        "relationships": ["product", "structure_blocks", "content_blocks (via attachments)"],
+    },
+    "document_content_block": {
+        "description": (
+            "A reusable content unit referenced by document templates. "
+            "Each content block has one or more locales; each locale holds "
+            "EITHER an EditorJS `blocks` array (static content) OR a "
+            "`template_name` string (dynamic content resolved at render "
+            "time — the two fields are mutually exclusive). System-provided "
+            "dynamic blocks have is_dynamic=true and a well-known key like "
+            "'dynamic:document_configuration'. NEVER wrap a system dynamic "
+            "block in a new content block — attach it by id."
+        ),
+        "key_fields": ["id", "key", "title", "is_dynamic", "locales", "tags", "product_id"],
+        "api_endpoint": "/documents/content-blocks",
+        "relationships": ["locales", "attachments", "directory"],
+    },
+    "document_structure_block": {
+        "description": (
+            "A node in a document template's structure tree. node_type is "
+            "one of: chapter, section, container, repeater, placeholder. "
+            "Chapters are top-level sections; sections nest inside chapters; "
+            "placeholders are empty slots filled by attachments. Slugs must "
+            "be unique per template. Content blocks are connected via "
+            "attachments, not directly."
+        ),
+        "key_fields": [
+            "id",
+            "template_id",
+            "parent_id",
+            "node_type",
+            "title",
+            "slug",
+            "order_index",
+        ],
+        "api_endpoint": "/documents/templates/{id}/structure/blocks",
+        "relationships": ["template", "parent (structure block)", "attachments"],
+    },
+    "document_attachment": {
+        "description": (
+            "Links a content block to a structure block in a document "
+            "template. Multiple attachments per structure block are allowed "
+            "(order_index controls order). is_required=true marks an "
+            "attachment that must resolve for the document to publish — "
+            "used for dynamic blocks like 'dynamic:document_configuration' "
+            "that the offer doc_type requires."
+        ),
+        "key_fields": [
+            "id",
+            "structure_id",
+            "content_block_id",
+            "order_index",
+            "is_active",
+            "is_required",
+        ],
+        "api_endpoint": ("/documents/templates/{id}/structure/blocks/{block_id}/attachments"),
+        "relationships": ["structure_block", "content_block"],
+    },
+    "doc_type_layout": {
+        "description": (
+            "Machine-readable contract for a document type. "
+            "GET /documents/doc-types returns each registered doc_type with "
+            "a default_layout (list of {slug, title, dynamic_key}) and "
+            "boolean flags like requires_configuration and requires_quote. "
+            "Consulting workflows should read this at runtime and use it as "
+            "the source of truth for which dynamic blocks a template must "
+            "contain to be valid for a given doc_type."
+        ),
+        "key_fields": [
+            "key",
+            "label",
+            "default_layout",
+            "requires_configuration",
+            "requires_quote",
+            "supported_formats",
+        ],
+        "api_endpoint": "/documents/doc-types",
+        "relationships": ["document_template (via doc_type)"],
+    },
 }
 
 
@@ -194,6 +295,126 @@ CONFIGURATION_RULES: list[dict] = [
             "configurations that cannot be manufactured or delivered."
         ),
         "applies_to": ["options", "constraints"],
+    },
+    {
+        "id": "no-empty-areas",
+        "rule": (
+            "Every area must contain at least one group. Areas exist to "
+            "host configurable groups — they are not a place for narrative "
+            "or marketing content. If you have a product section with no "
+            "configurable choices, it does not belong in an area."
+        ),
+        "rationale": (
+            "An area with zero groups is a dead end in the configurator "
+            "UI: the user sees a section with nothing to configure. "
+            "Narrative content for the product belongs in the documents "
+            "system (see narrative-in-documents-system), not in a "
+            "configuration area."
+        ),
+        "applies_to": ["areas", "groups"],
+    },
+    {
+        "id": "narrative-in-documents-system",
+        "rule": (
+            "Product narrative (overview, specifications table, marketing "
+            "copy, section headers like 'Mechanics', 'Electronics', "
+            "'Software') belongs in /documents/content-blocks attached to "
+            "an 'offer' document template — NOT in configuration areas."
+        ),
+        "rationale": (
+            "Areas are for configurable options. Content blocks are for "
+            "rich EditorJS narrative. Mixing the two leads to fake "
+            "'Description' areas that violate no-empty-areas and fragment "
+            "the configurator UX. The documents system is the canonical "
+            "home for per-product narrative and renders into offer PDFs."
+        ),
+        "applies_to": ["areas", "document_content_block", "document_template"],
+    },
+    {
+        "id": "offer-requires-configuration-block",
+        "rule": (
+            "Every published 'offer' document template MUST include a "
+            "structure block with an attachment referencing the system-"
+            "provided dynamic content block 'dynamic:document_configuration'."
+        ),
+        "rationale": (
+            "The 'offer' doc_type is registered with "
+            "requires_configuration=true (see GET /documents/doc-types). "
+            "An offer template without a dynamic configuration attachment "
+            "renders without the live product configuration and is therefore "
+            "missing the primary payload customers expect in an offer."
+        ),
+        "applies_to": ["document_template", "document_attachment"],
+    },
+    {
+        "id": "use-system-dynamic-blocks",
+        "rule": (
+            "When attaching dynamic content (configuration, pricing, "
+            "company_contacts, document_summary, document_line_items, "
+            "document_agreements), reference the pre-existing system content "
+            "block by id. NEVER create a new content block whose only "
+            "locale wraps `template_name: 'dynamic:...'` — that produces a "
+            "duplicate shadow of a built-in resource."
+        ),
+        "rationale": (
+            "System dynamic blocks are registered with is_dynamic=true and "
+            "well-known keys. Look them up via "
+            "GET /documents/content-blocks?is_dynamic=true and reference "
+            "the id directly in attachments. Wrapping them fragments the "
+            "catalogue, breaks rendering, and causes duplicate-dynamic-"
+            "wrappers anti-pattern findings."
+        ),
+        "applies_to": ["document_content_block", "document_attachment"],
+    },
+    {
+        "id": "shared-groups-across-products",
+        "rule": (
+            "Prefer one library group linked to many areas across products "
+            "via POST /groups/{id}/areas, with per-area option-area-config "
+            "overrides for price scaling. Do not duplicate a group per "
+            "product unless the option list genuinely differs."
+        ),
+        "rationale": (
+            "Shared groups stay in sync: rename once, fix once, add an "
+            "option once. Duplicating fragments the catalogue and makes "
+            "rename/refactor-across-products painful. Per-product price "
+            "differences are a solved problem — use area-config overrides."
+        ),
+        "applies_to": ["groups", "option_area_config"],
+    },
+    {
+        "id": "area-config-for-scaled-prices",
+        "rule": (
+            "When an option's price varies by product tier or area, keep "
+            "a single option and set per-area prices via "
+            "PUT /options/{id}/area-config?area_id=…. Do NOT duplicate "
+            "the option for each tier."
+        ),
+        "rationale": (
+            "Duplicating options for pricing variations breaks BOM "
+            "consistency (a single 'T-slots M8' part gets split into "
+            "tier-specific options) and defeats the reuse-over-duplicate "
+            "rule. area-config is the purpose-built mechanism for exactly "
+            "this case."
+        ),
+        "applies_to": ["options", "option_area_config"],
+    },
+    {
+        "id": "minimal-keys",
+        "rule": (
+            "Do not invent custom `key` values on groups or options unless "
+            "the tenant explicitly needs integration IDs (ERP, external "
+            "system references). Auto-generated keys are fine; bespoke "
+            "human-readable keys become clutter that has to be maintained "
+            "alongside names."
+        ),
+        "rationale": (
+            "Custom keys drift away from names over time and add a second "
+            "source of truth. Per-tenant style preferences (e.g. 'never "
+            "set custom keys') belong in the tenant memory profile, not "
+            "scattered through the catalogue."
+        ),
+        "applies_to": ["groups", "options"],
     },
 ]
 
@@ -275,7 +496,190 @@ ANTI_PATTERNS: list[dict] = [
             "Option 'HSK-63F mit Encoder' (price: 2500)."
         ),
     },
+    {
+        "id": "description-area-smell",
+        "name": "Narrative Area Smell",
+        "description": (
+            "The input mentions narrative sections like 'Description', "
+            "'Overview', 'Beschreibung', 'Produktbeschreibung', or chapter "
+            "titles like 'Mechanics' / 'Sensors' / 'Electronics' / "
+            "'Software' as if they were on par with configurable options. "
+            "Signals the author is about to create a narrative-only area "
+            "that will have no groups."
+        ),
+        "indicators": [
+            "Beschreibung",
+            "Produktbeschreibung",
+            "Description",
+            "Overview",
+            "Übersicht",
+            "Mechanics",
+            "Mechanik",
+            "Sensorik",
+            "Elektronik",
+            "Bedienung",
+        ],
+        "correction": (
+            "Narrative content does not belong in a configuration area. "
+            "Create a document template (doc_type='offer') with a "
+            "'Product Overview' chapter and attach a static EditorJS "
+            "content block carrying the narrative. Attach the system "
+            "'dynamic:document_configuration' block in a separate chapter "
+            "so the live configuration still renders."
+        ),
+        "example_wrong": (
+            "Area 'Widget Pro — Description' (0 groups, just rich text "
+            "about the product). The area has nothing to configure."
+        ),
+        "example_correct": (
+            "Document template 'Widget Pro — Offer' (doc_type=offer): "
+            "chapter 'Product Overview' with attached content block "
+            "containing EditorJS narrative; chapter 'Configuration' with "
+            "attached dynamic:document_configuration. Areas carry only "
+            "configurable groups."
+        ),
+    },
+    {
+        "id": "addon-only-software-modules",
+        "name": "Add-on Only Software Modules",
+        "description": (
+            "Software/licence modules appear only as surcharges without a "
+            "matching base-module option. Common in pricelists because "
+            "software has no physical BOM and is easy to miss when "
+            "applying the explicit-options-for-all-variants rule."
+        ),
+        "indicators": [
+            "Software-Modul",
+            "Software Modul",
+            "Modul-Aufpreis",
+            "Lizenzmodul",
+            "zusätzliches Modul",
+            "Software surcharge",
+        ],
+        "correction": (
+            "Create a group for the software capability (e.g. 'Cyclic "
+            "testing software') with both the baseline option (price 0, "
+            "recommended) and the upgrade module option. Set is_multi "
+            "based on whether modules stack."
+        ),
+        "example_wrong": (
+            "Aufpreis Software-Modul 'Multistep cyclic': 500€. Problem: "
+            "no option exists for the default (no-module) state."
+        ),
+        "example_correct": (
+            "Group 'Software — Cyclic testing' (is_multi: false): "
+            "Option 'Manual cyclic testing (included)' (recommended: true, "
+            "price: 0), Option 'Multistep cyclic testing module' (price: 500)."
+        ),
+    },
 ]
+
+
+# ---------------------------------------------------------------------------
+# Structural checks — declarative specs for live-tenant audit
+# ---------------------------------------------------------------------------
+#
+# Each entry is a declarative check spec that a live-tenant audit runner can
+# execute against a RattleClient. The runner lives outside this module (Part
+# C follow-up); here we only keep the data so the consulting system can
+# reference the checks by id in prompts, documentation, and future tooling.
+
+STRUCTURAL_CHECKS: dict = {
+    "areas-without-groups": {
+        "name": "Areas without groups",
+        "description": (
+            "Areas that have zero groups linked to them. Violates the no-empty-areas rule."
+        ),
+        "severity": "error",
+        "check_spec": {
+            "list": "/areas",
+            "per_entity": "/areas/{id}/groups",
+            "flag_when": "len(groups) == 0",
+        },
+        "related_rules": ["no-empty-areas"],
+    },
+    "duplicate-group-names": {
+        "name": "Duplicate group names",
+        "description": (
+            "Groups where the same (case-insensitive) name appears on "
+            "multiple group ids. Indicates a reuse-over-duplicate failure."
+        ),
+        "severity": "warning",
+        "check_spec": {
+            "list": "/groups",
+            "group_by": "lower(name)",
+            "flag_when": "count > 1",
+        },
+        "related_rules": ["reuse-over-duplicate", "shared-groups-across-products"],
+    },
+    "offer-template-missing-configuration": {
+        "name": "Offer template missing configuration block",
+        "description": (
+            "Offer document templates whose structure tree does not "
+            "contain any attachment to the system dynamic content block "
+            "'dynamic:document_configuration'. Violates the "
+            "offer-requires-configuration-block rule and the doc_type "
+            "requires_configuration contract."
+        ),
+        "severity": "error",
+        "check_spec": {
+            "list": "/documents/templates?doc_type=offer",
+            "per_entity": "/documents/templates/{id}/structure",
+            "flag_when": (
+                "no attachment has content_block_key == 'dynamic:document_configuration'"
+            ),
+        },
+        "related_rules": ["offer-requires-configuration-block"],
+    },
+    "duplicate-dynamic-wrappers": {
+        "name": "Duplicate wrappers around system dynamic blocks",
+        "description": (
+            "User-created content blocks whose only locale has a "
+            "template_name matching a system dynamic block key (e.g. "
+            "'dynamic:document_configuration'). Indicates a built-in "
+            "dynamic block was wrapped instead of referenced by id."
+        ),
+        "severity": "warning",
+        "check_spec": {
+            "list": "/documents/content-blocks",
+            "flag_when": (
+                "is_dynamic == False and any(locale.template_name startswith 'dynamic:')"
+            ),
+        },
+        "related_rules": ["use-system-dynamic-blocks"],
+    },
+    "options-with-custom-keys": {
+        "name": "Options with custom keys",
+        "description": (
+            "Options that have a non-empty `key` field. Not an error by "
+            "itself — some tenants require integration keys — but reported "
+            "so tenants who prefer minimal keys can audit. Opt-in via "
+            "tenant memory profile."
+        ),
+        "severity": "info",
+        "check_spec": {
+            "list": "/options",
+            "flag_when": "key != '' and key is not None",
+        },
+        "related_rules": ["minimal-keys"],
+        "tenant_opt_in": True,
+    },
+    "options-with-conflicting-area-overrides": {
+        "name": "Options with conflicting area overrides",
+        "description": (
+            "Options where an area-config has price 0 / null / missing "
+            "while the base option price is non-zero. Indicates the option "
+            "silently drops to free in that area."
+        ),
+        "severity": "warning",
+        "check_spec": {
+            "list": "/options",
+            "per_entity": "/options/{id}/area-config?area_id={area_id}",
+            "flag_when": ("base_price > 0 and area_config.price in (0, None, '')"),
+        },
+        "related_rules": ["price-on-option", "area-config-for-scaled-prices"],
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -283,8 +687,16 @@ ANTI_PATTERNS: list[dict] = [
 # ---------------------------------------------------------------------------
 
 
-def system_prompt_base() -> str:
-    """Core consulting rules fragment, usable as a prefix for any prompt."""
+def system_prompt_base(*, tenant_profile: str | None = None) -> str:
+    """Core consulting rules fragment, usable as a prefix for any prompt.
+
+    Args:
+        tenant_profile: Optional tenant-specific preferences markdown. When
+            provided, it is appended under a ``## Tenant preferences``
+            section so every downstream prompt inherits the tenant's style
+            choices (e.g. "never set custom option keys"). Typically
+            produced by :meth:`rattle_api.memory.TenantMemory.inject_into_prompt`.
+    """
     rules_text = "\n".join(
         f"  {i + 1}. **{r['id']}**: {r['rule']}" for i, r in enumerate(CONFIGURATION_RULES)
     )
@@ -294,16 +706,20 @@ def system_prompt_base() -> str:
         for ap in ANTI_PATTERNS
     )
 
-    return (
+    base = (
         "You are a product configurator consultant with deep expertise in "
         "building correct, BOM-aware product configurations for the Rattle "
         "product configurator platform.\n\n"
         "## Rattle Data Model\n"
         "Product → Areas → Groups (is_multi: single/multi-select) → Options\n"
         "Parts → BOM items (parent→child with quantity + usage_subclauses)\n"
-        "Constraints (forbidden option combinations + conditional rules)\n\n"
+        "Constraints (forbidden option combinations + conditional rules)\n"
+        "Documents system: document_template → structure_blocks → "
+        "attachments → content_blocks (static EditorJS or system dynamic).\n\n"
         "- Groups are linked to Areas (not directly to Products). "
         "A group's is_multi field controls single-select vs multi-select.\n"
+        "- Every area must contain at least one group — no narrative-only "
+        "areas. Narrative content lives in the documents system.\n"
         "- Options have: name, price, key, recommended (=pre-selected default).\n"
         "- BOM items contain usage_subclauses: "
         '[{"option_id": <id>, "factor": <multiplier>}]. '
@@ -316,7 +732,14 @@ def system_prompt_base() -> str:
         "Atomically replaces all pairs for a product.\n"
         "- Constraint rules (POST /constraints/rules): conditional logic "
         "with rule_json: "
-        '[{"if": {"option_selected": X}, "then": {"forbid_options": [Y, Z]}}].\n\n'
+        '[{"if": {"option_selected": X}, "then": {"forbid_options": [Y, Z]}}].\n'
+        "- Documents system (offer templates): GET /documents/doc-types "
+        "gives each doc_type's default_layout + requires_configuration "
+        "flag. The 'offer' doc_type REQUIRES a structure block attachment "
+        "to the system dynamic content block 'dynamic:document_configuration'. "
+        "Built-in dynamic blocks (is_dynamic=true) are listed by "
+        "GET /documents/content-blocks?is_dynamic=true — reference them by "
+        "id, never wrap them in a new content block.\n\n"
         "## THE #1 RULE\n"
         "NEVER build 'base product + add-ons' where the base configuration is "
         "implicit. Every configurable feature MUST have an explicit group with "
@@ -336,12 +759,25 @@ def system_prompt_base() -> str:
         f"## Anti-Patterns to Detect\n{anti_text}"
     )
 
+    if tenant_profile and tenant_profile.strip():
+        base += (
+            "\n\n## Tenant preferences\n"
+            "The following preferences apply specifically to this tenant and "
+            "override general defaults where they conflict. Respect them in "
+            "all recommendations.\n\n"
+            f"{tenant_profile.strip()}"
+        )
 
-def system_prompt_analyse_pricelist(*, language: str = "de") -> str:
+    return base
+
+
+def system_prompt_analyse_pricelist(
+    *, language: str = "de", tenant_profile: str | None = None
+) -> str:
     """System prompt for pricelist analysis with embedded consulting rules."""
     lang_name = "German" if language == "de" else language
     return (
-        f"{system_prompt_base()}\n\n"
+        f"{system_prompt_base(tenant_profile=tenant_profile)}\n\n"
         "## Your Task\n"
         f"Analyse the following pricelist or technical document (respond in {lang_name}). "
         "Identify:\n"
@@ -354,7 +790,10 @@ def system_prompt_analyse_pricelist(*, language: str = "de") -> str:
 
 
 def system_prompt_suggest_configuration(
-    *, language: str = "de", existing_groups: list[dict] | None = None
+    *,
+    language: str = "de",
+    existing_groups: list[dict] | None = None,
+    tenant_profile: str | None = None,
 ) -> str:
     """System prompt for configuration suggestion with BOM-aware rules."""
     lang_name = "German" if language == "de" else language
@@ -379,7 +818,7 @@ def system_prompt_suggest_configuration(
         )
 
     return (
-        f"{system_prompt_base()}{reuse_section}\n\n"
+        f"{system_prompt_base(tenant_profile=tenant_profile)}{reuse_section}\n\n"
         "## Your Task\n"
         "Generate an explicit, BOM-aware configuration structure for the Rattle "
         f"product configurator (respond in {lang_name}).\n\n"
@@ -399,6 +838,175 @@ def system_prompt_suggest_configuration(
         '"then": {"forbid_options": [names]}}]}].\n\n'
         "Return JSON with key 'products' (array of objects with keys: "
         "name, groups, bom_rules, forbidden_pairs, constraint_rules)."
+    )
+
+
+def system_prompt_build_offer_template(
+    *,
+    doc_type_layout: dict | None = None,
+    dynamic_content_blocks: list[dict] | None = None,
+    language: str = "de",
+    tenant_profile: str | None = None,
+) -> str:
+    """System prompt for building an offer document template.
+
+    Produces a prompt that instructs the AI to emit a template definition
+    matching the live tenant's `offer` doc_type contract. The caller is
+    expected to fetch:
+
+    - `doc_type_layout`: a single entry from ``GET /documents/doc-types``
+      (the one with ``key == "offer"``), providing ``default_layout`` and
+      ``requires_configuration``.
+    - `dynamic_content_blocks`: the list of system content blocks from
+      ``GET /documents/content-blocks?is_dynamic=true`` — referenced by id
+      in the AI's output.
+
+    The AI's JSON output has the shape ``{template_name, chapters: [{slug,
+    title, attachments: [{content_block_id?, dynamic_key?}]}]}`` — suitable
+    for an idempotent builder to execute.
+    """
+    lang_name = "German" if language == "de" else language
+
+    layout_section = ""
+    if doc_type_layout:
+        requires_cfg = doc_type_layout.get("requires_configuration", False)
+        default_layout = doc_type_layout.get("default_layout", [])
+        layout_lines = "\n".join(
+            f"  - {entry.get('slug', '?')}: {entry.get('title', '?')} "
+            f"(dynamic_key={entry.get('dynamic_key', 'none')})"
+            for entry in default_layout
+        )
+        layout_section = (
+            "\n\n## Target doc_type contract\n"
+            f"doc_type: {doc_type_layout.get('key', 'offer')}  "
+            f"(requires_configuration={requires_cfg})\n"
+            f"Default layout:\n{layout_lines}\n\n"
+            "Every dynamic_key in the default layout MUST appear in the "
+            "template as an attachment referencing the corresponding system "
+            "dynamic content block."
+        )
+
+    dynamic_section = ""
+    if dynamic_content_blocks:
+        dyn_lines = "\n".join(
+            f"  - id={cb.get('id', '?')}  key={cb.get('key', '?')}  title={cb.get('title', '?')}"
+            for cb in dynamic_content_blocks
+        )
+        dynamic_section = (
+            "\n\n## Available system dynamic content blocks\n"
+            f"{dyn_lines}\n\n"
+            "Reference these by id in attachments. NEVER create a new content "
+            "block that wraps a dynamic key — use the existing one."
+        )
+
+    return (
+        f"{system_prompt_base(tenant_profile=tenant_profile)}"
+        f"{layout_section}"
+        f"{dynamic_section}\n\n"
+        "## Your Task\n"
+        "Propose a document template for the given product. The template "
+        "must satisfy the doc_type contract above and follow the "
+        "offer-requires-configuration-block and use-system-dynamic-blocks "
+        f"rules. Respond in {lang_name}.\n\n"
+        "Structure chapters: at minimum include\n"
+        "  1. 'Product Overview' — static content block with EditorJS "
+        "narrative (intro, core-features table, mechanics/sensors/"
+        "electronics/software sub-sections). You may reference an existing "
+        "static content block by id or describe a new one.\n"
+        "  2. 'Configuration' — required attachment to the system "
+        "'dynamic:document_configuration' content block. Look it up in the "
+        "dynamic-blocks list above and use its id.\n\n"
+        "Return JSON: {template_name, chapters: [{slug, title, "
+        "order_index, attachments: [{content_block_id, dynamic_key, "
+        "is_required}]}]}."
+    )
+
+
+def system_prompt_audit(
+    *,
+    findings: list[dict] | None = None,
+    language: str = "de",
+    tenant_profile: str | None = None,
+) -> str:
+    """System prompt for reviewing structural audit findings.
+
+    Accepts a list of findings produced by a structural-check runner
+    (future Part C ``audit.py``). Each finding is a dict with ``check_id``,
+    ``severity``, ``entity_type``, ``entity_id``, and ``message``. The AI
+    is asked to triage them and propose prioritised fixes.
+    """
+    lang_name = "German" if language == "de" else language
+
+    findings_section = ""
+    if findings:
+        lines = "\n".join(
+            f"  - [{f.get('severity', 'info')}] {f.get('check_id', '?')} on "
+            f"{f.get('entity_type', '?')} {f.get('entity_id', '?')}: "
+            f"{f.get('message', '')}"
+            for f in findings
+        )
+        findings_section = f"\n\n## Audit findings\n{lines}"
+
+    checks_section = "\n".join(
+        f"  - **{cid}** ({spec['severity']}): {spec['description']}"
+        for cid, spec in STRUCTURAL_CHECKS.items()
+    )
+
+    return (
+        f"{system_prompt_base(tenant_profile=tenant_profile)}\n\n"
+        f"## Available structural checks\n{checks_section}"
+        f"{findings_section}\n\n"
+        "## Your Task\n"
+        "Review the audit findings above and propose prioritised fixes "
+        f"(respond in {lang_name}). For each finding:\n"
+        "1. Classify severity (error > warning > info)\n"
+        "2. Recommend the minimum change that resolves it\n"
+        "3. Cross-reference any configuration rule it violates (by id)\n\n"
+        "Return JSON: {summary, fixes: [{check_id, entity_id, severity, "
+        "fix_description, related_rules}]}."
+    )
+
+
+def system_prompt_apply_config(
+    *,
+    recommendation: dict | None = None,
+    tenant_profile: str | None = None,
+) -> str:
+    """System prompt for converting a suggest_configuration output into REST calls.
+
+    The consuming builder (future Part C ``builder.py``) executes the
+    returned plan idempotently (get-or-create for each entity), so the AI
+    output must be a sequence of idempotent operations keyed by natural
+    identifiers (names) rather than ids.
+    """
+    rec_section = ""
+    if recommendation:
+        import json as _json
+
+        rec_json = _json.dumps(recommendation, ensure_ascii=False, indent=2)[:6000]
+        rec_section = f"\n\n## Recommendation payload\n```json\n{rec_json}\n```"
+
+    return (
+        f"{system_prompt_base(tenant_profile=tenant_profile)}"
+        f"{rec_section}\n\n"
+        "## Your Task\n"
+        "Convert the recommendation above into a sequence of idempotent "
+        "REST operations for the Rattle API. Each operation must be "
+        "expressed as get-or-create so a second run is a safe no-op.\n\n"
+        "Valid operation types:\n"
+        "  - ensure_product {name, base_price, description?}\n"
+        "  - ensure_area {name, description?, parent_product: <name>}\n"
+        "  - ensure_group {name, is_multi, description?, link_to_areas: [<area_names>]}\n"
+        "  - ensure_option {name, price, recommended, description?, group: <group_name>}\n"
+        "  - ensure_area_config {option: <name>, area: <name>, price}\n"
+        "  - ensure_constraint_pair {option_1: <name>, option_2: <name>}\n"
+        "  - ensure_constraint_rule {description, rule_json}\n\n"
+        "Honour the no-empty-areas rule (do not emit ensure_area operations "
+        "that end up with zero groups), the reuse-over-duplicate rule (one "
+        "ensure_group per distinct group, with link_to_areas across all "
+        "products), and the minimal-keys rule (never include a custom key "
+        "unless the tenant profile explicitly requires one).\n\n"
+        "Return JSON: {operations: [...], notes: [string]}."
     )
 
 

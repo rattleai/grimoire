@@ -238,7 +238,7 @@ def analyse_pricelist(tenant, source_file, *, provider=None, language="de"):
 
     Two-phase analysis:
       1. Heuristic scan (free, no AI) via :func:`knowledge.detect_anti_patterns`
-      2. AI analysis with embedded consulting knowledge
+      2. AI analysis with embedded consulting knowledge + tenant profile
 
     Args:
         tenant:      Rattle tenant name.
@@ -251,6 +251,7 @@ def analyse_pricelist(tenant, source_file, *, provider=None, language="de"):
         ``ai_analysis``.
     """
     from .knowledge import detect_anti_patterns, system_prompt_analyse_pricelist
+    from .memory import TenantMemory
     from .source import read_source
 
     ai = _ai(provider)
@@ -262,8 +263,12 @@ def analyse_pricelist(tenant, source_file, *, provider=None, language="de"):
     if source["type"] == "excel":
         heuristic_results = detect_anti_patterns(source["data"])
 
-    # Phase 2: AI analysis
-    system = system_prompt_analyse_pricelist(language=language)
+    # Phase 2: AI analysis (tenant profile is read-only, never written)
+    tenant_profile = TenantMemory(tenant).inject_into_prompt()
+    system = system_prompt_analyse_pricelist(
+        language=language,
+        tenant_profile=tenant_profile or None,
+    )
     if source["type"] == "excel":
         content = json.dumps(source["data"], ensure_ascii=False, default=str)[:8000]
     else:
@@ -312,6 +317,7 @@ def suggest_configuration(
         (each with ``groups``, ``usage_subclauses``, ``forbidden_combinations``).
     """
     from .knowledge import system_prompt_suggest_configuration
+    from .memory import TenantMemory
     from .source import read_source
 
     ai = _ai(provider)
@@ -326,9 +332,12 @@ def suggest_configuration(
     except Exception:
         print("  WARN: could not fetch existing groups", file=sys.stderr)
 
+    # Tenant profile is read-only — explicit writes only via `memory` commands.
+    tenant_profile = TenantMemory(tenant).inject_into_prompt()
     system = system_prompt_suggest_configuration(
         language=language,
         existing_groups=existing_groups if existing_groups else None,
+        tenant_profile=tenant_profile or None,
     )
 
     if source["type"] == "excel":
