@@ -64,7 +64,7 @@ Write clear, concise commit messages:
 
 ## Reporting Issues
 
-- Use the [GitHub issue tracker](https://github.com/mngapps/rattle_api/issues).
+- Use the [GitHub issue tracker](https://github.com/rattleai/grimoire/issues).
 - Check existing issues before creating a new one.
 - Include steps to reproduce, expected behaviour, and actual behaviour.
 - For security vulnerabilities, see [SECURITY.md](SECURITY.md).

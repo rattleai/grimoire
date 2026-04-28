@@ -1,15 +1,16 @@
 {
-  "name": "rattle-ai-workspace",
-  "version": "0.3.0",
-  "description": "AI-native workspace for the Rattle product configurator (rattleapp.de). Bundles 8 skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 subagents, 4 slash commands, JSON Schemas for every output contract, and golden I/O examples. Encodes the #1 rule (explicit options for ALL variants), 12 configuration rules, 4 anti-patterns, 6 structural checks, and 7 idempotent ensure_* operation types so any AI model can produce, audit, and apply correct, BOM-aware Rattle configurations.",
+  "name": "grimoire",
+  "version": "0.4.0",
+  "description": "Grimoire — the AI-native consulting workspace for the Rattle product configurator (rattleapp.de). Bundles 8 skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 subagents, 4 slash commands, JSON Schemas for every output contract, and golden I/O examples. Encodes the #1 rule (explicit options for ALL variants), 12 configuration rules, 4 anti-patterns, 6 structural checks, and 7 idempotent ensure_* operation types so any AI model can produce, audit, and apply correct, BOM-aware Rattle configurations.",
   "author": {
-    "name": "mngapps",
+    "name": "rattleai",
     "email": "alex.menges@yahoo.de"
   },
   "license": "MIT",
-  "homepage": "https://github.com/mngapps/rattle_api",
-  "repository": "https://github.com/mngapps/rattle_api",
+  "homepage": "https://github.com/rattleai/grimoire",
+  "repository": "https://github.com/rattleai/grimoire",
   "keywords": [
+    "grimoire",
     "rattle",
     "rattleapp",
     "configurator",

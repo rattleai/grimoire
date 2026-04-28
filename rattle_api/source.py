@@ -44,7 +44,7 @@ def read_pdf(filepath):
     except ImportError:
         raise ImportError(
             "pymupdf is required for PDF reading. "
-            "Install it with: pip install 'rattle-ai-workspace[pdf]'"
+            "Install it with: pip install 'grimoire[pdf]'"
         )
     doc = fitz.open(filepath)
     pages = []
@@ -68,7 +68,7 @@ def read_docx(filepath):
     except ImportError:
         raise ImportError(
             "python-docx is required for Word document reading. "
-            "Install it with: pip install 'rattle-ai-workspace[docx]'"
+            "Install it with: pip install 'grimoire[docx]'"
         )
     doc = docx.Document(filepath)
     return "\n".join(p.text for p in doc.paragraphs)

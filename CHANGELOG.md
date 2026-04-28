@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-28
+
+### Changed — workspace renamed to **Grimoire**
+
+- **Project name** is now **Grimoire**. The Rattle product configurator (rattleapp.de) is the *target* of the workspace; Grimoire is the workspace itself.
+- **GitHub repo** moved to `rattleai/grimoire` (was `mngapps/rattle_api`). Old URL still redirects, but new clones should use the canonical location.
+- **npm package** renamed to `@rattleai/grimoire` (was `@rattle/ai-workspace`). Install: `npx @rattleai/grimoire install`.
+- **PyPI distribution** renamed to `grimoire` (was `rattle-ai-workspace`). Install: `pip install grimoire`. The `rattle` console script keeps its name — it is the CLI for the Rattle API.
+- **Claude Code plugin** renamed to `grimoire`. Install: `/plugin marketplace add rattleai/grimoire` then `/plugin install grimoire`.
+- **Installer script** renamed `bin/rattle-skills-install.mjs` → `bin/grimoire.mjs`. The two `bin` entries are now `grimoire` and `grimoire-install`.
+- All cross-references updated in `AGENTS.md`, `CLAUDE.md`, `SETUP.md`, `CONTRIBUTING.md`, `README.md`, and the runtime error messages in `rattle_api/source.py`.
+
+### Added
+
+- `PUBLISHING.md` — release runbook for npm, PyPI, the Claude Code marketplace, and GitHub releases.
+- `package.json` `publishConfig.access: "public"` so `npm publish` works for the scoped package by default.
+
+### Migration notes
+
+- Skill ids (`rattle-configurator`, `rattle-api`, `rattle-pricelist-analysis`, etc.) are **unchanged** — they describe the *target product* (Rattle), not the workspace. Bookmarks and slash commands keep working.
+- Commit `5adde19` was the last 0.3.0 commit. Anyone who installed from that commit can stay on it; the rename is documentation/distribution-only.
+
 ## [0.3.0] - 2026-04-28
 
 ### Added

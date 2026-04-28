@@ -109,18 +109,18 @@ This workspace is installable three ways:
 
 1. **Claude Code plugin** (richest):
    ```
-   /plugin marketplace add mngapps/rattle_api
-   /plugin install rattle-ai-workspace
+   /plugin marketplace add rattleai/grimoire
+   /plugin install grimoire
    ```
 
 2. **NPM** (drops skills + AGENTS.md into any project):
    ```
-   npx @rattle/ai-workspace install
+   npx @rattleai/grimoire install
    ```
 
 3. **PyPI** (Python CLI execution layer):
    ```
-   pip install rattle-ai-workspace[all-ai,all-sources]
+   pip install grimoire[all-ai,all-sources]
    rattle <tenant> ai-analyse-pricelist <file>
    ```
 

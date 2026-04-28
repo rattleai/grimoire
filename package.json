@@ -1,11 +1,11 @@
 {
-  "name": "@rattle/ai-workspace",
-  "version": "0.3.0",
-  "description": "AI-native workspace for the Rattle product configurator (rattleapp.de). Installs 8 Anthropic-format Skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 Claude Code subagents, 4 slash commands, JSON Schemas for every output contract, golden I/O examples, and a cross-platform AGENTS.md so any AI model (Claude, GPT, Cursor, Codex, Aider, Continue) can produce correct, BOM-aware Rattle configurations.",
+  "name": "@rattleai/grimoire",
+  "version": "0.4.0",
+  "description": "Grimoire — the AI-native consulting workspace for the Rattle product configurator (rattleapp.de). Installs 8 Anthropic-format Skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 Claude Code subagents, 4 slash commands, JSON Schemas for every output contract, golden I/O examples, and a cross-platform AGENTS.md so any AI model (Claude, GPT, Cursor, Codex, Aider, Continue) can produce correct, BOM-aware Rattle configurations.",
   "type": "module",
   "bin": {
-    "rattle-skills": "./bin/rattle-skills-install.mjs",
-    "rattle-skills-install": "./bin/rattle-skills-install.mjs"
+    "grimoire": "./bin/grimoire.mjs",
+    "grimoire-install": "./bin/grimoire.mjs"
   },
   "files": [
     "bin/",
@@ -21,9 +21,10 @@
     ".claude-plugin/"
   ],
   "scripts": {
-    "postinstall": "node bin/rattle-skills-install.mjs --postinstall || true"
+    "postinstall": "node bin/grimoire.mjs --postinstall || true"
   },
   "keywords": [
+    "grimoire",
     "rattle",
     "rattleapp",
     "configurator",
@@ -44,19 +45,22 @@
     "knowledge"
   ],
   "author": {
-    "name": "mngapps",
+    "name": "rattleai",
     "email": "alex.menges@yahoo.de"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mngapps/rattle_api.git"
+    "url": "git+https://github.com/rattleai/grimoire.git"
   },
-  "homepage": "https://github.com/mngapps/rattle_api#readme",
+  "homepage": "https://github.com/rattleai/grimoire#readme",
   "bugs": {
-    "url": "https://github.com/mngapps/rattle_api/issues"
+    "url": "https://github.com/rattleai/grimoire/issues"
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

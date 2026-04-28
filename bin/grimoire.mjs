@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 /**
- * rattle-skills-install
+ * grimoire
  *
- * Drops Rattle AI Workspace artifacts (skills/, agents/, commands/, AGENTS.md,
- * .claude-plugin/) into a target project so any AI agent (Claude Code, Cursor,
- * Codex, Aider, Continue, …) can pick them up.
+ * Drops the Grimoire AI workspace artifacts (skills/, agents/, commands/,
+ * schemas/, examples/, AGENTS.md, .claude-plugin/) into a target project so
+ * any AI agent (Claude Code, Cursor, Codex, Aider, Continue, …) can pick
+ * them up.
  *
  * Usage:
- *   npx @rattle/ai-workspace install                    # install into ./
- *   npx @rattle/ai-workspace install --target ./my-app  # install into a path
- *   npx @rattle/ai-workspace install --layout claude    # only Claude Code paths (.claude/skills, .claude/agents, .claude/commands)
- *   npx @rattle/ai-workspace install --layout flat      # default — root-level skills/, agents/, commands/, AGENTS.md
- *   npx @rattle/ai-workspace install --layout user      # ~/.claude/skills, ~/.claude/agents, ~/.claude/commands (machine-wide)
- *   npx @rattle/ai-workspace install --dry-run          # show what would be copied without copying
+ *   npx @rattleai/grimoire install                    # install into ./
+ *   npx @rattleai/grimoire install --target ./my-app  # install into a path
+ *   npx @rattleai/grimoire install --layout claude    # only Claude Code paths (.claude/skills, .claude/agents, .claude/commands)
+ *   npx @rattleai/grimoire install --layout flat      # default — root-level skills/, agents/, commands/, AGENTS.md
+ *   npx @rattleai/grimoire install --layout user      # ~/.claude/skills, ~/.claude/agents, ~/.claude/commands (machine-wide)
+ *   npx @rattleai/grimoire install --dry-run          # show what would be copied without copying
  *
  * Layouts:
  *   - flat   (default): writes skills/, agents/, commands/, AGENTS.md, .claude-plugin/ at the target root.
@@ -22,7 +23,7 @@
  * Idempotent: re-running re-copies (overwrites) files. Existing files outside
  * the workspace footprint are never touched.
  *
- * Suppressed when invoked as `node bin/rattle-skills-install.mjs --postinstall`
+ * Suppressed when invoked as `node bin/grimoire.mjs --postinstall`
  * (used as the npm `postinstall` hook so installing the package itself doesn't
  * spam the user's project).
  */
@@ -129,7 +130,7 @@ async function install(args) {
   }
 
   console.log(
-    `${args.dryRun ? "[DRY RUN] " : ""}Installing rattle-ai-workspace artifacts`
+    `${args.dryRun ? "[DRY RUN] " : ""}Installing grimoire artifacts`
   );
   console.log(`  layout : ${args.layout}`);
   console.log(`  target : ${args.layout === "user" ? path.join(os.homedir(), ".claude") : target}`);
@@ -167,7 +168,7 @@ async function install(args) {
 
 function help() {
   console.log(
-    `Usage: npx @rattle/ai-workspace install [--target <path>] [--layout flat|claude|user] [--dry-run]
+    `Usage: npx @rattleai/grimoire install [--target <path>] [--layout flat|claude|user] [--dry-run]
 
 Drops the Rattle AI Workspace artifacts (skills/, agents/, commands/, AGENTS.md,
 .claude-plugin/) into a target project or your machine-wide ~/.claude/.
@@ -178,10 +179,10 @@ Layouts:
   user:             ~/.claude/skills, ~/.claude/agents, ~/.claude/commands
 
 Examples:
-  npx @rattle/ai-workspace install
-  npx @rattle/ai-workspace install --layout claude --target ./my-project
-  npx @rattle/ai-workspace install --layout user
-  npx @rattle/ai-workspace install --dry-run
+  npx @rattleai/grimoire install
+  npx @rattleai/grimoire install --layout claude --target ./my-project
+  npx @rattleai/grimoire install --layout user
+  npx @rattleai/grimoire install --dry-run
 `
   );
 }

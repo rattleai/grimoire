@@ -11,7 +11,7 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 
 | Path | Purpose |
 |---|---|
-| `.claude-plugin/plugin.json` + `marketplace.json` | Claude Code plugin / marketplace manifest. Installable via `/plugin marketplace add mngapps/rattle_api`. |
+| `.claude-plugin/plugin.json` + `marketplace.json` | Claude Code plugin / marketplace manifest. Installable via `/plugin marketplace add rattleai/grimoire`. |
 | `skills/rattle-configurator/` | Core consulting knowledge. **Always load first.** |
 | `skills/rattle-api/` | REST API surface (auth, pagination, 443 operations across 245 paths, OpenAPI spec). |
 | `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |

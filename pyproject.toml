@@ -3,16 +3,17 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rattle-ai-workspace"
-version = "0.3.0"
-description = "Rattle AI Workspace — AI-native skills, agents, and CLI for the Rattle product configurator"
+name = "grimoire"
+version = "0.4.0"
+description = "Grimoire — AI-native consulting workspace for the Rattle product configurator. Bundles skills, agents, slash commands, JSON Schemas, and a Python CLI execution layer."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "mngapps" },
+    { name = "rattleai" },
 ]
 keywords = [
+    "grimoire",
     "rattle",
     "rattleapp",
     "configurator",
@@ -69,11 +70,11 @@ dev = [
 rattle = "rattle_api.main:main"
 
 [project.urls]
-Homepage = "https://github.com/mngapps/rattle_api"
-Documentation = "https://github.com/mngapps/rattle_api#readme"
-Repository = "https://github.com/mngapps/rattle_api"
-Issues = "https://github.com/mngapps/rattle_api/issues"
-Changelog = "https://github.com/mngapps/rattle_api/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/rattleai/grimoire"
+Documentation = "https://github.com/rattleai/grimoire#readme"
+Repository = "https://github.com/rattleai/grimoire"
+Issues = "https://github.com/rattleai/grimoire/issues"
+Changelog = "https://github.com/rattleai/grimoire/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages]
 find = {}

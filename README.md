@@ -1,8 +1,8 @@
 <p align="center">
   <img src="rattle_logos/rattle_long_black_transparent.png" width="320" alt="Rattle">
   <br>
-  <strong>Rattle AI Workspace</strong><br>
-  <em>AI-native workspace for the Rattle product configurator</em>
+  <strong>Grimoire</strong><br>
+  <em>AI-native consulting workspace for the Rattle product configurator</em>
 </p>
 
 <p align="center">
@@ -18,107 +18,115 @@
 
 ---
 
-## What this is
+## What is Grimoire?
 
-An **AI-native workspace** — a bundle of model-agnostic knowledge artifacts plus a thin Python execution layer. Two layers:
+A **portable consulting brain** for the Rattle product configurator. Two layers:
 
-1. **AI knowledge layer** — Anthropic-format Skills, Claude Code subagents, slash commands, `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT-4/5, Llama, Mistral, …) can read these and follow the workflow.
+1. **AI knowledge layer** — Anthropic-format Skills, Claude Code subagents, slash commands, JSON Schemas, golden I/O examples, the `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT-4/5, Llama, Mistral, …) can read these and follow the same workflow.
 2. **Python execution layer** — `rattle_api/` package + `rattle` CLI, a reference implementation that wires the same prompts up to OpenAI / Anthropic / Ollama / custom-HTTP providers.
 
-Goal: give every AI model the same consulting expertise — the #1 rule, the data model, configuration rules, anti-patterns, structural checks, REST API conventions — without retraining.
+Goal: every AI model gets the same consulting expertise — the #1 rule, the data model, configuration rules, anti-patterns, structural checks, REST API conventions — without retraining.
 
 ## What's inside
 
 ```
 rattle_api/                    Python execution layer (CLI, RattleClient, providers, prompts)
-skills/                        Anthropic-format Skills (model-agnostic)
+skills/                        8 Anthropic-format Skills (model-agnostic)
   rattle-configurator/         Core consulting knowledge (the #1 rule, rules, anti-patterns)
-  rattle-api/                  REST API surface (443 ops, 245 paths, 36 tags; OpenAPI spec, client patterns)
+  rattle-api/                  REST API surface (443 ops, OpenAPI spec, client patterns)
   rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
   rattle-document-templates/   Workflow: build offer/datasheet templates
-agents/                        Claude Code subagents (consultant, auditor, config-builder)
-commands/                      Claude Code slash commands (/rattle-analyse, /rattle-audit, …)
+  rattle-apply-config/         Workflow: apply a recommendation idempotently
+  rattle-audit/                Workflow: scan a live tenant against 6 structural checks
+  rattle-tenant-memory/        Per-tenant preferences (file-based, explicit-write only)
+agents/                        3 Claude Code subagents (consultant, auditor, config-builder)
+commands/                      4 Claude Code slash commands (/rattle-analyse, /rattle-audit, …)
+schemas/                       JSON Schemas for every output contract
+examples/                      Synthetic golden I/O for every workflow
 .claude-plugin/                Plugin + marketplace manifest (Claude Code distribution)
 AGENTS.md                      Cross-platform agent rules (Cursor, Codex, Aider, Continue)
 CLAUDE.md                      Claude-Code-specific project instructions
-package.json + bin/            npm installer (npx @rattle/ai-workspace install)
-pyproject.toml                 PyPI distribution (pip install rattle-ai-workspace)
+package.json + bin/grimoire.mjs npm installer (npx @rattleai/grimoire install)
+pyproject.toml                 PyPI distribution (pip install grimoire)
 docs/API_REFERENCE.md          Full Rattle REST reference (also bundled into the API skill)
 memory/                        Per-tenant style preferences (gitignored)
-tests/                         170+ tests, ~97% coverage
+tests/                         262 tests, ~97% coverage
 ```
 
 ## Install
 
-Three distribution channels — pick the one that matches your tooling.
+Three install paths. **Pick the one that matches your tooling — they're not mutually exclusive.**
 
-### 1. Claude Code plugin (richest)
+### 1. Claude Code (richest)
 
-```bash
-# In Claude Code:
-/plugin marketplace add mngapps/rattle_api
-/plugin install rattle-ai-workspace
+Inside Claude Code:
+
+```text
+/plugin marketplace add rattleai/grimoire
+/plugin install grimoire
 ```
 
-Skills, subagents, and slash commands become available. The `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, and `/rattle-build-offer` commands appear in the palette.
+Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`. The 8 skills auto-load when you mention Rattle. The 3 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`) become invocable.
 
-### 2. NPM (works with Cursor, Codex, Aider, Continue, plain Claude.ai)
+### 2. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
+
+The `npx` installer copies the same skills + subagents + commands + schemas + examples + AGENTS.md into your project, ready for any agent that reads `AGENTS.md` (the cross-platform standard).
 
 ```bash
-# Drop skills/, agents/, commands/, AGENTS.md, .claude-plugin/ into the current project:
-npx @rattle/ai-workspace install
+# Drop everything into the current project root:
+npx @rattleai/grimoire install
 
-# Or into a specific project, only under .claude/:
-npx @rattle/ai-workspace install --target ./my-app --layout claude
+# Or only under .claude/ (project-local Claude Code layout):
+npx @rattleai/grimoire install --layout claude
 
-# Or machine-wide (~/.claude/):
-npx @rattle/ai-workspace install --layout user
+# Or machine-wide for every Claude Code session:
+npx @rattleai/grimoire install --layout user
 
 # Preview without copying:
-npx @rattle/ai-workspace install --dry-run
+npx @rattleai/grimoire install --dry-run
 ```
 
-Run with `--help` for all options. Idempotent — re-running just refreshes files.
+Idempotent — re-running just refreshes files. Run with `--help` for all options.
+
+> Until the package is published to npm, install directly from the repo:
+> ```bash
+> git clone https://github.com/rattleai/grimoire.git
+> node grimoire/bin/grimoire.mjs install --target ./my-project
+> ```
 
 ### 3. PyPI (Python CLI execution layer)
 
-```bash
-git clone https://github.com/mngapps/rattle_api.git
-cd rattle_api
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,all-ai,all-sources]"
-```
-
-Then configure `.env`:
+For terminal-driven workflows that call your AI provider directly:
 
 ```bash
+pip install grimoire[all-ai,all-sources]
 cp .env.example .env
-# Edit .env — RATTLE_API_KEY_<TENANT>, AI_PROVIDER, OPENAI_API_KEY / ANTHROPIC_API_KEY / OLLAMA_BASE_URL, …
-```
+# Edit .env — RATTLE_API_KEY_<TENANT>, AI_PROVIDER, OPENAI_API_KEY / ANTHROPIC_API_KEY, …
 
-Verify:
-
-```bash
 rattle <tenant> test-connection
+rattle <tenant> ai-analyse-pricelist <file>
+rattle <tenant> ai-suggest-config <file>
 ```
+
+Note: the CLI is still called `rattle` (it's the Rattle API CLI). `grimoire` is the **distribution name** on PyPI; `pip install grimoire` installs the `rattle` console script along with the workspace.
 
 ## How any AI model uses this
 
-Every Skill is a self-contained Markdown bundle with a `SKILL.md` (frontmatter `name` + `description`) and optional `references/`, `scripts/`. Models load them by reading the frontmatter, deciding the skill is relevant, then reading the body and references on demand.
+Every Skill is a self-contained Markdown bundle with a `SKILL.md` (frontmatter `name` + `description`) and optional `references/` and `scripts/`. Models load them by reading the frontmatter, deciding the skill is relevant, then reading the body and references on demand.
 
-The flow for a typical engagement:
+A typical engagement:
 
-1. User asks: *"Analyse this pricelist for our `acme` tenant."*
-2. Agent loads `skills/rattle-pricelist-analysis/SKILL.md` (and `rattle-configurator` automatically).
+1. User: *"Analyse this pricelist for our `acme` tenant."*
+2. Agent loads `skills/rattle-pricelist-analysis/SKILL.md` (+ `rattle-configurator` automatically).
 3. Agent runs `scripts/detect_anti_patterns.py pricelist.xlsx` for deterministic keyword detection.
-4. Agent calls its LLM with the prompt template documented in `system-prompts.md` to do the structural pass.
+4. Agent calls its LLM with the prompt template documented in `system-prompts.md`.
 5. Agent merges findings, prioritises `implicit-base-config` first, presents to the user.
-6. User asks: *"OK, generate a configuration."*
-7. Agent loads `skills/rattle-suggest-config/SKILL.md`, fetches existing groups (via the Python CLI or its own HTTP client), produces the canonical recommendation JSON.
-8. User asks to apply it. Agent delegates to `rattle-config-builder` which calls `ensure_*` operations idempotently against the live API.
+6. User: *"OK, generate a configuration."*
+7. Agent loads `skills/rattle-suggest-config/SKILL.md`, fetches existing groups, produces the canonical recommendation JSON.
+8. User: *"Apply it."* Agent delegates to `rattle-config-builder` which calls `ensure_*` operations idempotently against the live API. `validate_recommendation.py` runs first; the agent never writes if validation fails.
 
-The Python CLI `rattle <tenant> ai-analyse-pricelist` and `ai-suggest-config` subcommands implement steps 3-7 directly — useful when you want a one-shot terminal command instead of an agent loop.
+The Python CLI implements steps 3–7 directly when you want a one-shot terminal command instead of an agent loop.
 
 ## The #1 rule
 
@@ -181,15 +189,15 @@ Per-tenant style preferences live under `memory/<tenant>/profile.md` (gitignored
 - Required chapters: Product Overview + Configuration (dynamic:document_configuration)
 ```
 
-The `TenantMemory` class auto-injects this into every system prompt. Writes are explicit-only (`rattle <tenant> memory set-preference …`); tasks never write silently. Full docs: `memory/README.md`.
+The `TenantMemory` class auto-injects this into every system prompt. Writes are explicit-only (`rattle <tenant> memory set-preference …`); tasks never write silently. Full docs: `memory/README.md` and `skills/rattle-tenant-memory/SKILL.md`. A starter template lives at `examples/tenant-profile.md`.
 
 ## Development
 
 ```bash
-make check         # lint + type-check + test
+make check         # lint + type-check + 262 tests
 make lint          # ruff
 make type-check    # mypy
-make test          # pytest (170+ tests, ~97% coverage)
+make test          # pytest
 make format        # ruff format
 ```
 
@@ -210,9 +218,10 @@ Full conventions: `AGENTS.md` (cross-platform) and `CLAUDE.md` (Claude-Code-spec
 
 ## Documentation
 
-- [`AGENTS.md`](AGENTS.md) — cross-platform agent rules and where the knowledge lives.
+- [`AGENTS.md`](AGENTS.md) — cross-platform agent rules and the full knowledge map.
 - [`CLAUDE.md`](CLAUDE.md) — Claude Code project instructions.
-- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (443 operations across 245 paths). Regenerate with `python3 scripts/build_api_reference.py` after replacing `docs/openapi.json`.
+- [`PUBLISHING.md`](PUBLISHING.md) — how to release to npm, PyPI, and the Claude Code marketplace.
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (443 operations).
 - [`SETUP.md`](SETUP.md) — beginner-friendly setup guide.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guidelines.
 - [`SECURITY.md`](SECURITY.md) — security policy.
