@@ -1,0 +1,39 @@
+{
+  "tenant": "acme",
+  "recommendation_source": "examples/recommendation.json",
+  "operations": [
+    {"type": "ensure_product", "name": "Widget Pro", "base_price": 0, "description": "Configurable industrial widget."},
+    {"type": "ensure_area", "name": "Widget Pro — Configuration", "parent_product": "Widget Pro"},
+
+    {"type": "ensure_group", "name": "Wheels", "is_multi": false, "description": "Wheel size selection.",
+     "link_to_areas": ["Widget Pro — Configuration"]},
+    {"type": "ensure_group", "name": "Frässpindel", "is_multi": false, "description": "Milling spindle selection.",
+     "link_to_areas": ["Widget Pro — Configuration"]},
+    {"type": "ensure_group", "name": "Software — Cyclic testing", "is_multi": false, "description": "Software capability for cyclic testing.",
+     "link_to_areas": ["Widget Pro — Configuration"]},
+
+    {"type": "ensure_option", "group": "Wheels",        "name": "17 inch", "price": 0,   "recommended": true,  "description": "Standard wheel size."},
+    {"type": "ensure_option", "group": "Wheels",        "name": "19 inch", "price": 500, "recommended": false, "description": "Larger 19-inch wheels."},
+
+    {"type": "ensure_option", "group": "Frässpindel", "name": "ISO 30 Standard",       "price": 0,    "recommended": true,  "description": "Default ISO 30 spindle."},
+    {"type": "ensure_option", "group": "Frässpindel", "name": "HSK-63F ohne Encoder",  "price": 1800, "recommended": false, "description": "HSK-63F without encoder."},
+    {"type": "ensure_option", "group": "Frässpindel", "name": "HSK-63F mit Encoder",   "price": 2500, "recommended": false, "description": "HSK-63F with encoder."},
+
+    {"type": "ensure_option", "group": "Software — Cyclic testing", "name": "Manual cyclic testing (included)", "price": 0,   "recommended": true,  "description": "Default included."},
+    {"type": "ensure_option", "group": "Software — Cyclic testing", "name": "Multistep cyclic testing module",  "price": 500, "recommended": false, "description": "Add-on module."},
+
+    {"type": "ensure_constraint_pair", "product": "Widget Pro", "option_1": "19 inch", "option_2": "ISO 30 Standard"},
+
+    {"type": "ensure_constraint_rule",
+     "product": "Widget Pro",
+     "description": "Multistep cyclic testing requires HSK-63F spindle with encoder.",
+     "rule_json": [
+       {"if": {"option_selected": "Multistep cyclic testing module"},
+        "then": {"forbid_options": ["ISO 30 Standard", "HSK-63F ohne Encoder"]}}
+     ]}
+  ],
+  "notes": [
+    "Tenant memory `custom-keys: never` is honoured — no `key` field on any group or option.",
+    "Constraints are written via POST /constraints with X-Constraints-Version optimistic concurrency."
+  ]
+}

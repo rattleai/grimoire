@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rattleapp.de/schemas/audit-findings.schema.json",
+  "title": "Rattle Audit Findings",
+  "description": "Output of the rattle-audit workflow. Each finding cites a check id and matching configuration rule(s) so downstream tools can group and trend.",
+  "type": "object",
+  "required": ["tenant", "ran_at", "summary", "findings"],
+  "properties": {
+    "tenant": { "type": "string", "minLength": 1 },
+    "ran_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 / RFC 3339 UTC timestamp."
+    },
+    "summary": {
+      "type": "object",
+      "required": ["errors", "warnings", "info"],
+      "properties": {
+        "errors":   { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "info":     { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["check_id", "severity", "entity_type", "message"],
+      "properties": {
+        "check_id": {
+          "type": "string",
+          "enum": [
+            "areas-without-groups",
+            "duplicate-group-names",
+            "offer-template-missing-configuration",
+            "duplicate-dynamic-wrappers",
+            "options-with-custom-keys",
+            "options-with-conflicting-area-overrides"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning", "info"]
+        },
+        "entity_type": {
+          "type": "string",
+          "enum": [
+            "area",
+            "group",
+            "option",
+            "document_template",
+            "document_content_block",
+            "document_structure_block",
+            "audit"
+          ]
+        },
+        "entity_id":   { "type": ["integer", "string", "null"] },
+        "entity_name": { "type": "string" },
+        "message":     { "type": "string", "minLength": 1 },
+        "related_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "minimum_fix": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

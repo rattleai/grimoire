@@ -1,8 +1,39 @@
 # Rattle AI Workspace
 
-AI-powered console CLI for the Rattle API. Users run CLI commands with their choice of AI backend (OpenAI, Anthropic, Ollama, or any custom endpoint) to enrich, classify, transform, and analyse product data. The codebase embeds deep configurator consulting expertise so AI agents working with it can guide users in building correct, BOM-aware product configurations.
+AI-native workspace for the Rattle product configurator (rattleapp.de). The repo is **two layers**:
 
-## Architecture
+1. **AI knowledge layer** — Anthropic-format Skills (`skills/`), Claude Code subagents (`agents/`), slash commands (`commands/`), the `.claude-plugin/` manifest, and the cross-platform `AGENTS.md`. This is the part any AI model can read and use, regardless of language or runtime.
+2. **Python execution layer** — `rattle_api/` package + `rattle` CLI, which calls a configured AI provider (OpenAI / Anthropic / Ollama / custom HTTP) using the same prompts the Skills describe. One reference implementation; non-Python clients can build their own using the Skills.
+
+**Read first:** when answering anything Rattle-related, load `skills/rattle-configurator/SKILL.md`. It encodes the #1 rule, the data model, configuration rules, anti-patterns, and structural checks. The cross-platform `AGENTS.md` lists every reference file with a one-line purpose.
+
+## Knowledge layer (AI-native artifacts)
+
+| Path | Purpose |
+|---|---|
+| `.claude-plugin/plugin.json` + `marketplace.json` | Claude Code plugin / marketplace manifest. Installable via `/plugin marketplace add mngapps/rattle_api`. |
+| `skills/rattle-configurator/` | Core consulting knowledge. **Always load first.** |
+| `skills/rattle-api/` | REST API surface (auth, pagination, 443 operations across 245 paths, OpenAPI spec). |
+| `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
+| `skills/rattle-suggest-config/` | Workflow: produce BOM-aware configuration recommendation JSON. |
+| `skills/rattle-document-templates/` | Workflow: build offer/datasheet templates honouring the doc_type contract. |
+| `skills/rattle-apply-config/` | Workflow: apply a recommendation idempotently. Includes `scripts/validate_recommendation.py`. |
+| `skills/rattle-audit/` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
+| `skills/rattle-tenant-memory/` | Per-tenant preferences and decisions (file-based, explicit-write only). |
+| `schemas/` | JSON Schemas for the 4 output contracts (recommendation, audit-findings, offer-template, apply-operations). |
+| `examples/` | Synthetic golden I/O for every workflow. |
+| `agents/rattle-consultant.md` | Senior consultant subagent — orchestrates strategic decisions. |
+| `agents/rattle-auditor.md` | Live-tenant structural auditor. Read-only. |
+| `agents/rattle-config-builder.md` | Idempotent builder. Only agent allowed to write to the API. |
+| `commands/rattle-analyse.md` | `/rattle-analyse` slash command. |
+| `commands/rattle-suggest-config.md` | `/rattle-suggest-config` slash command. |
+| `commands/rattle-audit.md` | `/rattle-audit` slash command. |
+| `commands/rattle-build-offer.md` | `/rattle-build-offer` slash command. |
+| `AGENTS.md` | Cross-platform agent rules (Cursor, Codex, Aider, Continue). |
+
+The Markdown content under `skills/rattle-configurator/references/` is the source of truth for rules / anti-patterns / checks. `rattle_api/knowledge.py` mirrors it as Python data structures so the CLI's prompts stay in sync. **When they conflict, the Markdown wins — update the Python to match.**
+
+## Python execution layer
 
 Standard Python package layout — all source lives in `rattle_api/`:
 
@@ -62,7 +93,14 @@ make format                        # Auto-format with Ruff
 
 ## Rattle REST API Reference
 
-A comprehensive reference of all ~500 REST API operations is at `docs/API_REFERENCE.md`.
+A comprehensive reference of all **443 REST API operations across 245 paths and 36 resource groups** is at `docs/API_REFERENCE.md`. It is **generated** from `docs/openapi.json` by `scripts/build_api_reference.py` — re-run that script whenever the spec is replaced:
+
+```bash
+python3 scripts/build_api_reference.py
+```
+
+The script also mirrors the rendered Markdown and the spec into `skills/rattle-api/references/` so the plugin Skill stays in sync. **Do not hand-edit `docs/API_REFERENCE.md`** — changes are overwritten on the next build.
+
 Consult it before making any API calls to understand available endpoints, required parameters,
 request/response shapes, and example JSON. The `RattleClient` in `rattle_api/client.py` is a
 thin HTTP wrapper — paths are relative (e.g. `client.get("products")` calls `GET /api/v1/products`).

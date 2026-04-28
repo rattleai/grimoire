@@ -1,0 +1,124 @@
+{
+  "products": [
+    {
+      "name": "Widget Pro",
+      "description": "Configurable industrial widget.",
+      "base_price": 0,
+      "groups": [
+        {
+          "name": "Wheels",
+          "is_multi": false,
+          "description": "Wheel size selection.",
+          "options": [
+            {
+              "name": "17 inch",
+              "price": 0,
+              "recommended": true,
+              "description": "Standard wheel size, included in base configuration."
+            },
+            {
+              "name": "19 inch",
+              "price": 500,
+              "recommended": false,
+              "description": "Larger 19-inch wheels with sport-style rim."
+            }
+          ],
+          "reuse_existing": false,
+          "existing_group_id": null
+        },
+        {
+          "name": "Frässpindel",
+          "is_multi": false,
+          "description": "Milling spindle selection.",
+          "options": [
+            {
+              "name": "ISO 30 Standard",
+              "price": 0,
+              "recommended": true,
+              "description": "Default ISO 30 spindle."
+            },
+            {
+              "name": "HSK-63F ohne Encoder",
+              "price": 1800,
+              "recommended": false,
+              "description": "HSK-63F spindle without encoder."
+            },
+            {
+              "name": "HSK-63F mit Encoder",
+              "price": 2500,
+              "recommended": false,
+              "description": "HSK-63F spindle with encoder."
+            }
+          ],
+          "reuse_existing": false,
+          "existing_group_id": null
+        },
+        {
+          "name": "Software — Cyclic testing",
+          "is_multi": false,
+          "description": "Software capability for cyclic testing.",
+          "options": [
+            {
+              "name": "Manual cyclic testing (included)",
+              "price": 0,
+              "recommended": true,
+              "description": "Default included manual cyclic testing."
+            },
+            {
+              "name": "Multistep cyclic testing module",
+              "price": 500,
+              "recommended": false,
+              "description": "Add-on module for multistep cyclic testing."
+            }
+          ],
+          "reuse_existing": false,
+          "existing_group_id": null
+        }
+      ],
+      "bom_rules": [
+        {
+          "child_part_name": "17-inch wheel assy",
+          "usage_subclauses": [{"option_name": "17 inch", "factor": 1.0}]
+        },
+        {
+          "child_part_name": "19-inch wheel assy",
+          "usage_subclauses": [{"option_name": "19 inch", "factor": 1.0}]
+        },
+        {
+          "child_part_name": "ISO 30 spindle",
+          "usage_subclauses": [{"option_name": "ISO 30 Standard", "factor": 1.0}]
+        },
+        {
+          "child_part_name": "HSK-63F spindle (no encoder)",
+          "usage_subclauses": [{"option_name": "HSK-63F ohne Encoder", "factor": 1.0}]
+        },
+        {
+          "child_part_name": "HSK-63F spindle (with encoder)",
+          "usage_subclauses": [{"option_name": "HSK-63F mit Encoder", "factor": 1.0}]
+        }
+      ],
+      "forbidden_pairs": [
+        {
+          "option_name_1": "19 inch",
+          "option_name_2": "ISO 30 Standard",
+          "reason": "19-inch wheels require the upgraded HSK-63F spindle for clearance."
+        }
+      ],
+      "constraint_rules": [
+        {
+          "description": "Multistep cyclic testing requires HSK-63F spindle with encoder.",
+          "rule_json": [
+            {
+              "if": {"option_selected": "Multistep cyclic testing module"},
+              "then": {"forbid_options": ["ISO 30 Standard", "HSK-63F ohne Encoder"]}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Standard wheel size assumed to be 17-inch — confirm with the customer before applying.",
+    "Software — Cyclic testing options are stackable in some tenants; confirm is_multi setting."
+  ]
+}

@@ -4,15 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rattle-ai-workspace"
-version = "0.1.0"
-description = "Rattle AI Workspace — AI-powered console CLI for the Rattle API"
+version = "0.3.0"
+description = "Rattle AI Workspace — AI-native skills, agents, and CLI for the Rattle product configurator"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
     { name = "mngapps" },
 ]
-keywords = ["rattle", "api", "ai", "data-transformation", "cli"]
+keywords = [
+    "rattle",
+    "rattleapp",
+    "configurator",
+    "product-configurator",
+    "consulting",
+    "ai",
+    "skills",
+    "claude",
+    "claude-code",
+    "agents",
+    "agents-md",
+    "cli",
+    "bom",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

@@ -1,0 +1,62 @@
+{
+  "name": "@rattle/ai-workspace",
+  "version": "0.3.0",
+  "description": "AI-native workspace for the Rattle product configurator (rattleapp.de). Installs 8 Anthropic-format Skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 Claude Code subagents, 4 slash commands, JSON Schemas for every output contract, golden I/O examples, and a cross-platform AGENTS.md so any AI model (Claude, GPT, Cursor, Codex, Aider, Continue) can produce correct, BOM-aware Rattle configurations.",
+  "type": "module",
+  "bin": {
+    "rattle-skills": "./bin/rattle-skills-install.mjs",
+    "rattle-skills-install": "./bin/rattle-skills-install.mjs"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "agents/",
+    "commands/",
+    "schemas/",
+    "examples/",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "LICENSE",
+    "README.md",
+    ".claude-plugin/"
+  ],
+  "scripts": {
+    "postinstall": "node bin/rattle-skills-install.mjs --postinstall || true"
+  },
+  "keywords": [
+    "rattle",
+    "rattleapp",
+    "configurator",
+    "product-configurator",
+    "consulting",
+    "claude",
+    "claude-code",
+    "skill",
+    "skills",
+    "agent",
+    "agents",
+    "agents-md",
+    "cursor",
+    "codex",
+    "aider",
+    "ai",
+    "ai-native",
+    "knowledge"
+  ],
+  "author": {
+    "name": "mngapps",
+    "email": "alex.menges@yahoo.de"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mngapps/rattle_api.git"
+  },
+  "homepage": "https://github.com/mngapps/rattle_api#readme",
+  "bugs": {
+    "url": "https://github.com/mngapps/rattle_api/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

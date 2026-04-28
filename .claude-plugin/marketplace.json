@@ -1,0 +1,45 @@
+{
+  "name": "rattle-ai-workspace",
+  "owner": {
+    "name": "mngapps",
+    "email": "alex.menges@yahoo.de"
+  },
+  "metadata": {
+    "description": "AI-native workspace for the Rattle product configurator (rattleapp.de). Skills, subagents, and slash commands that teach any AI model how to produce correct, BOM-aware product configurations on the Rattle SaaS platform."
+  },
+  "plugins": [
+    {
+      "name": "rattle-ai-workspace",
+      "source": "./",
+      "description": "Eight Anthropic-format skills (rattle-configurator, rattle-api, rattle-pricelist-analysis, rattle-suggest-config, rattle-document-templates, rattle-apply-config, rattle-audit, rattle-tenant-memory), three subagents (rattle-consultant, rattle-auditor, rattle-config-builder), four slash commands (/rattle-analyse, /rattle-audit, /rattle-suggest-config, /rattle-build-offer), JSON Schemas for every output contract, and golden I/O examples. Encodes the #1 rule, 12 configuration rules, 4 anti-patterns, 6 structural checks, and 7 idempotent ensure_* operation types.",
+      "version": "0.3.0",
+      "author": {
+        "name": "mngapps",
+        "email": "alex.menges@yahoo.de"
+      },
+      "homepage": "https://github.com/mngapps/rattle_api",
+      "repository": "https://github.com/mngapps/rattle_api",
+      "license": "MIT",
+      "keywords": [
+        "rattle",
+        "rattleapp",
+        "configurator",
+        "product-configurator",
+        "consulting",
+        "skills",
+        "bom",
+        "pricelist-analysis"
+      ],
+      "category": "domain",
+      "tags": [
+        "rattle",
+        "configurator",
+        "consulting",
+        "skills",
+        "agents",
+        "commands"
+      ],
+      "strict": false
+    }
+  ]
+}
