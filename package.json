@@ -1,0 +1,66 @@
+{
+  "name": "@rattleai/grimoire",
+  "version": "0.4.0",
+  "description": "Grimoire — the AI-native consulting workspace for the Rattle product configurator (rattleapp.de). Installs 8 Anthropic-format Skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 Claude Code subagents, 4 slash commands, JSON Schemas for every output contract, golden I/O examples, and a cross-platform AGENTS.md so any AI model (Claude, GPT, Cursor, Codex, Aider, Continue) can produce correct, BOM-aware Rattle configurations.",
+  "type": "module",
+  "bin": {
+    "grimoire": "./bin/grimoire.mjs",
+    "grimoire-install": "./bin/grimoire.mjs"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "agents/",
+    "commands/",
+    "schemas/",
+    "examples/",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "LICENSE",
+    "README.md",
+    ".claude-plugin/"
+  ],
+  "scripts": {
+    "postinstall": "node bin/grimoire.mjs --postinstall || true"
+  },
+  "keywords": [
+    "grimoire",
+    "rattle",
+    "rattleapp",
+    "configurator",
+    "product-configurator",
+    "consulting",
+    "claude",
+    "claude-code",
+    "skill",
+    "skills",
+    "agent",
+    "agents",
+    "agents-md",
+    "cursor",
+    "codex",
+    "aider",
+    "ai",
+    "ai-native",
+    "knowledge"
+  ],
+  "author": {
+    "name": "rattleai",
+    "email": "alex.menges@yahoo.de"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rattleai/grimoire.git"
+  },
+  "homepage": "https://github.com/rattleai/grimoire#readme",
+  "bugs": {
+    "url": "https://github.com/rattleai/grimoire/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

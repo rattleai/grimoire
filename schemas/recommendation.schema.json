@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rattleapp.de/schemas/recommendation.schema.json",
+  "title": "Rattle Configuration Recommendation",
+  "description": "Output of the rattle-suggest-config workflow. Describes a BOM-aware product configuration ready to be applied via rattle-apply-config.",
+  "type": "object",
+  "required": ["products"],
+  "properties": {
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/product" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional soft warnings the AI wants to bubble up (e.g. assumed-default placeholders)."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "product": {
+      "type": "object",
+      "required": ["name", "groups"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "base_price": { "type": "number", "minimum": 0 },
+        "groups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/group" }
+        },
+        "bom_rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/bom_rule" }
+        },
+        "forbidden_pairs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/forbidden_pair" }
+        },
+        "constraint_rules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/constraint_rule" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "group": {
+      "type": "object",
+      "required": ["name", "is_multi", "options"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "is_multi": { "type": "boolean" },
+        "description": { "type": "string" },
+        "key": {
+          "type": "string",
+          "description": "Custom key. Discouraged unless the tenant memory profile explicitly opts in (minimal-keys rule)."
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/option" }
+        },
+        "reuse_existing": { "type": "boolean" },
+        "existing_group_id": { "type": ["integer", "null"] },
+        "price_overrides": {
+          "type": "object",
+          "description": "Map of area_name → option_name → price for per-area overrides. Maps to option-area-config writes."
+        }
+      },
+      "additionalProperties": false
+    },
+    "option": {
+      "type": "object",
+      "required": ["name", "price"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "price": { "type": "number", "minimum": 0 },
+        "recommended": { "type": "boolean" },
+        "description": { "type": "string" },
+        "key": {
+          "type": "string",
+          "description": "Custom key. Discouraged unless the tenant memory profile explicitly opts in (minimal-keys rule)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "bom_rule": {
+      "type": "object",
+      "required": ["child_part_name", "usage_subclauses"],
+      "properties": {
+        "child_part_name": { "type": "string", "minLength": 1 },
+        "parent_part_name": { "type": "string" },
+        "quantity": { "type": "number", "exclusiveMinimum": 0 },
+        "uom": { "type": "string" },
+        "usage_subclauses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["option_name", "factor"],
+            "properties": {
+              "option_name": { "type": "string", "minLength": 1 },
+              "factor": { "type": "number", "exclusiveMinimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "forbidden_pair": {
+      "type": "object",
+      "required": ["option_name_1", "option_name_2"],
+      "properties": {
+        "option_name_1": { "type": "string", "minLength": 1 },
+        "option_name_2": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "constraint_rule": {
+      "type": "object",
+      "required": ["description", "rule_json"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "rule_json": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "if": {
+                "type": "object",
+                "properties": {
+                  "option_selected": { "type": "string" }
+                }
+              },
+              "then": {
+                "type": "object",
+                "properties": {
+                  "forbid_options": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -63,7 +63,7 @@ python3 --version
 
 ### Option A: Download as ZIP (easiest)
 
-1. Go to https://github.com/mngapps/rattle_api
+1. Go to https://github.com/rattleai/grimoire
 2. Click the green **"Code"** button
 3. Click **"Download ZIP"**
 4. Extract the ZIP file to a folder you can find easily (e.g., your Desktop or Documents)
@@ -71,7 +71,7 @@ python3 --version
 ### Option B: Clone with Git (if you have Git installed)
 
 ```
-git clone https://github.com/mngapps/rattle_api.git
+git clone https://github.com/rattleai/grimoire.git
 ```
 
 ### Navigate into the folder
@@ -269,4 +269,4 @@ Then you can run `rattle` commands as normal.
 
 - Run `rattle --help` to see all available commands
 - Run `rattle <tenant> <command> --help` to see options for a specific command
-- Report issues at https://github.com/mngapps/rattle_api/issues
+- Report issues at https://github.com/rattleai/grimoire/issues

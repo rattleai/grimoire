@@ -1,0 +1,20 @@
+[
+  {
+    "feature": "Wheels",
+    "Standard": "17 inch wheels (Standard, im Lieferumfang)",
+    "Aufpreis 19 inch": 500
+  },
+  {
+    "feature": "Frässpindel",
+    "Aufpreis HSK-63F mit Encoder": 2500,
+    "Standard": "ISO 30 Standard"
+  },
+  {
+    "feature": "Software cyclic testing",
+    "Software-Modul Multistep": 500
+  },
+  {
+    "feature": "Beschreibung",
+    "Produktbeschreibung": "Widget Pro is a configurable industrial widget."
+  }
+]

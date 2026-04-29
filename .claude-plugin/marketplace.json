@@ -1,0 +1,47 @@
+{
+  "name": "grimoire",
+  "owner": {
+    "name": "rattleai",
+    "email": "alex.menges@yahoo.de"
+  },
+  "metadata": {
+    "description": "Grimoire — AI-native consulting workspace for the Rattle product configurator (rattleapp.de). Skills, subagents, slash commands, JSON Schemas, and golden I/O examples that teach any AI model how to produce correct, BOM-aware product configurations on the Rattle SaaS platform."
+  },
+  "plugins": [
+    {
+      "name": "grimoire",
+      "source": "./",
+      "description": "Eight Anthropic-format skills (rattle-configurator, rattle-api, rattle-pricelist-analysis, rattle-suggest-config, rattle-document-templates, rattle-apply-config, rattle-audit, rattle-tenant-memory), three subagents (rattle-consultant, rattle-auditor, rattle-config-builder), four slash commands (/rattle-analyse, /rattle-audit, /rattle-suggest-config, /rattle-build-offer), JSON Schemas for every output contract, and golden I/O examples. Encodes the #1 rule, 12 configuration rules, 4 anti-patterns, 6 structural checks, and 7 idempotent ensure_* operation types.",
+      "version": "0.4.0",
+      "author": {
+        "name": "rattleai",
+        "email": "alex.menges@yahoo.de"
+      },
+      "homepage": "https://github.com/rattleai/grimoire",
+      "repository": "https://github.com/rattleai/grimoire",
+      "license": "MIT",
+      "keywords": [
+        "grimoire",
+        "rattle",
+        "rattleapp",
+        "configurator",
+        "product-configurator",
+        "consulting",
+        "skills",
+        "bom",
+        "pricelist-analysis"
+      ],
+      "category": "domain",
+      "tags": [
+        "grimoire",
+        "rattle",
+        "configurator",
+        "consulting",
+        "skills",
+        "agents",
+        "commands"
+      ],
+      "strict": false
+    }
+  ]
+}

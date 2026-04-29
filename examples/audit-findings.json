@@ -1,0 +1,37 @@
+{
+  "tenant": "acme",
+  "ran_at": "2026-04-28T18:00:00+00:00",
+  "summary": {"errors": 2, "warnings": 1, "info": 0},
+  "findings": [
+    {
+      "check_id": "areas-without-groups",
+      "severity": "error",
+      "entity_type": "area",
+      "entity_id": 42,
+      "entity_name": "Widget Pro — Description",
+      "message": "Area has 0 groups",
+      "related_rules": ["no-empty-areas"],
+      "minimum_fix": "Add at least one group to this area, OR migrate the narrative to a document template (see narrative-in-documents-system rule) and delete the area."
+    },
+    {
+      "check_id": "offer-template-missing-configuration",
+      "severity": "error",
+      "entity_type": "document_template",
+      "entity_id": 7,
+      "entity_name": "Widget Pro — Offer",
+      "message": "Offer template has no attachment to dynamic:document_configuration",
+      "related_rules": ["offer-requires-configuration-block"],
+      "minimum_fix": "Add a structure block (node_type=section) and attach the system content block whose key='dynamic:document_configuration'. Look up its id via GET /documents/content-blocks?is_dynamic=true. Set is_required=true."
+    },
+    {
+      "check_id": "duplicate-group-names",
+      "severity": "warning",
+      "entity_type": "group",
+      "entity_id": 314,
+      "entity_name": "Wheels",
+      "message": "Group name 'Wheels' duplicates group id=312.",
+      "related_rules": ["reuse-over-duplicate", "shared-groups-across-products"],
+      "minimum_fix": "Pick one canonical group (id=312), link it to all areas the duplicate (id=314) was assigned to (POST /groups/{id}/areas), use option-area-config for any per-area pricing differences, then delete the duplicate."
+    }
+  ]
+}

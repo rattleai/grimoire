@@ -1,0 +1,61 @@
+{
+  "template_name": "Widget Pro — Offer",
+  "doc_type": "offer",
+  "product_id": null,
+  "chapters": [
+    {
+      "slug": "product-overview",
+      "title": "Product Overview",
+      "order_index": 0,
+      "attachments": [
+        {
+          "content_block_id": null,
+          "content_block_proposal": {
+            "title": "Widget Pro — Overview",
+            "key": "widget-pro-overview",
+            "locales": [
+              {
+                "locale": "de",
+                "blocks": [
+                  {"type": "paragraph", "data": {"text": "Widget Pro is a configurable industrial widget designed for…"}}
+                ]
+              }
+            ]
+          },
+          "is_required": false,
+          "order_index": 0
+        }
+      ]
+    },
+    {
+      "slug": "configuration",
+      "title": "Configuration",
+      "order_index": 1,
+      "attachments": [
+        {
+          "content_block_id": null,
+          "dynamic_key": "dynamic:document_configuration",
+          "is_required": true,
+          "order_index": 0
+        }
+      ]
+    },
+    {
+      "slug": "pricing",
+      "title": "Pricing",
+      "order_index": 2,
+      "attachments": [
+        {
+          "content_block_id": null,
+          "dynamic_key": "dynamic:document_line_items",
+          "is_required": true,
+          "order_index": 0
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Resolve dynamic_key 'dynamic:document_configuration' to its content_block_id via GET /documents/content-blocks?is_dynamic=true&key=dynamic:document_configuration",
+    "Resolve dynamic_key 'dynamic:document_line_items' similarly. Required only if the doc_type contract reports requires_quote=true."
+  ]
+}

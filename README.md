@@ -1,225 +1,231 @@
 <p align="center">
   <img src="rattle_logos/rattle_long_black_transparent.png" width="320" alt="Rattle">
   <br>
-  <strong>Rattle AI Workspace</strong><br>
-  <em>AI-powered console CLI for the Rattle API</em>
+  <strong>Grimoire</strong><br>
+  <em>AI-native consulting workspace for the Rattle product configurator</em>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+"></a>
-  <a href="https://github.com/mngapps/rattle_api/actions/workflows/ci.yml"><img src="https://github.com/mngapps/rattle_api/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/mngapps/rattle_api/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-Keep%20a%20Changelog-orange.svg" alt="Changelog"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-18%2B-blue.svg" alt="Node 18+"></a>
 </p>
 
 <p align="center">
-  Manage product data, enrich with AI, and transform industry<br>
-  interchange formats — all from the command line, with <strong>your choice of AI backend</strong>.
+  Skills, subagents, slash commands, and rules that teach <strong>any AI model</strong><br>
+  how to produce correct, BOM-aware product configurations on the Rattle SaaS platform (rattleapp.de).
 </p>
 
 ---
 
-## Why Rattle AI Workspace?
+## What is Grimoire?
 
-- **Swap AI providers in seconds** — OpenAI, Anthropic, Ollama (local), or any custom endpoint. One env var, zero code changes.
-- **Built for automation** — pure CLI with JSON output, no interactive prompts. Works out of the box with Claude Code, Codex, Aider, Cursor, and any tool that can run shell commands.
-- **Industry data formats** — transform between Datanorm, eCl@ss, BMEcat, and Rattle with a single command.
-- **Local-first option** — run completely offline with Ollama. No API keys, no costs, full privacy.
+A **portable consulting brain** for the Rattle product configurator. Two layers:
 
-> **New here?** Follow the **[Fast Setup Guide (SETUP.md)](SETUP.md)** for detailed,
-> beginner-friendly instructions to get up and running — no programming experience needed.
+1. **AI knowledge layer** — Anthropic-format Skills, Claude Code subagents, slash commands, JSON Schemas, golden I/O examples, the `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT-4/5, Llama, Mistral, …) can read these and follow the same workflow.
+2. **Python execution layer** — `rattle_api/` package + `rattle` CLI, a reference implementation that wires the same prompts up to OpenAI / Anthropic / Ollama / custom-HTTP providers.
 
-## Table of Contents
+Goal: every AI model gets the same consulting expertise — the #1 rule, the data model, configuration rules, anti-patterns, structural checks, REST API conventions — without retraining.
 
-- [Fast Setup Guide](SETUP.md)
-- [Quick Start](#quick-start)
-- [Commands](#commands)
-- [AI Providers](#ai-providers)
-- [Using with CLI Agents](#using-with-cli-agents)
-- [Architecture](#architecture)
-- [Docker](#docker)
-- [Development](#development)
-- [Contributing](#contributing)
+## What's inside
 
-## Quick Start
-
-### 1. Install
-
-```bash
-git clone https://github.com/mngapps/rattle_api.git
-cd rattle_api
-python -m venv .venv && source .venv/bin/activate
+```
+rattle_api/                    Python execution layer (CLI, RattleClient, providers, prompts)
+skills/                        8 Anthropic-format Skills (model-agnostic)
+  rattle-configurator/         Core consulting knowledge (the #1 rule, rules, anti-patterns)
+  rattle-api/                  REST API surface (443 ops, OpenAPI spec, client patterns)
+  rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
+  rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
+  rattle-document-templates/   Workflow: build offer/datasheet templates
+  rattle-apply-config/         Workflow: apply a recommendation idempotently
+  rattle-audit/                Workflow: scan a live tenant against 6 structural checks
+  rattle-tenant-memory/        Per-tenant preferences (file-based, explicit-write only)
+agents/                        3 Claude Code subagents (consultant, auditor, config-builder)
+commands/                      4 Claude Code slash commands (/rattle-analyse, /rattle-audit, …)
+schemas/                       JSON Schemas for every output contract
+examples/                      Synthetic golden I/O for every workflow
+.claude-plugin/                Plugin + marketplace manifest (Claude Code distribution)
+AGENTS.md                      Cross-platform agent rules (Cursor, Codex, Aider, Continue)
+CLAUDE.md                      Claude-Code-specific project instructions
+package.json + bin/grimoire.mjs npm installer (npx @rattleai/grimoire install)
+pyproject.toml                 PyPI distribution (pip install grimoire)
+docs/API_REFERENCE.md          Full Rattle REST reference (also bundled into the API skill)
+memory/                        Per-tenant style preferences (gitignored)
+tests/                         262 tests, ~97% coverage
 ```
 
-Pick your AI provider:
+## Install
 
-```bash
-pip install -e ".[openai]"       # OpenAI / Azure / vLLM / LM Studio
-pip install -e ".[anthropic]"    # Anthropic Claude
-pip install -e ".[all-ai]"       # All providers
+Three install paths. **Pick the one that matches your tooling — they're not mutually exclusive.**
+
+### 1. Claude Code (richest)
+
+Inside Claude Code:
+
+```text
+/plugin marketplace add rattleai/grimoire
+/plugin install grimoire
 ```
 
-### 2. Configure
+Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`. The 8 skills auto-load when you mention Rattle. The 3 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`) become invocable.
+
+### 2. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
+
+The `npx` installer copies the same skills + subagents + commands + schemas + examples + AGENTS.md into your project, ready for any agent that reads `AGENTS.md` (the cross-platform standard).
 
 ```bash
+# Drop everything into the current project root:
+npx @rattleai/grimoire install
+
+# Or only under .claude/ (project-local Claude Code layout):
+npx @rattleai/grimoire install --layout claude
+
+# Or machine-wide for every Claude Code session:
+npx @rattleai/grimoire install --layout user
+
+# Preview without copying:
+npx @rattleai/grimoire install --dry-run
+```
+
+Idempotent — re-running just refreshes files. Run with `--help` for all options.
+
+> Until the package is published to npm, install directly from the repo:
+> ```bash
+> git clone https://github.com/rattleai/grimoire.git
+> node grimoire/bin/grimoire.mjs install --target ./my-project
+> ```
+
+### 3. PyPI (Python CLI execution layer)
+
+For terminal-driven workflows that call your AI provider directly:
+
+```bash
+pip install grimoire[all-ai,all-sources]
 cp .env.example .env
-# Edit .env — add your Rattle API key and AI provider credentials
+# Edit .env — RATTLE_API_KEY_<TENANT>, AI_PROVIDER, OPENAI_API_KEY / ANTHROPIC_API_KEY, …
+
+rattle <tenant> test-connection
+rattle <tenant> ai-analyse-pricelist <file>
+rattle <tenant> ai-suggest-config <file>
 ```
 
-### 3. Verify
+Note: the CLI is still called `rattle` (it's the Rattle API CLI). `grimoire` is the **distribution name** on PyPI; `pip install grimoire` installs the `rattle` console script along with the workspace.
 
-```bash
-$ rattle acme test-connection
-Connection OK for tenant 'acme'
-```
+## How any AI model uses this
 
-### 4. Use
+Every Skill is a self-contained Markdown bundle with a `SKILL.md` (frontmatter `name` + `description`) and optional `references/` and `scripts/`. Models load them by reading the frontmatter, deciding the skill is relevant, then reading the body and references on demand.
 
-```bash
-# Generate product descriptions
-$ rattle acme ai-describe --limit 3 --language de
-[{"id": "p-001", "description": "Professionelle Industriebohrmaschine …"}, …]
+A typical engagement:
 
-# Classify products into categories
-$ rattle acme ai-classify --limit 5
+1. User: *"Analyse this pricelist for our `acme` tenant."*
+2. Agent loads `skills/rattle-pricelist-analysis/SKILL.md` (+ `rattle-configurator` automatically).
+3. Agent runs `scripts/detect_anti_patterns.py pricelist.xlsx` for deterministic keyword detection.
+4. Agent calls its LLM with the prompt template documented in `system-prompts.md`.
+5. Agent merges findings, prioritises `implicit-base-config` first, presents to the user.
+6. User: *"OK, generate a configuration."*
+7. Agent loads `skills/rattle-suggest-config/SKILL.md`, fetches existing groups, produces the canonical recommendation JSON.
+8. User: *"Apply it."* Agent delegates to `rattle-config-builder` which calls `ensure_*` operations idempotently against the live API. `validate_recommendation.py` runs first; the agent never writes if validation fails.
 
-# Transform interchange data and push to Rattle
-$ rattle acme ai-transform datanorm rattle import.json --push
+The Python CLI implements steps 3–7 directly when you want a one-shot terminal command instead of an agent loop.
 
-# Ask questions about your product data
-$ rattle acme ai-analyse --question "Which products lack descriptions?"
-```
+## The #1 rule
 
-## Commands
+> **Never build "base product + add-ons" where the base configuration is implicit.** Every configurable feature MUST have an explicit group with ALL variants as separate options — including the "standard" / default variant.
 
-| Command | Description | Key Options |
-|---|---|---|
-| `test-connection` | Verify API connectivity | |
-| `list-sources` | List local data files | |
-| `ai-describe` | Generate marketing descriptions | `--limit`, `--language` |
-| `ai-classify` | Classify products into categories | `--limit` |
-| `ai-transform` | Convert between data formats | `source_format`, `target_format`, `--push` |
-| `ai-analyse` | Run data quality audits & analysis | `--question` |
-| `ai-providers` | Show available AI backends | |
+The Rattle BOM is driven by `usage_subclauses` on BOM items linking parts to options. If the standard variant has no option, no BOM line can reference it, and the configurator can't toggle the standard parts on or off.
 
-Every command outputs JSON to stdout — pipe it, parse it, chain it.
-
-## AI Providers
-
-Switch providers with a single environment variable:
-
-```bash
-AI_PROVIDER=openai     rattle acme ai-describe  # default
-AI_PROVIDER=anthropic  rattle acme ai-describe
-AI_PROVIDER=ollama     rattle acme ai-describe  # local, free
-AI_PROVIDER=custom     rattle acme ai-describe  # your endpoint
-```
-
-| Provider | Backend | Env Vars |
-|---|---|---|
-| `openai` | OpenAI, Azure, vLLM, LM Studio | `OPENAI_API_KEY`, `OPENAI_BASE_URL`*, `OPENAI_MODEL`* |
-| `anthropic` | Anthropic Claude | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`* |
-| `ollama` | Local Ollama server | `OLLAMA_BASE_URL`*, `OLLAMA_MODEL`* |
-| `custom` | Any OpenAI-compatible REST API | `CUSTOM_AI_BASE_URL`, `CUSTOM_AI_API_KEY`*, `CUSTOM_AI_MODEL`* |
-
-<sub>* optional</sub>
-
-See [`.env.example`](.env.example) for all configuration options.
-
-## Using with CLI Agents
-
-Rattle AI Workspace is designed to be driven by any CLI coding agent:
-
-```bash
-# Claude Code
-rattle acme ai-analyse --question "Summarise product categories"
-
-# Codex CLI
-rattle acme ai-describe --limit 10
-
-# Any agent — just run shell commands and parse JSON stdout
-rattle acme ai-transform datanorm rattle data.json --push
-```
-
-No interactive prompts, no TUI, no special SDKs — just `stdin`/`stdout`/`stderr` and JSON.
-
-## Architecture
+Wrong:
 
 ```
-rattle_api/                      # Main package
-├── rattle_api/
-│   ├── main.py                  # CLI entry point (argparse dispatch)
-│   ├── config.py                # Tenant & provider configuration via .env
-│   ├── client.py                # Rattle API HTTP client (REST + pagination)
-│   ├── provider.py              # AI provider abstraction layer
-│   ├── tasks.py                 # AI task implementations
-│   ├── source.py                # Data file reader (Excel, JSON)
-│   └── image.py                 # Image processing & shadow generation
-├── tests/                       # Test suite (135 tests, 97% coverage)
-├── source/                      # Local data files per tenant
-└── pyproject.toml
+Product: Widget Pro (17" wheels standard)
+Option: 19 inch wheels (+500€)
 ```
 
+Correct:
+
 ```
-         ┌───────────────────┐
-         │  CLI / AI Agent   │
-         └────────┬──────────┘
-                  │  rattle acme ai-describe
-         ┌────────▼──────────┐
-         │     tasks.py       │  describe · classify · transform · analyse
-         └────────┬──────────┘
-                  │
-         ┌────────▼──────────┐
-         │   provider.py      │  complete() · complete_json()
-         └────────┬──────────┘
-                  │
-    ┌─────┬───────┼───────┬─────────┐
-    │     │       │       │         │
- OpenAI  Anthropic  Ollama  Custom HTTP
+Group "Wheels" (is_multi=false):
+  Option "17 inch" (recommended=true, price=0)
+  Option "19 inch" (recommended=false, price=500)
+BOM:
+  child_part "17-inch wheel assy", usage_subclauses: [{option_id: <17_inch>, factor: 1.0}]
+  child_part "19-inch wheel assy", usage_subclauses: [{option_id: <19_inch>, factor: 1.0}]
 ```
 
-### Adding a new provider
+Full reasoning + 11 more rules in `skills/rattle-configurator/references/configuration-rules.md`.
 
-1. Subclass `AIProvider` in `rattle_api/provider.py`
-2. Implement `complete()`
-3. Register in the `PROVIDERS` dict
-4. Document env vars in `config.py` and `.env.example`
+## Python CLI commands
 
-## Docker
+Every command writes JSON to stdout, progress to stderr, no interactive prompts.
 
-```bash
-docker build -t rattle-api .
-docker run --env-file .env rattle-api acme test-connection
-docker run --env-file .env rattle-api acme ai-describe --limit 3
+| Command | Description |
+|---|---|
+| `rattle <tenant> test-connection` | Verify API connectivity |
+| `rattle <tenant> list-sources` | List source files for a tenant |
+| `rattle <tenant> ai-analyse-pricelist <file>` | Analyse a pricelist for anti-patterns |
+| `rattle <tenant> ai-suggest-config <file>` | Generate BOM-aware configuration recommendation |
+| `rattle <tenant> ai-describe` | Generate AI product descriptions |
+| `rattle <tenant> ai-classify` | Classify products with AI |
+| `rattle <tenant> ai-transform <src> <tgt> <file>` | Transform interchange data |
+| `rattle <tenant> ai-analyse` | Custom data quality / analysis |
+| `rattle <tenant> ai-providers` | List configured AI providers |
+| `rattle <tenant> memory show / edit / set-preference / record-decision` | Tenant memory ops |
+
+Switch AI providers with one env var: `AI_PROVIDER=openai|anthropic|ollama|custom`.
+
+## Tenant memory
+
+Per-tenant style preferences live under `memory/<tenant>/profile.md` (gitignored). Captured preferences override default rules:
+
+```markdown
+# acme — tenant preferences
+
+## Preferences
+- **custom-keys**: never
+- **option-standard-variant**: always present, price 0, recommended=true
+
+## Offer documents
+- doc_type: `offer`
+- Required chapters: Product Overview + Configuration (dynamic:document_configuration)
 ```
+
+The `TenantMemory` class auto-injects this into every system prompt. Writes are explicit-only (`rattle <tenant> memory set-preference …`); tasks never write silently. Full docs: `memory/README.md` and `skills/rattle-tenant-memory/SKILL.md`. A starter template lives at `examples/tenant-profile.md`.
 
 ## Development
 
 ```bash
-# Install everything
-pip install -e ".[dev,all-ai]"
-
-# Run checks
-make lint          # Ruff linter + formatter check
+make check         # lint + type-check + 262 tests
+make lint          # ruff
+make type-check    # mypy
 make test          # pytest
-make check         # All of the above
+make format        # ruff format
+```
 
-# Auto-format
-make format
+Pre-commit:
 
-# Pre-commit hooks (optional but recommended)
+```bash
 pre-commit install
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
+## Adding new knowledge
 
-## Contributing
+1. Edit the **Markdown reference** under `skills/rattle-configurator/references/` — it is the source of truth.
+2. Mirror the change in `rattle_api/knowledge.py` so the Python CLI stays in sync. Markdown wins on conflicts.
+3. Run `make test` — the prompt-builder tests catch most drift.
+4. If you add a new rule, cross-reference it from any matching anti-pattern and structural check.
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+Full conventions: `AGENTS.md` (cross-platform) and `CLAUDE.md` (Claude-Code-specific).
 
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md)
-- [Changelog](CHANGELOG.md)
+## Documentation
+
+- [`AGENTS.md`](AGENTS.md) — cross-platform agent rules and the full knowledge map.
+- [`CLAUDE.md`](CLAUDE.md) — Claude Code project instructions.
+- [`PUBLISHING.md`](PUBLISHING.md) — how to release to npm, PyPI, and the Claude Code marketplace.
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (443 operations).
+- [`SETUP.md`](SETUP.md) — beginner-friendly setup guide.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guidelines.
+- [`SECURITY.md`](SECURITY.md) — security policy.
+- [`CHANGELOG.md`](CHANGELOG.md) — version history.
 
 ## License
 

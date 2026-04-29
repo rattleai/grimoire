@@ -1,0 +1,29 @@
+[
+  {
+    "pattern_id": "implicit-base-config",
+    "pattern_name": "Implicit Base Configuration",
+    "row_index": 0,
+    "column": "Standard",
+    "value": "17 inch wheels (Standard, im Lieferumfang)",
+    "indicator": "standard",
+    "correction": "Create an explicit group with explicit options for ALL variants — including the standard one. Mark the standard option as recommended=true."
+  },
+  {
+    "pattern_id": "implicit-base-config",
+    "pattern_name": "Implicit Base Configuration",
+    "row_index": 1,
+    "column": "Standard",
+    "value": "ISO 30 Standard",
+    "indicator": "standard",
+    "correction": "Create an explicit group with explicit options for ALL variants — including the standard one. Mark the standard option as recommended=true."
+  },
+  {
+    "pattern_id": "description-area-smell",
+    "pattern_name": "Narrative Area Smell",
+    "row_index": 3,
+    "column": "feature",
+    "value": "Beschreibung",
+    "indicator": "Beschreibung",
+    "correction": "Narrative content does not belong in a configuration area. Create a document template (doc_type='offer') with a 'Product Overview' chapter and attach a static EditorJS content block carrying the narrative."
+  }
+]
