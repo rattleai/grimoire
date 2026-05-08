@@ -1,0 +1,63 @@
+# MANIFEST.in — controls what `python -m build` puts into the source distribution.
+# The wheel is scoped via [tool.setuptools.packages.find] in pyproject.toml.
+# This file scopes the sdist so tenant data, AI artifacts, and dev assets do not ship.
+
+# Top-level metadata and docs that PyPI users expect
+include README.md
+include LICENSE
+include CHANGELOG.md
+include SECURITY.md
+include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
+include SETUP.md
+include PUBLISHING.md
+include AGENTS.md
+include CLAUDE.md
+include pyproject.toml
+include MANIFEST.in
+include Makefile
+include Dockerfile
+include .dockerignore
+include .editorconfig
+include .env.example
+
+# Python package
+recursive-include rattle_api *.py
+recursive-include rattle_api py.typed
+
+# Tests are kept in the sdist (downstream packagers, Linux distros expect them)
+recursive-include tests *.py
+
+# Hard exclusions — never ship these in the Python distribution
+prune source
+prune memory
+prune tools
+prune skills
+prune agents
+prune commands
+prune schemas
+prune examples
+prune bin
+prune docs
+prune scripts
+prune rattle_logos
+prune .claude
+prune .claude-plugin
+prune .github
+prune .venv
+prune build
+prune dist
+prune *.egg-info
+
+# Filesystem cruft and dev artefacts
+global-exclude .DS_Store
+global-exclude Thumbs.db
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude .coverage
+global-exclude .coverage.*
+global-exclude *.swp
+global-exclude *.swo
+global-exclude *~
+global-exclude .env
+global-exclude .env.*

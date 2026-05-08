@@ -1,4 +1,4 @@
-.PHONY: help install dev lint format type-check test test-cov check clean
+.PHONY: help install dev lint format type-check test test-cov check clean clean-publish
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -31,5 +31,16 @@ check: lint type-check test ## Run all checks (lint + type-check + test)
 
 clean: ## Remove build artefacts and caches
 	rm -rf build/ dist/ *.egg-info/
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	rm -rf .mypy_cache/ .pytest_cache/ .ruff_cache/
+	rm -f .coverage .coverage.*
+	find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -not -path './.venv/*' -delete 2>/dev/null || true
+	find . -type f -name ".DS_Store" -not -path './.git/*' -not -path './.venv/*' -delete 2>/dev/null || true
+
+clean-publish: clean ## Strict cleanup before publishing — also removes orphan dirs (tools/, legacy egg-info)
+	rm -rf tools/ rattle_ai_workspace.egg-info/
+	@echo
+	@echo "Repo is publish-ready. Verify with:"
+	@echo "  git status        # working tree should be clean"
+	@echo "  python -m build   # produces dist/grimoire-*.whl + .tar.gz"
+	@echo "  npm pack --dry-run  # lists files that would ship to npm"

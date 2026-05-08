@@ -98,6 +98,7 @@ gh release create vX.Y.Z --notes-file <(awk '/^## \[X.Y.Z\]/,/^## \[/{print}' CH
 
 Before any of the three publish steps:
 
+- [ ] `make clean-publish` (removes caches, egg-info, orphan dirs, and macOS metadata).
 - [ ] `make check` (Python lint + type-check + 262 tests) is green.
 - [ ] `node bin/grimoire.mjs install --dry-run` enumerates all expected artifacts.
 - [ ] `python skills/rattle-apply-config/scripts/validate_recommendation.py examples/recommendation.json` returns `valid: true`.

@@ -76,8 +76,12 @@ Repository = "https://github.com/rattleai/grimoire"
 Issues = "https://github.com/rattleai/grimoire/issues"
 Changelog = "https://github.com/rattleai/grimoire/blob/main/CHANGELOG.md"
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+include = ["rattle_api*"]
+exclude = ["tests*", "source*", "tools*", "docs*", "scripts*", "examples*", "memory*", "skills*", "agents*", "commands*", "schemas*", "bin*", "rattle_logos*"]
+
+[tool.setuptools.package-data]
+rattle_api = ["py.typed"]
 
 [tool.ruff]
 target-version = "py310"
