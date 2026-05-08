@@ -19,6 +19,11 @@ build/
 dist/
 *.egg-info/
 *.egg
+*.whl
+*.tar.gz
+
+# Orphan / pre-refactor scratch dirs
+tools/
 
 # Testing & coverage
 .pytest_cache/
