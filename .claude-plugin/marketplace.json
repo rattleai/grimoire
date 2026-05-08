@@ -2,7 +2,7 @@
   "name": "grimoire",
   "owner": {
     "name": "rattleai",
-    "email": "alex.menges@yahoo.de"
+    "email": "grimoire@rattleapp.de"
   },
   "metadata": {
     "description": "Grimoire — AI-native consulting workspace for the Rattle product configurator (rattleapp.de). Skills, subagents, slash commands, JSON Schemas, and golden I/O examples that teach any AI model how to produce correct, BOM-aware product configurations on the Rattle SaaS platform."
@@ -15,7 +15,7 @@
       "version": "0.4.0",
       "author": {
         "name": "rattleai",
-        "email": "alex.menges@yahoo.de"
+        "email": "grimoire@rattleapp.de"
       },
       "homepage": "https://github.com/rattleai/grimoire",
       "repository": "https://github.com/rattleai/grimoire",
