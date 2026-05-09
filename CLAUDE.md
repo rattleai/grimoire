@@ -17,6 +17,10 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
 | `skills/rattle-suggest-config/` | Workflow: produce BOM-aware configuration recommendation JSON. |
 | `skills/rattle-document-templates/` | Workflow: build offer/datasheet templates honouring the doc_type contract. |
+| `skills/rattle-techdoc/` | Workflow: build full technical documentations (`doc_type=technical_documentation`). 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1). Includes `scripts/inventory_techdocs.py` and reference files for chapters, audit checks, EditorJS blocks, legal basis. |
+| `skills/rattle-safety-notices/` | Knowledge: ISO 7010 + ISO 3864-2 + ANSI Z535.6 safety notices. EditorJS `safety_notice` block contract, signal-word locales (31 languages), 6 ISO 7010 categories, SAFE-principle authoring. |
+| `skills/rattle-ghs-statements/` | Knowledge: CLP Regulation EC 1272/2008 H/P/EUH statements + 9 GHS pictograms. EditorJS `hp_statement` block contract, 24-locale resolution, combined and enhanced statements. |
+| `skills/rattle-techdoc-language/` | Knowledge: language, tone, mood, terminology rules per IEC/IEEE 82079-1 §7. Imperative-mood instructions, original-language obligation, MVO 2023/1230 digital provision. |
 | `skills/rattle-apply-config/` | Workflow: apply a recommendation idempotently. Includes `scripts/validate_recommendation.py`. |
 | `skills/rattle-audit/` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/` | Per-tenant preferences and decisions (file-based, explicit-write only). |
@@ -25,10 +29,14 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `agents/rattle-consultant.md` | Senior consultant subagent — orchestrates strategic decisions. |
 | `agents/rattle-auditor.md` | Live-tenant structural auditor. Read-only. |
 | `agents/rattle-config-builder.md` | Idempotent builder. Only agent allowed to write to the API. |
+| `agents/rattle-techdoc-author.md` | Senior technical-writer subagent. Walks the inventory → audit → plan → build → translate workflow for technical documentations. |
+| `agents/rattle-techdoc-auditor.md` | Read-only auditor for technical documentations. Runs ~30 checks across structural, safety-notice, GHS, and language rules. |
 | `commands/rattle-analyse.md` | `/rattle-analyse` slash command. |
 | `commands/rattle-suggest-config.md` | `/rattle-suggest-config` slash command. |
 | `commands/rattle-audit.md` | `/rattle-audit` slash command. |
 | `commands/rattle-build-offer.md` | `/rattle-build-offer` slash command. |
+| `commands/rattle-build-techdoc.md` | `/rattle-build-techdoc` slash command — build technical docs from input manuals. |
+| `commands/rattle-audit-techdoc.md` | `/rattle-audit-techdoc` slash command — audit a technical-doc template against ISO 20607 / IEC 82079-1 / MRL/MVO. |
 | `AGENTS.md` | Cross-platform agent rules (Cursor, Codex, Aider, Continue). |
 
 The Markdown content under `skills/rattle-configurator/references/` is the source of truth for rules / anti-patterns / checks. `rattle_api/knowledge.py` mirrors it as Python data structures so the CLI's prompts stay in sync. **When they conflict, the Markdown wins — update the Python to match.**

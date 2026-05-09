@@ -25,6 +25,14 @@ When the user asks anything Rattle-related, **read these files before answering*
 | `skills/rattle-pricelist-analysis/SKILL.md` | Workflow: analyse a pricelist for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
 | `skills/rattle-suggest-config/SKILL.md` | Workflow: produce a BOM-aware config recommendation. |
 | `skills/rattle-document-templates/SKILL.md` | Workflow: build offer/datasheet templates. |
+| `skills/rattle-techdoc/SKILL.md` | Workflow: build full technical documentations (`doc_type=technical_documentation`) from input manuals. 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1, MRL/MVO). Includes 4 reference files and `scripts/inventory_techdocs.py`. |
+| `skills/rattle-techdoc/references/chapter-reference.md` | Master template — every canonical chapter and section, mandatory content callouts, norm refs, reusable content-block keys. |
+| `skills/rattle-techdoc/references/audit-checks.md` | 12 structural checks for technical docs (CRITICAL/HIGH/MEDIUM/LOW). |
+| `skills/rattle-techdoc/references/editorjs-blocks.md` | Every EditorJS block type used in tech docs with shape, validation, ordering. |
+| `skills/rattle-techdoc/references/legal-basis.md` | MRL 2006/42, MVO (EU) 2023/1230, MDR, CLP, harmonised standards reference. |
+| `skills/rattle-safety-notices/SKILL.md` | Knowledge: ISO 7010 + ISO 3864-2 + ANSI Z535.6 safety notices. EditorJS `safety_notice` block contract. Signal-word locales (31), 6 ISO 7010 categories, SAFE-principle. |
+| `skills/rattle-ghs-statements/SKILL.md` | Knowledge: CLP Regulation EC 1272/2008 H/P/EUH statements + 9 GHS pictograms. EditorJS `hp_statement` block contract. 24-locale resolution, combined and enhanced statements. |
+| `skills/rattle-techdoc-language/SKILL.md` | Knowledge: language, tone, mood, terminology rules per IEC/IEEE 82079-1 §7. Imperative-mood, original-language obligation, MVO digital provision. |
 | `skills/rattle-apply-config/SKILL.md` | Workflow: apply a recommendation idempotently via 7 `ensure_*` ops. Includes `scripts/validate_recommendation.py`. |
 | `skills/rattle-audit/SKILL.md` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/SKILL.md` | Per-tenant preferences, decisions, audit history (file-based, explicit-write only). |
