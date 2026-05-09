@@ -1,14 +1,18 @@
 ---
 name: rattle-techdoc
-description: Use this skill whenever the user is building, auditing, restructuring, or translating a technical documentation (Betriebsanleitung / operating manual / instructions for use) on the Rattle SaaS platform. Activates for any "technical documentation", "Betriebsanleitung", "Bedienungsanleitung", "instructions for use", "user manual", "operating manual" task — and for any input of multiple product manuals that must be unified into modular, ready-to-ship documentation. Encodes the 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1), the doc_type contract (`doc_type=technical_documentation`), the EditorJS block taxonomy (paragraph, list, table, warning, quote, delimiter, safety_notice, hp_statement, image, header), and the legal basis (Maschinenrichtlinie 2006/42/EG, Maschinenverordnung (EU) 2023/1230). Pair with rattle-safety-notices, rattle-ghs-statements, rattle-techdoc-language, rattle-document-templates, and rattle-api.
+description: Use this skill whenever the user is building, auditing, restructuring, or translating a technical documentation (Betriebsanleitung / operating manual / instructions for use) on the Rattle SaaS platform. Activates for any "technical documentation", "Betriebsanleitung", "Bedienungsanleitung", "instructions for use", "user manual", "operating manual" task — and for any input of multiple product manuals that must be unified into modular, ready-to-ship documentation. Encodes the 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1), the doc_type contract (`doc_type=technical_doc` — the legacy alias `technical_documentation` is accepted on GET filters but rejected on POST/PUT), the EditorJS block taxonomy (paragraph, list, table, warning, quote, delimiter, safety_notice, hp_statement, image, header), and the legal basis (Maschinenrichtlinie 2006/42/EG, Maschinenverordnung (EU) 2023/1230). Pair with rattle-safety-notices, rattle-ghs-statements, rattle-techdoc-language, rattle-document-templates, and rattle-api.
 license: MIT
 ---
 
 # Rattle technical documentation
 
-You are advising on **technical documentation** for products configured in Rattle (rattleapp.de). Technical documentation in this context is the binding deliverable that travels with every physical product placed on the EU market: the operating manual (`Betriebsanleitung`), assembly instructions, maintenance manual, or full instructions for use. It is **legally mandatory** for every machine, electrical device, medical device, or product covered by the Machinery Directive / Machinery Regulation, the Low-Voltage Directive, the EMC Directive, the MDR, ATEX, PED, or any other CE rights-act.
+You are advising on **technical documentation** for products configured in Rattle (rattleapp.de). Technical documentation in this context is the binding deliverable that travels with every physical product placed on the EU market: the operating manual (`Betriebsanleitung`), assembly instructions, maintenance manual, or full instructions for use. It is **legally mandatory** for every machine or other product covered by an applicable CE directive / regulation — primarily the Machinery Directive 2006/42/EC and (from 20 January 2027) the Machinery Regulation (EU) 2023/1230, plus where relevant the Low Voltage Directive 2014/35/EU, the EMC Directive 2014/30/EU, ATEX 2014/34/EU, the Pressure Equipment Directive 2014/68/EU, and the Radio Equipment Directive 2014/53/EU.
 
-This skill encodes the consulting expertise needed to design and build a full Rattle `doc_type=technical_documentation` template: the 15-chapter normative structure, the EditorJS block taxonomy, and the rules for splitting general vs. phase-specific safety, residual risks, conformity, and disposal.
+> **Out of scope.** Medical devices (MDR (EU) 2017/745, IVDR (EU) 2017/746) and *in vitro* diagnostics need a different scaffold (ISO 20417 + ISO 15223-1 + IEC 62366-1 usability engineering). The 15-chapter machinery scheme below is **not** an MDR-compliant IFU. Refuse the machinery scaffold for medical devices and flag the scope mismatch to the user — a future `rattle-techdoc-medical` skill will own that scope.
+
+This skill encodes the consulting expertise needed to design and build a full Rattle `doc_type=technical_doc` template: the 15-chapter normative structure, the EditorJS block taxonomy, and the rules for splitting general vs. phase-specific safety, residual risks, conformity, and disposal.
+
+> **doc_type canonical value.** The Pydantic create/update validator (`app/schemas/v1/document.py:81` `_validate_doc_type`, with `extra="forbid"`) accepts `{offer, quote, technical_doc, ccms, custom}` plus the legacy plurals (`offers`/`quotes`). The string `technical_documentation` is **rejected on POST/PUT** even though some seeded rows in the database still carry it (the seeder writes it directly via `app/utils/techdoc_seeder.py`). Always send `technical_doc` on writes; use either form on `GET ?doc_type=…` filters.
 
 ## When to use this skill
 
@@ -32,7 +36,7 @@ If the request is purely about an offer/quote/datasheet, use `rattle-document-te
 
 ## The 15-chapter normative structure
 
-Every Rattle `technical_documentation` template follows this canonical chapter order. Chapter slugs match the seed data in `rattle_api` and the live API `default_layout`. Chapters marked **OPT** are optional; everything else is **mandatory** for a CE-marked machine.
+Every Rattle `technical_doc` template follows this canonical chapter order. Chapter slugs match the seed data in `app/utils/techdoc_seed_data.py` of rattleapp and the live API `default_layout`. Chapters marked **OPT** are optional; everything else is **mandatory** for a CE-marked machine.
 
 | # | Slug | Title (DE / EN) | Norm refs | Status |
 |---|------|-----------------|-----------|--------|
@@ -57,7 +61,7 @@ Full chapter reference (all 100+ sections with mandatory content, suggested word
 ## Rattle data model for technical documentation
 
 ```
-DocumentTemplate (doc_type = "technical_documentation")
+DocumentTemplate (doc_type = "technical_doc")   ← canonical write value
   └── StructureBlock (chapter / section / sub-section)
        └── Locales (DE, EN, FR, …) — title only
        └── Attachments
@@ -152,20 +156,20 @@ Encode the plan as a JSON object that the next step (`build`) consumes:
 
 ### Step 4 — Build the templates
 
-For each product, create a `DocumentTemplate` (`doc_type=technical_documentation`) and seed the canonical 15-chapter structure with `POST /documents/templates/{id}/structure/batch`. The seeded reference content (Editorial notes, suggested wording, mandatory-content callouts) for every chapter is available in `references/chapter-reference.md` as DE/EN EditorJS arrays — copy, do not invent.
+For each product, create a `DocumentTemplate` (`doc_type=technical_doc`) and seed the canonical 15-chapter structure with `POST /documents/templates/{id}/structure/batch`. The seeded reference content (Editorial notes, suggested wording, mandatory-content callouts) for every chapter is available in `references/chapter-reference.md` as DE/EN EditorJS arrays — copy, do not invent.
 
 The build sequence is:
 
-1. `POST /documents/templates` with `doc_type=technical_documentation`, `name`, `product_id`.
+1. `POST /documents/templates` with `doc_type=technical_doc`, `name`, `product_id`.
 2. For each chapter in canonical order, `POST /documents/templates/{id}/structure/blocks` with `node_type=chapter`, `slug`, `order_index`, locale titles in DE+EN.
 3. For each section under a chapter, `POST .../structure/blocks` with `node_type=section`, `parent_id`, `slug`, `order_index`, locale titles.
 4. For each section's content, either:
    - **Reuse**: `POST .../attachments` with `content_block_id` of an existing block.
    - **Create**: `POST /documents/content-blocks` with the EditorJS block array, then attach it.
-5. For dynamic content (configuration tables, line items, technical data fed from product attributes), use system dynamic blocks (`dynamic:document_configuration`, `dynamic:document_line_items`, `dynamic:document_technical_data` if present) — discover them via `GET /documents/content-blocks?is_dynamic=true`.
+5. For dynamic content (configuration tables, line items, technical data fed from product attributes), use system dynamic blocks (`dynamic:document_configuration`, `dynamic:document_line_items`). Discover them via `GET /documents/content-blocks` (the route honours `cursor`, `limit`, `product_id`, `directory_id`, `tag`, `search`, `is_active` query params; **`is_dynamic` is not a server-side filter** — paginate the response and inspect each block's `is_dynamic` field client-side).
 6. After every product is built, `POST /documents/templates/{id}/publish` (only after the audit checks for the template all pass).
 
-For idempotent re-runs, use the `ensure_*` operation pattern from `rattle-apply-config` (it works for documents too: every block keyed by `slug` becomes upsert-by-slug).
+For idempotent re-runs, use the document-tier `ensure_*` operations on the **`rattle-config-builder` agent** (not `rattle-apply-config`, which only ships the configurator-tier set). The builder grammar covers `ensure_template`, `ensure_chapter` / `ensure_structure_block`, `ensure_attachment`, `ensure_content_block` — each upsert-by-natural-key (template by `(company_id, name)`, structure block by `(template_id, slug, parent_id)`, content block by `(company_id, key)`). See `agents/rattle-config-builder.md` § "Document- and BOM-tier operations" for the full operation contract.
 
 ### Step 5 — Translate
 
@@ -178,7 +182,7 @@ When this skill produces a build plan (without yet calling the API), output:
 ```json
 {
   "template_name": "PFM-3200 — Originalbetriebsanleitung",
-  "doc_type": "technical_documentation",
+  "doc_type": "technical_doc",
   "product_id": 101,
   "primary_locale": "de",
   "additional_locales": ["en"],
@@ -231,7 +235,7 @@ When this skill produces a build plan (without yet calling the API), output:
 | 12 manuals all repeat the same 4-page LOTO description | Create one `loto-procedure` content block; attach to every Maintenance chapter via `content_block_id`. |
 | Manual was written in German only — customer wants EN, FR, IT | Build DE first, then `POST /documents/templates/{id}/translate` for each target. Normative text is locale-resolved, not AI-translated. |
 | Customer asks "what about Konformitätserklärung?" | Chapter 12 (`ch-12-conformity`) and Chapter 13 (`ch-13-appendix.sec-13-1-declaration`) — these are mandatory under MRL Annex II A. Section 13.1 holds the EC/EU Declaration. |
-| Manual has no signal-word legend | `ch-01-about-document.sec-1-6-symbols` is mandatory per IEC/IEEE 82079-1 (6.4, 6.5) and ISO 3864-2. Insert the four-row table (DANGER/WARNING/CAUTION/NOTICE) plus all ISO 7010 categories used. |
+| Manual has no signal-word legend | `ch-01-about-document.sec-1-6-symbols` is mandatory per IEC/IEEE 82079-1:2019 §7.5 + §7.6 and ISO 3864-2:2016. Insert the four-row table (DANGER/WARNING/CAUTION/NOTICE) plus all ISO 7010 categories used. |
 
 ## Related skills and references
 
@@ -245,4 +249,3 @@ When this skill produces a build plan (without yet calling the API), output:
 - `references/editorjs-blocks.md` — every EditorJS block type used in technical documentations with shape, validation, rendering notes.
 - `references/legal-basis.md` — MRL/MVO/IEC/ISO standards, when each applies, what each requires.
 - `scripts/inventory_techdocs.py` — extract chapter map and reusability candidates from input PDF/Word manuals.
-- `scripts/audit_techdoc.py` — run the 12 audit checks against a template ID.

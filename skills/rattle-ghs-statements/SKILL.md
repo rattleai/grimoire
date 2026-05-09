@@ -59,9 +59,9 @@ For non-chemical safety messages (machine hazards), use `rattle-safety-notices`.
 
 ## Legal basis
 
-EU CLP Regulation **(EC) No 1272/2008** on classification, labelling and packaging of substances and mixtures. Annex I defines the hazard classes; Annex III defines the H-statement codes; Annex IV defines the P-statement codes; Annex V defines the GHS pictograms.
+EU CLP Regulation **(EC) No 1272/2008** on classification, labelling and packaging of substances and mixtures. Annex I defines the hazard classes; Annex III defines the H-statement codes; Annex IV defines the P-statement codes; Annex V defines the GHS pictograms. CLP applies in the EU/EEA; the UK retains its own UK CLP regime since Brexit (texts maintained by the HSE — verify before placement in the UK).
 
-Statement data in Rattle comes from the open-source **mhchem/hpstatements** project (CC BY 4.0), stored as JSON files in `app/static/data/hp_statements/hpstatements-<lang>-latest.json`.
+Statement data in Rattle comes from the open-source **mhchem/hpstatements** project (CC BY 4.0), stored as JSON files in `app/static/data/hp_statements/hpstatements-<lang>-latest.json`. The mhchem dataset is derived from the official **ECHA** translations published in EUR-Lex (Annex III/IV/VI of CLP). For audit defensibility, every shipped statement should be checkable byte-for-byte against the latest ECHA / EUR-Lex tables.
 
 ## The H/P/EUH code families
 

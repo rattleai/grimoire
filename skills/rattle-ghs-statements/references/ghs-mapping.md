@@ -48,7 +48,7 @@ SVG sources in rattleapp: `app/static/img/ghs/GHS0X.svg`.
 | H225 | GHS02 | Highly flammable liquid and vapour |
 | H226 | GHS02 | Flammable liquid and vapour |
 | H228 | GHS02 | Flammable solid |
-| H229 | GHS02 | Pressurised container; may burst if heated |
+| H229 | GHS02 (combined only) | Pressurised container; may burst if heated. Standalone H229 is text-only per CLP Annex I; GHS02 applies only when combined with a flammable-aerosol class (e.g. H222 / H223). |
 | H230 | GHS02 | May react explosively even in absence of air |
 | H231 | GHS02 | May react explosively even in absence of air at elevated pressure / temperature |
 | H232 | GHS02 | May ignite spontaneously if exposed to air |

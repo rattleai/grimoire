@@ -17,10 +17,10 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
 | `skills/rattle-suggest-config/` | Workflow: produce BOM-aware configuration recommendation JSON. |
 | `skills/rattle-document-templates/` | Workflow: build offer/datasheet templates honouring the doc_type contract. |
-| `skills/rattle-techdoc/` | Workflow: build full technical documentations (`doc_type=technical_documentation`). 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1). Includes `scripts/inventory_techdocs.py` and reference files for chapters, audit checks, EditorJS blocks, legal basis. |
-| `skills/rattle-safety-notices/` | Knowledge: ISO 7010 + ISO 3864-2 + ANSI Z535.6 safety notices. EditorJS `safety_notice` block contract, signal-word locales (31 languages), 6 ISO 7010 categories, SAFE-principle authoring. |
+| `skills/rattle-techdoc/` | Workflow: build full technical documentations (`doc_type=technical_doc` — write canonical; legacy alias `technical_documentation` accepted on filters only). 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1). Includes `scripts/inventory_techdocs.py` and reference files for chapters, audit checks, EditorJS blocks, legal basis. |
+| `skills/rattle-safety-notices/` | Knowledge: ISO 7010 + ISO 3864-2 + ANSI Z535.6-2011 (R2017) safety notices. EditorJS `safety_notice` block contract, signal-word locales (32 languages), **5** ISO 7010 categories + the separate CLP/GHS pictogram set, SAFE-principle authoring (Signalwort, Art und Quelle, Folgen, Entkommen). |
 | `skills/rattle-ghs-statements/` | Knowledge: CLP Regulation EC 1272/2008 H/P/EUH statements + 9 GHS pictograms. EditorJS `hp_statement` block contract, 24-locale resolution, combined and enhanced statements. |
-| `skills/rattle-techdoc-language/` | Knowledge: language, tone, mood, terminology rules per IEC/IEEE 82079-1 §7. Imperative-mood instructions, original-language obligation, MVO 2023/1230 digital provision. |
+| `skills/rattle-techdoc-language/` | Knowledge: language, tone, mood, terminology rules per IEC/IEEE 82079-1:2019 Clause 5 (seven quality attributes). Imperative-mood instructions, original-language obligation, MVO 2023/1230 Article 10(7) digital provision including consumer-machinery paper mandate. |
 | `skills/rattle-apply-config/` | Workflow: apply a recommendation idempotently. Includes `scripts/validate_recommendation.py`. |
 | `skills/rattle-audit/` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/` | Per-tenant preferences and decisions (file-based, explicit-write only). |

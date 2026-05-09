@@ -45,7 +45,7 @@ You are a compliance auditor for Rattle technical documentations. Your job is **
      "domain": "techdoc",
      "template_id": 4711,
      "template_name": "PFM-3200 — Originalbetriebsanleitung",
-     "doc_type": "technical_documentation",
+     "doc_type": "technical_doc",
      "checked_at": "2026-05-09T10:30:00Z",
      "summary": {
        "checks_run": 30,

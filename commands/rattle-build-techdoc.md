@@ -1,5 +1,5 @@
 ---
-description: Build a Rattle technical documentation (`doc_type=technical_documentation`) from one or many input product manuals. Walks the inventory → audit → plan → build → translate workflow. Honours the 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1) and the safety-notice / GHS / language rules. Produces a modular, reusable, ready-to-ship template with shared and product-specific content blocks.
+description: Build a Rattle technical documentation (`doc_type=technical_doc` — write canonical; legacy alias `technical_documentation` accepted on filters only) from one or many input product manuals. Walks the inventory → audit → plan → build → translate workflow. Honours the 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1) and the safety-notice / GHS / language rules. Produces a modular, reusable, ready-to-ship template with shared and product-specific content blocks.
 argument-hint: <tenant> <input-dir-or-product-list> [--language de|en] [--directive mrl|mvo|mdr] [--targets de,en,fr]
 ---
 
@@ -13,7 +13,7 @@ Build a Rattle technical documentation for the inputs at `$ARGUMENTS`.
 
 2. **Inventory.** For input directories, run `python skills/rattle-techdoc/scripts/inventory_techdocs.py <input-dir>`. The output is a coverage matrix + reusability candidates JSON.
 
-3. **Audit each input.** Walk the 12 structural checks in `skills/rattle-techdoc/references/audit-checks.md` against every input manual. Surface every CRITICAL (missing-safety-chapter, missing-phase-safety-section, missing-residual-risks-table, missing-declaration-of-conformity, missing-disposal-section) and HIGH (missing-signal-words-legend, missing-target-groups-matrix, missing-validity-section, unstructured-warnings, missing-disposal-section) finding before proposing structure.
+3. **Audit each input.** Walk the 14 structural checks in `skills/rattle-techdoc/references/audit-checks.md` against every input manual (12 numbered + 10b `default-fallback-symbol` + 10c `mismatched-ghs-pictogram`). Surface every CRITICAL (missing-safety-chapter, missing-phase-safety-section, missing-residual-risks-table, missing-declaration-of-conformity) and HIGH (missing-signal-words-legend, missing-target-groups-matrix, missing-validity-section, unstructured-warnings, missing-disposal-section, mismatched-ghs-pictogram) finding before proposing structure.
 
 4. **Plan the modular content.** Group input content by reusability:
    - **Shared (reusability=high)** — LOTO, signal-word legend, target groups, general safety rules, disposal, glossary stub. Built once at company level (`product_id=null`).
@@ -21,7 +21,7 @@ Build a Rattle technical documentation for the inputs at `$ARGUMENTS`.
    - **Product-specific (reusability=low)** — technical data, configuration-specific commissioning, EC declaration. Bound with `product_id`.
 
 5. **Build the templates.** For each product, produce the JSON payload for:
-   - `POST /documents/templates` (with `doc_type=technical_documentation`, `name`, `product_id`).
+   - `POST /documents/templates` (with `doc_type=technical_doc`, `name`, `product_id`).
    - For each canonical chapter (`ch-00-cover` … `ch-13-appendix`): `POST /documents/templates/{id}/structure/blocks`.
    - For each section: child `POST .../structure/blocks` with `parent_id`.
    - For each content attachment: either `POST .../attachments` with an existing `content_block_id`, or `POST /documents/content-blocks` then attach.
@@ -56,6 +56,6 @@ The agent produces:
 
 ## Hand-off
 
-For writes, delegate to `rattle-config-builder` with the `techdoc-template.json` payload. The builder uses the same idempotent `ensure_*` operations as configurator writes; templates and content blocks become upsert-by-slug / upsert-by-key respectively.
+For writes, delegate to `rattle-config-builder` with the `techdoc-template.json` payload. The builder agent's contract (`agents/rattle-config-builder.md` § "Document- and BOM-tier operations") covers the document-tier operation grammar — `ensure_template` (keyed by `(company_id, name)`), `ensure_structure_block` / `ensure_chapter` (keyed by `(template_id, slug, parent_id)`), `ensure_content_block` (keyed by `(company_id, key)`), `ensure_attachment` (keyed by `(structure_block_id, content_block_id)`), `ensure_block_locale` (keyed by `(structure_or_content_block_id, language)`). Each is upsert-by-natural-key — a second run is a safe no-op.
 
 $ARGUMENTS

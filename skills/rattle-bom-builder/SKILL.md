@@ -257,7 +257,7 @@ This is the canonical procedure. Walk it in order; every step has a verifiable o
       "priority": 0,
       "order_index": 0,
       "ghost_part": false,
-      "note": "1 bracket per 4 selected panels (numbered option 119 = panels)"
+      "note": "1 bracket per 4 selected panels (numbered option 119 = panels). quantity=1 baseline + scaled contribution. For range-mode lines that should ignore the base, still set quantity=1 — the API rejects quantity=0 with 422."
     }
   ],
   "validation": {"errors": [], "warnings": []},

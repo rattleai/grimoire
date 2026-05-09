@@ -1,6 +1,6 @@
 ---
 name: rattle-techdoc-language
-description: Use this skill whenever the user is writing, editing, translating, or auditing the language and tone of a Rattle technical documentation. Activates for any "language", "tone", "Sprache", "Verständlichkeit", "Klartext", "imperative mood", "controlled language", "terminology", "translation", "Übersetzung", "Originalbetriebsanleitung" task. Encodes IEC/IEEE 82079-1 §7 quality criteria (clarity, accuracy, completeness, conciseness, consistency, currency), audience-tailored mood (imperative for instructions, indicative for descriptions), terminology rules, the original-language obligation per MRL §1.7.4.1, the MVO 2023/1230 digital provision rules, and the locale-resolution policy (normative content is locale-resolved, not AI-translated). Pair with rattle-techdoc (host skill) and the safety-notices / GHS sister skills for normative texts.
+description: Use this skill whenever the user is writing, editing, translating, or auditing the language and tone of a Rattle technical documentation. Activates for any "language", "tone", "Sprache", "Verständlichkeit", "Klartext", "imperative mood", "controlled language", "terminology", "translation", "Übersetzung", "Originalbetriebsanleitung" task. Encodes the IEC/IEEE 82079-1:2019 Clause 5 quality attributes (complete, correct, concise, consistent, comprehensible, accessible, plus the principle of minimalism), audience-tailored mood (imperative for instructions, indicative for descriptions), terminology rules, the original-language obligation per MRL §1.7.4.1, the MVO 2023/1230 Article 10(7) digital provision rules including the consumer-machinery paper mandate, and the locale-resolution policy (normative content is locale-resolved, not AI-translated). Pair with rattle-techdoc (host skill) and the safety-notices / GHS sister skills for normative texts.
 license: MIT
 ---
 
@@ -22,20 +22,25 @@ Activate when the user:
 
 For the chapter structure itself, use `rattle-techdoc`. For safety-notice wording, use `rattle-safety-notices`. For chemical-hazard wording, use `rattle-ghs-statements`.
 
-## The IEC/IEEE 82079-1 §7 quality criteria
+## The IEC/IEEE 82079-1:2019 Clause 5 quality attributes
 
-Every chapter's content must satisfy six quality criteria (IEC/IEEE 82079-1:2019 §7):
+Every chapter's content must satisfy the **seven quality attributes** of IEC/IEEE 82079-1:2019 **Clause 5** (general principles for information for use), plus the overarching principle of **minimalism** (Clause 5.6 / Annex):
 
-| Criterion | Definition | What to check |
+| Attribute | Definition | What to check |
 |---|---|---|
-| **Clarity** | The reader understands on first read what to do. | No ambiguity ("perhaps", "maybe"); no nominalisation when a verb works ("perform inspection of …" → "inspect the …"); short sentences. |
-| **Accuracy** | Wording matches the product. | Part numbers, torque values, tolerances, software versions are exact. No "approximately" where a number is required. |
-| **Completeness** | All information required by the audience is present. | Acceptance criteria, error states, post-condition checks. |
-| **Conciseness** | No filler. Every sentence carries information. | No "in order to" (use "to"). No "it is recommended that" (use imperative). No restating chapter titles. |
-| **Consistency** | Same term, same meaning, throughout. | One name per part / state / mode. No "controller / control unit / PLC" alternation. |
-| **Currency** | The information is up-to-date. | Issue date present; revision-controlled; change log in `sec-12-3-doc-status`. |
+| **Complete** | All information the audience needs is present. | Acceptance criteria, error states, post-condition checks, prerequisites, tools list. |
+| **Correct** | Wording matches the product. | Part numbers, torque values, tolerances, software versions are exact. No "approximately" where a number is required. |
+| **Concise** | No filler. Every sentence carries information. | No "in order to" (use "to"). No "it is recommended that" (use imperative). No restating chapter titles. |
+| **Consistent** | Same term, same meaning, throughout. | One name per part / state / mode. No "controller / control unit / PLC" alternation. |
+| **Comprehensible** | The reader understands on first read what to do. | No ambiguity ("perhaps", "maybe"); no nominalisation when a verb works ("perform inspection of …" → "inspect the …"); short sentences. |
+| **Accessible** | The reader can find and consume the information. | Logical structure, navigation aids, accessible media (alt text, sufficient contrast, scalable text). |
+| **Minimalist** | Only the information needed for use, nothing more. | Cut narrative that doesn't help the reader act. |
 
-The audit emits `quality-violation:<criterion>:<sub-id>` findings.
+A separate **sustainment** attribute (often called "currency") is covered by **Clause 6** (information-management process, planning / design / production / evaluation / sustainment) — it is not part of the Clause 5 attribute set, but the audit still tracks it via `quality-violation:sustainment:<sub-id>` findings (issue date present; revision-controlled; change log in `sec-12-3-doc-status`).
+
+The audit emits `quality-violation:<attribute>:<sub-id>` findings using the seven attribute names above.
+
+> Earlier drafts of this skill cited "§7 quality criteria (clarity, accuracy, completeness, conciseness, consistency, currency)". Those attribute names were wrong and the section number was wrong — Clause 5 is the correct location, and the seven attributes above are the canonical list per IEC/IEEE 82079-1:2019.
 
 ## Mood and voice
 
@@ -119,7 +124,7 @@ When a procedure step requires more than one action, split into multiple steps. 
 - **Always SI units** with the symbol after the value: `230 V`, `50 Hz`, `Nm`, `°C`. Use a non-breaking space between number and unit.
 - **Tolerances** as `± n` with explicit unit: `± 0,5 mm` (DE) / `± 0.5 mm` (EN — note decimal separator).
 - **Ranges** with en-dash and unit at the end: `5–10 Nm`, not `5 Nm – 10 Nm`.
-- **Imperial units only** when the product is sold to a market that requires them; in that case, dual-unit `230 V (60 Hz)` becomes `120 V / 60 Hz` for US.
+- **Imperial units only** when the product is sold to a market that requires them. The US nameplate convention is comma-separated (`120 V, 60 Hz`), not slash-separated. When a product has different electrical specs per market, list each in its own bullet rather than combining (e.g. `EU: 230 V, 50 Hz`; `US: 120 V, 60 Hz`) — do not "convert" the EU value into a fictitious US value.
 
 ## Original-language obligation
 
@@ -144,24 +149,25 @@ When the user asks for a translation:
 4. **The translated document carries the translation marker** (see "Original-language obligation" above) — never just clone the cover from the source locale.
 5. **Accuracy check.** Translated procedures must produce the same physical result as the source. For safety-critical procedures (LOTO, e-stop), require human review of the translation.
 
-## MVO 2023/1230 digital provision rules (effective 20 January 2027)
+## MVO 2023/1230 Article 10(7) digital provision rules (effective 20 January 2027)
 
-The MVO replaces MRL and allows fully digital provision under conditions. Rattle's approach for `sec-1-8-digital-access`:
+The MVO replaces MRL and allows digital provision **under conditions**. Rattle's approach for `sec-1-8-digital-access`:
 
-1. The user receives a URL or QR code to the digital instructions on first use.
-2. The instructions remain available "for the expected lifetime of the machine" (≥ 10 years).
+0. **Determine the user audience first.** Is the machinery intended for or foreseeably used by **non-professional users** (consumer machinery)? If yes, then per **Article 10(7)**, the **safety-essential** information that is necessary for putting the machinery into service and using it safely **must be provided in paper form** — irrespective of any user request, and irrespective of whether the rest of the instructions is digital.
+1. For professional-use machinery, the user receives a URL or QR code to the digital instructions on first use.
+2. The instructions remain available for the **expected lifetime of the machinery** and at minimum **10 years** after placement on the market.
 3. An **offline copy** must be obtainable (download, USB stick).
-4. A **paper version** must be deliverable free within 30 days on request.
+4. A **paper version** of the full instructions must be deliverable **free of charge** at the time of purchase, **within one month** of request.
 
-The standard content for `sec-1-8-digital-access` is the reusable content block `digital-access-mvo` (see `rattle-techdoc/references/chapter-reference.md` reusable list).
+The standard content for `sec-1-8-digital-access` is the reusable content block `digital-access-mvo` (see `rattle-techdoc/references/chapter-reference.md` reusable list). The block exposes a `professional_use_only: bool` switch — when `false` (consumer machinery), the safety-essential paper supply is mandatory and the section text must say so.
 
 ## Locale list and locale aliases
 
 Locales for which Rattle ships normative content:
 
-- **Signal words (safety_notice):** 31 locales — see `rattle-safety-notices/references/signal-words.md`.
-- **H/P statements (hp_statement):** 24 EU locales + aliases — see `rattle-ghs-statements/references/hp-statement-locales.md`.
-- **Document content (everything else):** any locale supported by your AI provider + DeepL.
+- **Signal words (safety_notice):** 32 locales (plus a `default` alias) — see `rattle-safety-notices/references/signal-words.md`.
+- **H/P statements (hp_statement):** 24 EU locales + aliases — see `rattle-ghs-statements/references/hp-statement-locales.md`. CLP also applies in the EEA (Norwegian/Icelandic alias to neighbouring locales) and the UK retains its own UK CLP regime since Brexit; for UK placement, verify against HSE's UK CLP texts.
+- **Document content (everything else):** any locale supported by your configured AI provider + (if available) DeepL. If DeepL is not configured the translation pipeline falls back to the AI provider's translation capability.
 
 When picking the document's primary locale, prefer the manufacturer's verification language (the original-language obligation). Translations follow.
 

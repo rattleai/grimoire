@@ -4,7 +4,7 @@ Complete catalogue of the safety symbols Rattle ships with. Pick a symbol by its
 
 > **Live data source.** This file is an offline reference for reasoning about codes. **For runtime symbol selection, query `GET /api/v1/safety-logos[?category=...]`** — the API response carries the complete file list **plus EN and DE manifest descriptions** that let an AI agent match a hazard description (e.g. "crushing of hands") to the right SVG file (`W024_crushing_of_hands.svg`). See `rattle-api/references/api-reference.md` § Safety Reference for the full endpoint contract. Use this file when you need to reason about codes without a live API connection.
 
-The `isoSymbol.category` field on a `safety_notice` EditorJS block must be one of: `warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection`, `gefahrstoffe`. The `isoSymbol.file` field must be one of the filenames listed below for that category — or, equivalently, one of the `file` values returned by `GET /api/v1/safety-logos`.
+The `isoSymbol.category` field on a `safety_notice` EditorJS block must be one of: `warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection` (the **five** ISO 7010 categories), plus `gefahrstoffe` for CLP/GHS pictograms — **note that `gefahrstoffe` is NOT an ISO 7010 category**, it carries the separate CLP-pictogram set (see "Hazardous materials" section below). The `isoSymbol.file` field must be one of the filenames listed below for that category — or, equivalently, one of the `file` values returned by `GET /api/v1/safety-logos`.
 
 > **Coverage note.** The catalogue below is the *currently shipped* set in rattleapp. ISO 7010 itself defines a slightly larger set (~230 signs). When a hazard has no exact match, fall back to the most specific available; for "moving parts" without a finer match, `W001_general_warning_sign.svg` is acceptable but always note the imprecision in the audit `notes` field.
 
@@ -266,9 +266,18 @@ F016_fire_blanket.svg
 
 ---
 
-## Hazardous materials · `gefahrstoffe`
+## Hazardous materials · `gefahrstoffe` *(CLP pictograms — separate normative basis, NOT ISO 7010)*
 
-GHS pictograms (CLP Regulation EC 1272/2008). For chemical hazards, prefer the dedicated `hp_statement` block — see `rattle-ghs-statements/SKILL.md`. The catalogue lives in `app/static/img/safety_logos/gefahrstoffe/` for the SVG names, and `app/static/img/ghs/` for the canonical GHS01..GHS09 mapping.
+GHS pictograms come from the **CLP Regulation (EC) 1272/2008 Annex V** (and the UN GHS), **not** from ISO 7010. They have a different shape (red-bordered diamond on white), a different colour rule, and a different scope (chemical labelling). Treating them as a 6th ISO 7010 category in a CE-conformity dossier is a normative error.
+
+For chemical hazards, **always prefer the dedicated `hp_statement` block** under `rattle-ghs-statements`. It carries the H/P/EUH codes and resolves the right pictogram + locale text from `ghs_pictogram_map.json` and the per-locale CLP statement tables. The `safety_notice.isoSymbol.category="gefahrstoffe"` path exists for the rare case where a single safety notice mixes a non-chemical hazard with a CLP pictogram, but it should be the exception, not the default.
+
+The two SVG locations on disk:
+
+- `app/static/img/safety_logos/gefahrstoffe/<file>.svg` — **mnemonic filenames** used by the `safety_notice` block. These are the only filenames `GET /api/v1/safety-logos?category=gefahrstoffe` will return; agents must use these verbatim.
+- `app/static/img/ghs/GHS0X.svg` — numeric filenames (`GHS01.svg` … `GHS09.svg`) used by the `hp_statement` renderer for the GHS pictogram badge. **Not interchangeable with the safety-logos path** — `safety_notice.isoSymbol.file = "GHS06.svg"` will 404 in the renderer because that filename does not exist under the `gefahrstoffe` folder.
+
+Mnemonic catalogue under `gefahrstoffe`:
 
 ```text
 GHS-pictogram-acid.svg            (GHS05 — corrosive)

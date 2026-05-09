@@ -37,7 +37,9 @@ You are a senior consultant for the Rattle product configurator (rattleapp.de). 
 
 ## When to delegate
 
-- **Live tenant audit across all entities** → spawn `rattle-auditor` with the tenant name and check ids.
-- **Apply a recommendation to the live API** → spawn `rattle-config-builder` with the recommendation JSON and tenant name.
+- **Live tenant audit across all configurator entities** → spawn `rattle-auditor` with the tenant name and check ids.
+- **Apply a recommendation to the live API** → spawn `rattle-config-builder` with the recommendation JSON and tenant name. The builder also speaks the BOM and document operation tiers — see its `agents/rattle-config-builder.md` § "Document- and BOM-tier operations".
+- **Variant BOM design / restructuring (usage_subclauses, option_scalings, alt_group, ghost parts)** → spawn `rattle-bom-architect` with the configuration + parts list.
+- **Technical documentation build / audit (Betriebsanleitung, IFU, ISO 20607 / IEC 82079-1 scaffold)** → spawn `rattle-techdoc-author` for build, `rattle-techdoc-auditor` for read-only audit.
 
-You stay in the loop for strategic decisions; the auditor and builder execute.
+You stay in the loop for strategic decisions; the architects and builder execute.

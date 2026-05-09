@@ -1,16 +1,19 @@
 # SAFE-principle authoring guide
 
-The four-part SAFE structure every `safety_notice` follows:
+The four-part SAFE structure every `safety_notice` follows. The mnemonic is German (the canonical references — kothes, GFT Akademie, midok, doku-abteilung, brittagoers, dictajet — all use these letter mappings):
 
 ```
-S — SIGNAL WORD          (level: danger/warning/caution/notice)
-A — Art der Gefahr       (title: short hazard label)
-F — Folgen               (consequences[]: what happens if ignored)
-E — Erforderliche       (avoidance[]: imperative-mood instructions)
-    Maßnahme
+S — Signalwort                          (level: danger/warning/caution/notice)
+A — Art und Quelle der Gefahr           (title: short hazard label naming both
+                                         the hazard type AND its physical source)
+F — Folgen bei Nichtbeachtung           (consequences[]: what happens if ignored)
+E — Entkommen / Vermeidung              (avoidance[]: imperative-mood instructions
+                                         that let the user avoid the hazard)
 ```
 
-This is the German acronym; the English equivalent is sometimes called the "ANSI structure" or "Z535 four-part body". They describe the same thing.
+The English equivalent is sometimes called the "ANSI Z535.6 four-part body". They describe the same structure.
+
+> **Common authoring mistake.** Dropping "und Quelle" from `A` is the single most-cited German technical-writing audit finding — a warning that says only the hazard *type* (e.g. "Quetschgefahr") without the *source* (e.g. "durch bewegliche Maschinenteile") fails the SAFE check because the reader cannot locate the hazard. Always make the source explicit in the `title` field.
 
 ## Authoring rules
 

@@ -1,8 +1,14 @@
 # Signal-word locale catalogue
 
-The 31 locales Rattle ships normative signal words for. Source: `app/utils/safety_notice_words.py` in rattleapp.
+The 32 locales Rattle ships normative signal words for. Source: `app/utils/safety_notice_words.py` in rattleapp (the `_SIGNAL_WORDS` dict has 32 keys).
 
-> **Live data source.** For runtime resolution, call `GET /api/v1/safety-notices/signal-words[?locale=de]` — same data, served from the same backing module. With no `locale` query parameter the endpoint returns the full mapping for all 31 locales plus a `default` alias. See `rattle-api/references/api-reference.md` § Safety Reference for the full contract.
+> **Live data source.** For runtime resolution, call `GET /api/v1/safety-notices/signal-words[?locale=de]` — same data, served from the same backing module. With no `locale` query parameter the endpoint returns the full mapping for all 32 locales plus a `default` alias. See `rattle-api/references/api-reference.md` § Safety Reference for the full contract.
+
+> **National-standard divergence note.** The locale words below follow Rattle's internal convention. For jurisdictions with their own national-standard signal words (e.g. PN-EN ISO 3864-2 in Poland, NEN-EN ISO 3864-2 in the Netherlands, ANSI Z535.6 in the US), confirm with a national-standard reviewer before publication. Known divergences from common industry usage:
+>
+> - **Polish:** `OSTROŻNOŚĆ` is the noun form for CAUTION; the more common adverbial signal word is **OSTROŻNIE** or **UWAGA**. `OGŁOSZENIE` for NOTICE means "announcement" in everyday Polish; the safety-notice convention more commonly uses **UWAGA** or **WSKAZÓWKA**.
+> - **Dutch:** `VOORZICHTIGHEID` is the abstract noun for CAUTION; industry signage commonly uses the adjective **VOORZICHTIG** or the bracketed **LET OP**. `KENNISGEVING` for NOTICE is legal-register; technical safety notices often use **OPMERKING**.
+> - **German:** `HINWEIS` for NOTICE is the Rattle / DIN ISO 3864-2 convention; some ANSI Z535.6 native-German localisations prefer **ACHTUNG** to disambiguate from non-safety editorial notes.
 
 The renderer resolves `signalWord` automatically from the document locale; you only need to set it explicitly when overriding for a regional variant. Locale fallback chain: `xx-YY` → `xx` → `en`.
 

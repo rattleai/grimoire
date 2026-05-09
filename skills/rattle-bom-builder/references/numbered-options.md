@@ -124,7 +124,7 @@ Selected = 4.5 m → 4.95 m. Alternatively bake the splice into `scrap_percent: 
 }
 ```
 
-The line's `quantity` should be `0` so only the range value contributes.
+Set the line's `quantity` to `1` (the API rejects `0` with 422). Range-mode resolution is absolute on the explosion path; on the snapshot path the absolute value is added to the base. Document the absolute-vs-additive intent in the line's `note`.
 
 ### Pattern 7 — Threshold breakpoint (price/qty changes after threshold)
 
@@ -176,11 +176,11 @@ If selected_panels = 24 and selected_openings = 6 → 24 brackets + 6 caps total
   "option_scalings": {
     "<panels>": {"opt": 4, "part": 1}
   },
-  "quantity": 0
+  "quantity": 1
 }
 ```
 
-The line is active only when the premium frame is chosen, and the count of braces depends on the panel count.
+The line is active only when the premium frame is chosen; the count of braces is `1 + selected/4` (one baseline brace plus the scaled count). The API requires `quantity > 0` (Pydantic `gt=0`), so the baseline cannot be eliminated on a single line — model "scaled-only" via two BOM lines if the design demands it.
 
 ### Pattern 10 — Area-scoped scaling
 
@@ -216,14 +216,14 @@ The runtime does not floor or ceil. Encode it via two edges:
   },
   {
     "child_part_number": "BRK-12",
-    "quantity": 0,
+    "quantity": 1,
     "option_scalings": {"<panels>": {"areas": [{"min": 21, "part": 1}]}},
-    "note": "extra brackets above 20 panels — adjust ranges as needed"
+    "note": "extra brackets above 20 panels — quantity=1 is the API minimum (gt=0); on the additive snapshot path this 1 is added to the range value, on the explosion path the range value overrides"
   }
 ]
 ```
 
-This composes the floor (always 4) with bracketed extras.
+This composes the floor (always 4 from the first edge) with bracketed extras (from the second edge). The two lines aggregate via `totals_by_part` so the BOM rolls up the sum.
 
 ## How to validate
 

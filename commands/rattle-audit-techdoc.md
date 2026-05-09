@@ -1,5 +1,5 @@
 ---
-description: Audit a Rattle technical documentation (`doc_type=technical_documentation`) — or a stack of input manuals — for compliance with DIN EN ISO 20607, IEC/IEEE 82079-1, ISO 12100, MRL/MVO, ISO 3864-2, ISO 7010, CLP. Runs 12 structural checks plus the safety-notice, H/P-statement, and language-quality rule sets. Read-only.
+description: Audit a Rattle technical documentation (`doc_type=technical_doc` — write canonical; legacy alias `technical_documentation` accepted on filters only) — or a stack of input manuals — for compliance with DIN EN ISO 20607, IEC/IEEE 82079-1, ISO 12100, MRL/MVO, ISO 3864-2, ISO 7010, CLP. Runs 14 structural checks plus the safety-notice, H/P-statement, and language-quality rule sets. Read-only.
 argument-hint: <tenant> <template-id-or-input-dir> [--language de|en] [--severity critical,high,medium,low]
 ---
 

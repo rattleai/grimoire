@@ -1,6 +1,6 @@
 # Chapter reference — 15-chapter normative structure
 
-This document is the canonical chapter and section list for every Rattle `doc_type=technical_documentation` template. Slugs match the seed data in `rattle_api` and the API `default_layout` returned by `GET /documents/doc-types?key=technical_documentation`. Use it as the master template every audit reconciles against.
+This document is the canonical chapter and section list for every Rattle `doc_type=technical_doc` template. Slugs match the seed data in `app/utils/techdoc_seed_data.py` of rattleapp. The legacy alias `technical_documentation` is accepted on `GET /documents/doc-types?key=…` filters but rejected on POST/PUT — always send `technical_doc` on writes. Use this as the master template every audit reconciles against.
 
 Each chapter row shows: slug · title (DE/EN) · norm refs · key sections · mandatory content callouts.
 
@@ -50,7 +50,7 @@ Auto-generated index of all chapters and sections with page numbers. Cap depth a
 | 1.3 Target Groups and Qualification | `sec-1-3-target-groups` | ⚠ | Define every user group + required qualification. Operator / Setter / Electrical specialist / Service / Transport. |
 | 1.4 Structure and Use of This Document | `sec-1-4-document-structure` | ▸ | Tell the reader how to navigate (lifecycle order, colour tabs, index, QR codes). |
 | 1.5 Related Documents | `sec-1-5-related-documents` | ▸ | List schematics, HMI manual, supplier docs. Provide doc numbers + storage location. |
-| 1.6 Symbols, Signal Words, and Text Conventions | `sec-1-6-symbols` | ⚠ | The four-row signal-word legend (DANGER / WARNING / CAUTION / NOTICE) + every ISO 7010 category used + typographic conventions. **Mandatory per IEC/IEEE 82079-1 6.4, 6.5 and ISO 3864-2.** |
+| 1.6 Symbols, Signal Words, and Text Conventions | `sec-1-6-symbols` | ⚠ | The four-row signal-word legend (DANGER / WARNING / CAUTION / NOTICE) + every ISO 7010 category used + typographic conventions. **Mandatory per IEC/IEEE 82079-1:2019 §7.5 (warnings and warning messages), §7.6 (graphical and textual symbols), and ISO 3864-2:2016.** |
 | 1.7 Terms and Abbreviations | `sec-1-7-terms` | ▸ | Short product-specific definitions; cross-link to glossary in 13.6. |
 | 1.8 Provision Format and Digital Access | `sec-1-8-digital-access` | ◉ | MVO 2023/1230 prep: digital availability, URL/QR, offline copy, paper-on-demand within 30 days. |
 

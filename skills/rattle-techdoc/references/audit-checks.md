@@ -1,6 +1,6 @@
 # Technical-documentation audit checks
 
-Twelve structural checks every Rattle `doc_type=technical_documentation` template (and every input PDF/Word manual being inventoried) must pass before publication. The shape mirrors the configurator audit — same `id`, `severity`, `evidence`, `correction` fields — so a single tooling pipeline can ingest both kinds of findings.
+Fourteen structural checks every Rattle `doc_type=technical_doc` template (and every input PDF/Word manual being inventoried) must pass before publication. The shape mirrors the configurator audit — same `id`, `severity`, `evidence`, `correction` fields — so a single tooling pipeline can ingest both kinds of findings. (The set is numbered 1–12 plus 10b (`default-fallback-symbol`) and 10c (`mismatched-ghs-pictogram`) introduced when the live safety-logo and HP-statement APIs went online.)
 
 Findings are emitted against `schemas/audit-findings.schema.json` (the existing schema is reused; `domain: "techdoc"` distinguishes from configurator findings).
 
@@ -48,7 +48,7 @@ Findings are emitted against `schemas/audit-findings.schema.json` (the existing 
 
 **Definition.** Section `sec-1-6-symbols` exists but its content has no four-row table with rows for DANGER / WARNING / CAUTION / NOTICE.
 
-**Why HIGH.** Mandatory per IEC/IEEE 82079-1 (6.4, 6.5) and ISO 3864-2. Without it, signal words used elsewhere in the manual are not legally interpretable.
+**Why HIGH.** Mandatory per IEC/IEEE 82079-1:2019 §7.5 (warnings and warning messages) + §7.6 (graphical and textual symbols), and ISO 3864-2:2016. Without it, signal words used elsewhere in the manual are not legally interpretable.
 
 **Detection.** Section locale `block_json` must contain a `{type: "table"}` whose rows include all four signal words (case-insensitive, in the section locale).
 
@@ -80,15 +80,19 @@ Findings are emitted against `schemas/audit-findings.schema.json` (the existing 
 
 ---
 
-## 7 · `missing-disposal-section` *(HIGH)*
+## 7 · `missing-disposal-section` *(HIGH; split → CRITICAL when decommissioning chapter is missing entirely)*
 
-**Definition.** Chapter `ch-11-decommissioning` is absent, OR its `.4 Disposal` section is empty.
+**Definition.**
+- **CRITICAL** flavour `missing-decommissioning-chapter`: Chapter `ch-11-decommissioning` is absent.
+- **HIGH** flavour `missing-disposal-section`: Chapter `ch-11-decommissioning` exists but its `.4 Disposal` section is empty.
 
-**Why HIGH.** ISO 20607 (Tab. 1) lists end-of-life information as required. WEEE Directive (2012/19/EU) may also require electronic-disposal information.
+**Why severity-split.** MRL Annex I §1.7.4.2(z) explicitly lists "decommissioning, disabling and scrapping" as required content — absence of the entire chapter is a CE-conformity gap on the same severity tier as missing the Declaration. ISO 20607 (Tab. 1) and WEEE Directive 2012/19/EU Article 14 add the disposal-section content requirement; absent disposal text inside a present decommissioning chapter is a HIGH legal gap, not CRITICAL.
 
-**Detection.** No `sec-11-4-disposal-materials` block, or the block has no attachments / no usable content.
+**Detection.**
+- CRITICAL: no chapter with `slug=ch-11-decommissioning`.
+- HIGH: chapter exists but no `sec-11-4-disposal-materials` block, or that block has no attachments / no usable content.
 
-**Correction.** Insert the disposal section. Reuse the `disposal-electronics-weee` content block if available.
+**Correction.** Insert the missing chapter / section. Reuse the `disposal-electronics-weee` content block if available.
 
 ---
 
@@ -120,7 +124,7 @@ Findings are emitted against `schemas/audit-findings.schema.json` (the existing 
 
 **Definition.** An ISO 7010 / GHS pictogram appears in an `image` EditorJS block (or as inline HTML) without a code reference (W-code / P-code / M-code / E-code / F-code / GHSXX).
 
-**Why MEDIUM.** IEC/IEEE 82079-1 (6.5) and ISO 7010 require traceable identification of safety symbols.
+**Why MEDIUM.** IEC/IEEE 82079-1:2019 §7.6 (graphical and textual symbols) and ISO 7010 require traceable identification of safety symbols.
 
 **Detection.** Check every `image` URL whose path contains `/safety_logos/` or `/ghs/` against the alt text or surrounding paragraph for a code reference. Flag if absent.
 
@@ -146,7 +150,7 @@ Findings are emitted against `schemas/audit-findings.schema.json` (the existing 
 
 **Why HIGH.** Mismatched GHS pictograms create chemical-hazard misinformation — a regulatory non-conformance under CLP labelling rules.
 
-**Detection.** Walk every `hp_statement` block; resolve `data.ghs_pictogram` for each code via the API. If a peer `image` block in the same content-block locale references a GHS file (`/ghs/GHSXX.svg`) that is not in the resolved pictogram set, flag.
+**Detection.** Walk every `hp_statement` block; resolve `data.ghs_pictogram` for each code via the API. **For combined codes** (`H300+H310`, etc.) `GET /api/v1/hp-statements/<combinedKey>` returns the combined `text` but **does not set `ghs_pictogram`** — the renderer derives the union from each constituent code. So when validating a combined block, query each constituent (`GET /api/v1/hp-statements/H300`, `GET /api/v1/hp-statements/H310`) and union their pictograms; flag the peer image only if it falls outside that union.
 
 **Correction.** Either remove the standalone `image` block (the `hp_statement` block already renders the pictogram), or correct the `codes[]` to match the displayed pictogram.
 
@@ -184,15 +188,15 @@ Findings are emitted against `schemas/audit-findings.schema.json` (the existing 
   "domain": "techdoc",
   "template_id": 4711,
   "template_name": "PFM-3200 — Originalbetriebsanleitung",
-  "doc_type": "technical_documentation",
+  "doc_type": "technical_doc",
   "checked_at": "2026-05-09T10:30:00Z",
   "summary": {
-    "checks_run": 12,
+    "checks_run": 14,
     "critical": 1,
     "high": 2,
     "medium": 1,
     "low": 0,
-    "passed": 8
+    "passed": 10
   },
   "findings": [
     {

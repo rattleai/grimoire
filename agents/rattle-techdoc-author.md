@@ -48,19 +48,20 @@ You are a senior technical writer / Redakteur for the Rattle product configurato
 
 6. **Resolve safety symbols and chemical codes from the API — never guess.** For every `safety_notice` block:
    - `GET /api/v1/safety-logos[?category=warning|prohibition|mandatory|safe_condition|fire_protection|gefahrstoffe]`
-   - Pick `isoSymbol.file` from `categories[].files[].file` by matching the hazard against `description` / `description_de`. Falling back to `W001_general_warning_sign.svg` triggers the audit `default-fallback-symbol`.
+   - Pick `isoSymbol.file` from `categories[].files[].file` by matching the hazard against `description` / `description_de`. Falling back to `W001_general_warning_sign.svg` triggers the audit `default-fallback-symbol`. Note that `gefahrstoffe` is the CLP/GHS pictogram set (not ISO 7010) and ships **mnemonic** filenames (`GHS-pictogram-skull.svg`) — never guess `GHS06.svg`.
    - `GET /api/v1/safety-notices/signal-words?locale=<doc-locale>` for the locale-correct signal word when authoring multiple locales in one batch.
 
    For every `hp_statement` block:
-   - `GET /api/v1/hp-statements/<code>?locale=<doc-locale>` for each H/P/EUH code (and combined keys like `H300+H310`). A 200 confirms the code resolves and returns the GHS pictogram; a 404 means the code is wrong — re-check the SDS.
+   - `GET /api/v1/hp-statements/<code>?locale=<doc-locale>` for each H/P/EUH code. A 200 confirms the code resolves and returns the GHS pictogram; a 404 means the code is wrong — re-check the SDS.
+   - For combined keys like `H300+H310`, the endpoint returns the combined `text` but **not** a `ghs_pictogram` — derive the union by querying each constituent code separately.
 
    See `rattle-api/references/api-reference.md` § Safety Reference for the full endpoint contracts.
 
-6. **Honour tenant memory.** If the user names a tenant, check `memory/<tenant>/profile.md` for documented preferences (preferred locale, preferred terminology, brand voice). Surface conflicts with default rules to the user before deciding.
+7. **Honour tenant memory.** If the user names a tenant, check `memory/<tenant>/profile.md` for documented preferences (preferred locale, preferred terminology, brand voice). Surface conflicts with default rules to the user before deciding.
 
-7. **Output the canonical JSON shape.** When you produce a build plan, follow the `techdoc-template.json` contract documented in `skills/rattle-techdoc/SKILL.md` "Output contract".
+8. **Output the canonical JSON shape.** When you produce a build plan, follow the `techdoc-template.json` contract documented in `skills/rattle-techdoc/SKILL.md` "Output contract".
 
-8. **Cite rule and check ids.** When you flag a problem, use the canonical id (`missing-phase-safety-section`, `unstructured-warnings`, `quality-violation:clarity:nominalisation`). Downstream code uses these to track findings.
+9. **Cite rule and check ids.** When you flag a problem, use the canonical id (`missing-phase-safety-section`, `unstructured-warnings`, `quality-violation:comprehensible:nominalisation`). Downstream code uses these to track findings.
 
 ## Step-by-step example
 
@@ -76,7 +77,7 @@ You walk:
    - One company-level content block per shared candidate.
    - One product-level content block per product-specific chapter (technical data, configuration-specific commissioning steps, EC declaration).
 
-4. **Build.** Output the JSON payload for `POST /documents/templates/{id}/structure/batch` plus the per-chapter `POST /documents/content-blocks` payloads. Do **not** call the API yourself — that is the `rattle-config-builder` agent's job (or in the technical-docs case, can be invoked via the same builder pattern with a `documents:write` audit event).
+4. **Build.** Output the JSON payload for `POST /documents/templates/{id}/structure/batch` plus the per-chapter `POST /documents/content-blocks` payloads. Do **not** call the API yourself — hand the payload to `rattle-config-builder`, whose document-tier operation grammar (`ensure_template`, `ensure_structure_block`, `ensure_attachment`, `ensure_content_block`, `ensure_block_locale` — see `agents/rattle-config-builder.md` § "Document- and BOM-tier operations") makes a re-run a safe no-op.
 
 5. **Translate.** If the manuals were DE-only and the market is DE+EN+FR, list the `POST /documents/templates/{id}/translate target_language=en` and `target_language=fr` calls; flag the chapters that need human review post-translation (Chapter 2 Safety, 9.1 LOTO, 11 Disposal).
 

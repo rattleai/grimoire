@@ -1,6 +1,6 @@
 # EditorJS block reference for technical documentation
 
-Every chapter/section content in a Rattle `doc_type=technical_documentation` template is stored as a `ContentBlockLocale.block_json` field — an array of EditorJS blocks. This reference documents every block type used in technical documentations, the JSON shape, validation rules, and rendering notes.
+Every chapter/section content in a Rattle `doc_type=technical_doc` template is stored as a `ContentBlockLocale.block_json` field — an array of EditorJS blocks. This reference documents every block type used in technical documentations, the JSON shape, validation rules, and rendering notes.
 
 EditorJS reference: https://editorjs.io/. Rattle's frontend renderer is in `app/static/js/editor_tools.js` (rattleapp); the server-side HTML renderer is `app/utils/editorjs_html.py`.
 
@@ -269,14 +269,22 @@ Every `ContentBlockMaster` for a technical documentation should carry:
 
 ---
 
-## Validation rules (server-side)
+## Validation rules
+
+### Server-side (enforced)
 
 `app/utils/editorjs_html.py` and `app/schemas/v1/document_content.py` enforce:
 
-- `block_json` ≤ a configured size (defaults to 5 MB serialised) per locale.
+- `block_json` ≤ a configured size limit per locale.
 - Inline HTML in `paragraph.text` etc is sanitised against `_ALLOWED_TAGS` / `_ALLOWED_ATTRS`.
 - Anchors with `target` attribute get `rel="noopener"` enforced.
-- `safety_notice.isoSymbol.file` is constrained to filenames present in `app/static/img/safety_logos/<category>/`.
-- `hp_statement.codes` are validated against the loaded H/P/EUH code set per locale.
 
-When you hand-write a block, expect the API to reject anything that violates these rules. The `validate_recommendation.py` helper in `rattle-apply-config/scripts/` covers shape; for content-block specifics, add a second pass with the block size + symbol-existence check.
+### Author-side (enforce yourself before POSTing)
+
+The server does **not** validate `block_json` contents per-block-type. The following are **author obligations** the picker workflow + auditor agent enforce — the API will accept malformed blocks silently, but the rendering / audit pipeline will flag them:
+
+- `safety_notice.isoSymbol.file` should be a filename returned by `GET /api/v1/safety-logos?category=<cat>` for the declared category. Use the category folders in `app/static/img/safety_logos/<category>/` as the canonical set. Wrong filenames render as broken images.
+- `hp_statement.codes[]` should resolve via `GET /api/v1/hp-statements/<code>?locale=<locale>` (200). Unknown codes render text-only and trigger the `unknown-hp-code` audit finding.
+- `safety_notice.signalWord` should match the locale-resolved value from `GET /api/v1/safety-notices/signal-words?locale=<doc-locale>` for the declared `level` (or be omitted to let the renderer resolve at display time).
+
+The `validate_recommendation.py` helper in `rattle-apply-config/scripts/` covers configurator-shape validation; for content-block validation, agents author or audit through the picker workflow described in `rattle-safety-notices/SKILL.md` and `rattle-ghs-statements/SKILL.md`.

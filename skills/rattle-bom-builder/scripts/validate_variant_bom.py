@@ -12,9 +12,10 @@ Checks:
     - Every option_scalings descriptor matches one of the three valid shapes
       (legacy numeric, ratio with opt+part, range with areas[]).
     - Every range descriptor has non-overlapping intervals in ascending order.
-    - Every alt_group has unique priorities across its members under the same parent.
-    - No edge has a `quantity <= 0` unless it sits in option_scalings range mode
-      (where the absolute-from-range overrides the base).
+    - Every alt_group has unique priorities across its members under the same parent
+      (ERR — the alt_group selection algorithm is order-sensitive within a priority bucket).
+    - No edge has `quantity <= 0` (ERR — Pydantic enforces gt=0 server-side and the
+      API returns 422 even when option_scalings would override at explosion time).
     - Effective date pairs are well-ordered.
 
 Exit code 0 = valid, 1 = errors, 2 = bad input.
@@ -155,8 +156,8 @@ def validate(payload: dict) -> list[tuple[str, str]]:
         q = p.get("quantity", 1.0)
         try:
             qf = float(q)
-            if qf <= 0 and not p.get("option_scalings"):
-                issues.append((WARN, f"{prefix} quantity={qf} ≤ 0 with no option_scalings → line will contribute 0"))
+            if qf <= 0:
+                issues.append((ERR, f"{prefix} quantity={qf} ≤ 0 — API enforces gt=0 (Pydantic) and will return 422; use quantity=1 even when option_scalings will override at explosion time"))
         except (TypeError, ValueError):
             issues.append((ERR, f"{prefix} quantity not numeric"))
         issues.extend(_validate_subclauses(p.get("usage_subclauses"), prefix))
@@ -175,8 +176,8 @@ def validate(payload: dict) -> list[tuple[str, str]]:
         q = b.get("quantity", 1.0)
         try:
             qf = float(q)
-            if qf <= 0 and not b.get("option_scalings"):
-                issues.append((WARN, f"{prefix} quantity={qf} ≤ 0 with no option_scalings"))
+            if qf <= 0:
+                issues.append((ERR, f"{prefix} quantity={qf} ≤ 0 — API enforces gt=0 (Pydantic) and will return 422; use quantity=1 even when option_scalings will override at explosion time"))
         except (TypeError, ValueError):
             issues.append((ERR, f"{prefix} quantity not numeric"))
         sp = b.get("scrap_percent", 0)
@@ -199,7 +200,7 @@ def validate(payload: dict) -> list[tuple[str, str]]:
 
     for (parent, ag), priorities in alt_group_priorities.items():
         if len(priorities) != len(set(priorities)):
-            issues.append((WARN, f"alt_group ({parent}, {ag!r}) has duplicate priorities {priorities} — order will be tiebroken by order_index"))
+            issues.append((ERR, f"alt_group ({parent}, {ag!r}) has duplicate priorities {priorities} — alt_group selection requires unique priority per member (per the cardinal rule in SKILL.md); fix before applying"))
 
     return issues
 

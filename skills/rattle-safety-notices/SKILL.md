@@ -1,6 +1,6 @@
 ---
 name: rattle-safety-notices
-description: Use this skill whenever the user is producing, auditing, or reviewing safety notices (Sicherheitshinweise, Warnhinweise) inside a Rattle technical documentation. Activates for any "safety notice", "Warnhinweis", "Sicherheitshinweis", "DANGER/WARNING/CAUTION/NOTICE", "GEFAHR/WARNUNG/VORSICHT/HINWEIS", "ISO 7010", "ISO 3864", "ANSI Z535" task. Encodes the four-level signal word ladder (DANGER/WARNING/CAUTION/NOTICE) per ISO 3864-2 and ANSI Z535.6, the SAFE warning structure, the six ISO 7010 categories (warning W*, prohibition P*, mandatory M*, safe condition E*, fire protection F*, hazardous materials), the EditorJS `safety_notice` block contract from `app/static/js/editor_safety_note.js`, and the locale-aware signal words for 30+ languages from `app/utils/safety_notice_words.py`. Pair with rattle-techdoc (the host skill) and rattle-ghs-statements (for chemical-hazard statements).
+description: Use this skill whenever the user is producing, auditing, or reviewing safety notices (Sicherheitshinweise, Warnhinweise) inside a Rattle technical documentation. Activates for any "safety notice", "Warnhinweis", "Sicherheitshinweis", "DANGER/WARNING/CAUTION/NOTICE", "GEFAHR/WARNUNG/VORSICHT/HINWEIS", "ISO 7010", "ISO 3864", "ANSI Z535" task. Encodes the four-level signal word ladder (DANGER/WARNING/CAUTION/NOTICE) per ISO 3864-2 and ANSI Z535.6-2011 (R2017), the SAFE warning structure (Signalwort, Art und Quelle, Folgen, Entkommen), the **five** ISO 7010 categories (warning W*, prohibition P*, mandatory M*, safe condition E*, fire protection F*) plus the **separate CLP/GHS pictogram set** (Annex V of (EC) 1272/2008), the EditorJS `safety_notice` block contract from `app/static/js/editor_safety_note.js`, and the locale-aware signal words for 32 languages from `app/utils/safety_notice_words.py`. Pair with rattle-techdoc (the host skill) and rattle-ghs-statements (for chemical-hazard statements).
 license: MIT
 ---
 
@@ -67,38 +67,40 @@ For chemical hazard statements (H/P/EUH codes, GHS pictograms in chemical contex
 
 ## The four-level signal-word ladder
 
-Normative reference: ISO 3864-2:2016 Annex B + ANSI Z535.6:2023.
+Normative reference: ISO 3864-2:2016 Annex B + ANSI Z535.6-2011 (R2017).
 
 | Level | Meaning | Colour | When to use |
 |---|---|---|---|
-| **DANGER** | Imminent hazard → death or serious injury | Red (#DC143C / 7F0000) | The hazard is immediate AND severe AND involves serious injury or death. Reserved for truly imminent hazards. |
-| **WARNING** | Potential hazardous situation → death or serious injury | Orange (#FF8C00) | Possible (not imminent) and could result in death or serious injury. Most safety notices in industrial machine documentation are WARNING. |
-| **CAUTION** | Potential hazardous situation → minor / moderate injury | Yellow (#FFD700) | Could cause minor / moderate injury (cuts, bruises, abrasions, minor burns). |
-| **NOTICE** | Property damage or functional impairment possible | Blue (#1E90FF) | No personal injury, but property damage, data loss, performance degradation. |
+| **DANGER** | Imminent hazard → death or serious injury | Red (`#DC143C` / `#7F0000` — rendering approximation; the normative red of ISO 3864-2 Annex B is RAL 3001 / Pantone 485) | The hazard is immediate AND severe AND involves serious injury or death. Reserved for truly imminent hazards. |
+| **WARNING** | Potential hazardous situation → death or serious injury | Orange (`#FF8C00` — rendering approximation; the normative orange of ISO 3864-2 is RAL 2010 / Pantone 152) | Possible (not imminent) and could result in death or serious injury. Most safety notices in industrial machine documentation are WARNING. |
+| **CAUTION** | Potential hazardous situation → minor / moderate injury | Yellow (`#FFD700` — rendering approximation; the normative yellow of ISO 3864-2 is RAL 1003 / Pantone 109) | Could cause minor / moderate injury (cuts, bruises, abrasions, minor burns). |
+| **NOTICE** | Property damage or functional impairment possible | Blue (`#1E90FF`) — Rattle / ANSI Z535.6 convention; ISO 3864-2 does **not** standardise a NOTICE colour | No personal injury, but property damage, data loss, performance degradation. |
+
+> **The hex codes above are display approximations for the digital renderer.** Normative colour conformity for printed safety labels requires the exact RAL / Pantone references in ISO 3864-2 Annex B (red RAL 3001, yellow RAL 1003, blue RAL 5005, green RAL 6032, etc.). Do not cite the hex values as normative.
 
 > **Rule of thumb.** If unsure between DANGER and WARNING, use WARNING. DANGER is rare and reserved for truly imminent hazards (energised live conductors that the user is about to touch, etc.). Over-using DANGER dilutes its signal value.
 
-## The SAFE principle
+## The SAFE principle (Signalwort, Art und Quelle, Folgen, Entkommen)
 
-Every safety notice has a four-part body:
+Every safety notice has a four-part body. The German mnemonic SAFE expands to: **S**ignalwort · **A**rt und Quelle der Gefahr · **F**olgen bei Nichtbeachtung · **E**ntkommen / Vermeidung. The English equivalent is the ANSI Z535.6 four-part body.
 
 ```
-SIGNAL WORD — short hazard label
+S — Signal word            (level + signalWord)
         ↓
-Signal Word + Hazard Type
+A — Hazard type AND source (title — name BOTH the type and the physical source)
         ↓
-Consequences if not avoided
+F — Consequences if not avoided
         ↓
-Avoidance / Required action
+E — Avoidance / Escape — imperative instructions
 ```
 
 In the EditorJS block, this maps to:
 
 - `data.level` → signal word level
-- `data.title` → short hazard label (3–8 words)
+- `data.title` → short hazard label (3–8 words) naming **type and source** ("Quetschgefahr **durch bewegliche Maschinenteile**")
 - `data.hazard` → one-sentence hazard description
 - `data.consequences[]` → bullet list of "what happens if ignored"
-- `data.avoidance[]` → bullet list of imperative-mood instructions
+- `data.avoidance[]` → bullet list of imperative-mood instructions ("E" — Entkommen / Vermeidung)
 
 Example (DE):
 
@@ -155,7 +157,7 @@ The same hazard in EN auto-translates the signal word but **everything else is c
 }
 ```
 
-## The six ISO 7010 categories
+## The five ISO 7010 categories (plus the separate CLP/GHS pictogram set)
 
 Symbol catalogue location in Rattle: `app/static/img/safety_logos/<category>/<file>.svg`. Use the dedicated category folder names exactly as listed below; both German aliases (`warnzeichen`, `verbotszeichen`, `gebotszeichen`, `rettungszeichen`, `brandschutz`) and English (`warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection`) exist. **For the EditorJS block, always use the English name.**
 
@@ -166,15 +168,24 @@ Symbol catalogue location in Rattle: `app/static/img/safety_logos/<category>/<fi
 | **Mandatory action** (Gebotszeichen) | `mandatory` | M001…M057 | round, blue background, white symbol | blue + white | wear gloves, wear ear protection, refer to manual, wear safety footwear |
 | **Safe condition** (Rettungszeichen) | `safe_condition` | E001…E024 | square / rectangle, green background, white symbol | green + white | emergency exit, first aid, safety shower, eyewash station |
 | **Fire protection** (Brandschutzzeichen) | `fire_protection` | F001…F010 | square, red background, white symbol | red + white | fire extinguisher, fire alarm, fire hose reel |
-| **Hazardous materials** (Gefahrstoffe) | `gefahrstoffe` | GHS01…GHS09 | diamond on point, white background, red border + black symbol | red border, black symbol | explosive, flammable, oxidising, toxic, corrosive, environmental |
 
-Full filename catalogue per category lives in `references/iso-7010-symbols.md`. Always pick by the W/P/M/E/F/GHS code, not by visual interpretation.
+ISO 7010:2019 defines exactly these **five** categories. The catalogue per category lives in `references/iso-7010-symbols.md`. Always pick by the W/P/M/E/F code, not by visual interpretation.
+
+### CLP / GHS pictograms — **separate normative basis, NOT ISO 7010**
+
+| Container | EditorJS `isoSymbol.category` (presentational only) | Code prefix | Shape | Colour | Normative basis |
+|---|---|---|---|---|---|
+| **GHS pictograms** (Gefahrstoffe) | `gefahrstoffe` | GHS01…GHS09 | diamond on point, white background, red border + black symbol | red border, black symbol | **CLP Regulation (EC) 1272/2008 Annex V** + UN GHS — *not* ISO 7010 |
+
+> **Important.** GHS pictograms come from the CLP Regulation, not ISO 7010. They have a different shape (diamond on point), a different normative basis, and a different scope (chemical labelling). The Rattle frontend exposes them under `safety_notice.isoSymbol.category="gefahrstoffe"` for **presentational convenience** when a single safety notice mixes a CLP pictogram with an ISO 7010 hazard, but the **canonical container for chemical hazards is the dedicated `hp_statement` block** under `rattle-ghs-statements`. Document any document/template that asserts ISO 7010 conformity for a GHS pictogram as a finding (`mixed-normative-basis`); the audit will reject it.
+
+> **Filename convention warning.** The `gefahrstoffe` folder ships **mnemonic** filenames (`GHS-pictogram-flamme.svg`, `GHS-pictogram-skull.svg`, …) — *not* `GHS01.svg` … `GHS09.svg`. The numeric form (`GHS06.svg`) lives in a different path (`/static/img/ghs/`) and is unrelated to the `safety_notice` block. Always discover the correct filename by `GET /api/v1/safety-logos?category=gefahrstoffe` and use the returned `file` value verbatim — guessing the numeric form will 404 in the renderer.
 
 ## Locale-aware signal words
 
-Source: `app/utils/safety_notice_words.py`. Rattle ships normative signal words for **31 locales**. Every `safety_notice` block can omit `signalWord` and the renderer resolves it from the document locale. Specifying `signalWord` is only needed when overriding for a regional variant.
+Source: `app/utils/safety_notice_words.py`. Rattle ships normative signal words for **32 locales** (plus a `default` alias). Every `safety_notice` block can omit `signalWord` and the renderer resolves it from the document locale. Specifying `signalWord` is only needed when overriding for a regional variant.
 
-The 31 locales (and the four signal words per locale) are listed in `references/signal-words.md`. Selected examples:
+The 32 locales (and the four signal words per locale) are listed in `references/signal-words.md`. Selected examples:
 
 | Locale | DANGER | WARNING | CAUTION | NOTICE |
 |---|---|---|---|---|

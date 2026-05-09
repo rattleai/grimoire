@@ -21,7 +21,7 @@ A clause is a dict with up to four keys:
 
 | Key | Type | Required | Meaning |
 |---|---|---|---|
-| `operator` | `"AND"` / `"OR"` | yes (default `"OR"` on first clause) | How this clause combines with the running result of all prior clauses. The first clause's operator is applied as the seed; subsequent clauses fold left-to-right. |
+| `operator` | `"AND"` / `"OR"` | yes (default `"OR"` on first clause) | How this clause combines with the running result of all prior clauses. **The first clause's operator is silently overridden to the default (`OR`) on save** by `app/utils/conditions.py:_clean_usage_subclauses` — it has no effect on truth value. Worked examples include `"operator": "OR"` on the first clause for syntactic uniformity, but the value is informational only. From the second clause onward the operator folds left-to-right and matters. |
 | `groupSelections` | `{group_id: [option_id, ...]}` | optional | The clause is satisfied for **groupSelections** when, for every group listed, **at least one** of the listed options is in `chosen_option_ids`. Note: keys are stringified group ids; values are arrays of integer option ids. |
 | `areaStatuses` | `{area_id: bool}` | optional | The clause is satisfied for **areaStatuses** when **every** area listed has the matching enabled state. `true` = the area must be enabled; `false` = the area must be disabled. |
 | `areaSubclauses` | `[{operator, areaStatuses}]` | optional | A nested list of area-only clauses combined with their own AND/OR operators. Use when you need (`area X enabled OR area Y enabled`) rather than the conjunction `areaStatuses` gives. |
@@ -162,9 +162,9 @@ The area and group parts of a clause are AND-combined. Both must pass.
 ## Common pitfalls
 
 - **Stringified vs. integer keys.** `groupSelections` keys must be **stringified** group ids (`"42"`, not `42`). The normaliser stringifies them, but if you author by hand keep them as strings.
-- **Unknown options in groupSelections.** Options that don't exist are kept in storage but evaluate `False` at runtime — so the clause silently never matches. Always validate via `scripts/validate_variant_bom.py`.
+- **Options not selected at runtime → clause never matches.** A `groupSelections` clause is satisfied only when at least one of the listed options is in `chosen_option_ids`. Options that exist in the catalogue but were not selected are simply absent from `chosen_option_ids`, and the clause evaluates `False`. The runtime does not warn about "unknown options"; if you typo an id, the clause silently never matches. Always validate via `scripts/validate_variant_bom.py` (catches malformed shapes) and double-check option ids against the live recommendation.
 - **`isStandard: true` doesn't work anymore.** It's stripped on save. Use empty `usage_subclauses` instead.
-- **First-clause operator is informational.** It seeds the fold but can't change the truth value of clause 0 itself. The visible behaviour is determined by clauses 1..N.
+- **First-clause operator is silently overridden.** Per the table above, `_clean_usage_subclauses` sets the first clause's operator to the default (`OR`). It seeds the fold but cannot change the truth value of clause 0. The visible behaviour is determined by clauses 1..N.
 - **Empty clause is dropped.** A clause without `groupSelections`, `areaStatuses`, or `areaSubclauses` is removed during normalisation — it would always evaluate True and is meaningless.
 
 ## DSL evaluator reference

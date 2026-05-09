@@ -251,11 +251,11 @@ The factor evaluates to 0 → no contribution. Equivalent to omitting the entry.
   "option_scalings": {
     "119": {"opt": 4, "part": 1}
   },
-  "quantity": 0
+  "quantity": 1
 }
 ```
 
-Note `quantity = 0` because the line's base contributes nothing — only the scaled contribution is wanted. (Set `quantity = 1` to add a single base frame plus the scaled count.)
+> **Why `quantity: 1` and not `0`?** The API enforces `quantity > 0` (Pydantic `Field(gt=0)` on `BomItemCreateRequest`). A POST with `quantity: 0` returns 422. With `quantity: 1` the line contributes 1 base frame plus the scaled count. If the design truly needs zero baseline, model it via two BOM lines (one always-on with the baseline, one with `usage_subclauses` carrying only the scaling) or accept the 1-unit baseline.
 
 ### Example 11 — Quantity gate + ratio
 
@@ -276,16 +276,16 @@ Selected = 24 → 2 + 6 = 8 frames.
 
 ```json
 {
-  "quantity": 99,
+  "quantity": 1,
   "option_scalings": {
     "119": {"areas": [{"min": 1, "max": 10, "part": 2}]}
   }
 }
 ```
 
-Selected = 5 → 2 frames (the `quantity = 99` is overridden — range mode is absolute).
+Selected = 5 → 2 frames (range mode is absolute and overrides the base on the BOM-explosion path; the additive snapshot path adds the range value to the base).
 
-> Tip: when authoring with range mode, set `quantity = 0` for clarity. The runtime ignores it for range-only entries, but readers will assume the base 99 contributes.
+> **Don't author `quantity: 0` for range-mode lines.** The Pydantic schema enforces `quantity > 0` and POSTs with `0` are 422-ed. Use `quantity: 1` (the minimum positive value) and rely on the range descriptor to deliver the absolute number at explosion time. Make the absolute-vs-additive intent explicit in the line's `note` so readers don't assume the base contributes.
 
 ## Common pitfalls
 

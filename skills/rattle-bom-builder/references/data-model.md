@@ -4,20 +4,30 @@ Authoritative field reference for `Part`, `PartPlacement`, `BomItem`, and `BomLi
 
 ## Part
 
-The product-independent master record.
+The product-independent master record. Source: `app/models.py` `class Part`. Pydantic create / update schemas: `app/schemas/v1/part.py` (`PartCreateRequest`, `PartUpdateRequest`) — both use `extra="forbid"`, so unknown fields return 422.
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | int | PK |
-| `part_number` | string | Unique within company (the canonical identifier) |
-| `part_name` | string | Display name |
-| `part_cost` | numeric | Reference cost (currency from company) |
-| `uom` | string | Default unit-of-measure (`pcs`, `m`, `kg`, …) |
-| `lifecycle_state` | string | `Draft` / `Review` / `Released` / `Obsolete` |
-| `is_purchased` / `is_made` / `is_service` | bool | Manufacturing classification |
-| `tags` | JSON list | Free-form labels |
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `id` | int | — | PK |
+| `part_number` | string | — | Unique within company (the canonical identifier) |
+| `part_name` | string | — | Display name |
+| `part_cost` | int | 0 | **Integer** (`Field(ge=0)`), not numeric — currency unit per company config |
+| `part_img` | string\|null | null | URL |
+| `part_type` | string\|null | null | Free-form class (`raw`/`purchased`/`manufactured`/`assembly`/`consumable`/…) |
+| `part_description` | text\|null | null | |
+| `make_or_buy` | string\|null | null | Typically `make` / `buy` |
+| `commodity_code` | string\|null | null | HS / ECCN code |
+| `weight` | numeric(12,3)\|null | null | |
+| `weight_unit` | string(8) | `"kg"` | |
+| `status` | string | `"Draft"` | Lifecycle (`Draft`/`Review`/`Released`/`Obsolete`); name varies per tenant |
+| `bom_structure` | string(16) | `"normal"` | `"normal"` or `"ghost"` (phantom assembly) |
+| `phantom_resolve_mode` | string(24) | `"smart_reuse"` | `"smart_reuse"` / `"always_new"` / `"dissolve"` — only honoured when `bom_structure="ghost"` |
+| `custom_fields` | JSON object | `{}` | Tenant-defined extensions |
+| `integration_metadata` | JSON object | `{}` | ERP / connector pass-through |
 
-`Part` does not carry `usage_subclauses` itself — only its **edges** (`PartPlacement`, `BomItem`) do.
+`Part` does not carry `usage_subclauses` itself — only its **edges** (`PartPlacement`, `BomItem`) do. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
+
+> **Fields that are NOT on `Part`:** `uom`, `lifecycle_state`, `is_purchased`, `is_made`, `is_service`, `tags`. Earlier drafts of this skill listed them; they do not exist on the model and `extra="forbid"` rejects them. Use `part_type` / `make_or_buy` / `status` / `commodity_code` / `custom_fields` instead.
 
 ## PartPlacement (Part ↔ Area edge)
 
@@ -54,7 +64,7 @@ The structural BOM tree edge. Multi-level BOMs are pure traversals of these.
 | `order_index` | int | 0 | Display order under parent |
 | `alt_group` | string(50) | null | Alternates: same code → choose one |
 | `priority` | int | 0 | Within alt_group, lowest wins |
-| `part_group_id` | int (FK PartGroup) | null | Optional grouping |
+| `part_group_id` | int (FK PartGroup) | null | Optional grouping — **read-only on the wire**: present on `BomItemResponse`, but `BomItemCreateRequest` / `BomItemUpdateRequest` reject it (`extra="forbid"` → 422). Set out-of-band by the platform. |
 | `effective_from` / `effective_to` | date | null | Date validity window |
 | `usage_subclauses` | JSON list | `[]` | Conditional inclusion |
 | `option_scalings` | JSON dict | `{}` | Quantity scaling |
