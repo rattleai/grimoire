@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rattleapp.de/schemas/recommendation.schema.json",
   "title": "Rattle Configuration Recommendation",
-  "description": "Output of the rattle-suggest-config workflow. Describes a BOM-aware product configuration ready to be applied via rattle-apply-config.",
+  "description": "Output of the rattle-suggest-config workflow. Describes a BOM-aware product configuration ready to be applied via rattle-config-builder. Field names and types match the backend create-side Pydantic schemas where possible; downstream apply-config resolves `*_name` references to ids.",
   "type": "object",
   "required": ["products"],
   "properties": {
@@ -19,23 +19,33 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "decimal_string": {
+      "description": "Backend serialises prices as decimal strings (Numeric(10,2) → string). Accept either numeric or canonical 2-decimal string.",
+      "oneOf": [
+        { "type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$" },
+        { "type": "number", "minimum": 0 }
+      ]
+    },
     "product": {
       "type": "object",
       "required": ["name", "groups"],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
         "description": { "type": "string" },
-        "base_price": { "type": "number", "minimum": 0 },
+        "base_price": { "$ref": "#/$defs/decimal_string" },
+        "language": { "type": "string", "minLength": 2, "maxLength": 10, "default": "DE" },
         "groups": {
           "type": "array",
           "items": { "$ref": "#/$defs/group" }
         },
         "bom_rules": {
           "type": "array",
+          "description": "Optional BOM lines. Each rule maps to a PartPlacement (Part↔Area edge) or BomItem (Parent↔Child edge) write. Use `area_name` to scope a placement to a specific area; omit it for parent↔child BOM items.",
           "items": { "$ref": "#/$defs/bom_rule" }
         },
-        "forbidden_pairs": {
+        "forbidden": {
           "type": "array",
+          "description": "Forbidden option pairs for this product. Maps to ReplaceOptionConstraintsRequest.forbidden (POST /constraints atomic-replace; the body field is 'forbidden', not the legacy 'forbidden_pairs' or 'pairs').",
           "items": { "$ref": "#/$defs/forbidden_pair" }
         },
         "constraint_rules": {
@@ -49,11 +59,12 @@
       "type": "object",
       "required": ["name", "is_multi", "options"],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
         "is_multi": { "type": "boolean" },
         "description": { "type": "string" },
         "key": {
           "type": "string",
+          "maxLength": 255,
           "description": "Custom key. Discouraged unless the tenant memory profile explicitly opts in (minimal-keys rule)."
         },
         "options": {
@@ -65,7 +76,7 @@
         "existing_group_id": { "type": ["integer", "null"] },
         "price_overrides": {
           "type": "object",
-          "description": "Map of area_name → option_name → price for per-area overrides. Maps to option-area-config writes."
+          "description": "Map of area_name → option_name → price for per-area price overrides. Maps to PUT /options/{id}/area-config?area_id=… writes (AreaConfigUpdateRequest.price). The wider override set (option_description, recommended, is_numbered, number_min/max/step/unit, option_key) lives on each option's `area_overrides` field below."
         }
       },
       "additionalProperties": false
@@ -74,33 +85,45 @@
       "type": "object",
       "required": ["name", "price"],
       "properties": {
-        "name": { "type": "string", "minLength": 1 },
-        "price": { "type": "number", "minimum": 0 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "price": { "$ref": "#/$defs/decimal_string" },
         "recommended": { "type": "boolean" },
         "description": { "type": "string" },
         "key": {
           "type": "string",
+          "maxLength": 255,
           "description": "Custom key. Discouraged unless the tenant memory profile explicitly opts in (minimal-keys rule)."
-        }
-      },
-      "additionalProperties": false
-    },
-    "bom_rule": {
-      "type": "object",
-      "required": ["child_part_name", "usage_subclauses"],
-      "properties": {
-        "child_part_name": { "type": "string", "minLength": 1 },
-        "parent_part_name": { "type": "string" },
-        "quantity": { "type": "number", "exclusiveMinimum": 0 },
-        "uom": { "type": "string" },
-        "usage_subclauses": {
+        },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "is_numbered": {
+          "type": "boolean",
+          "description": "Set true to model a numeric-input option (e.g. count, length). Required when bom_rules reference this option via option_scalings."
+        },
+        "number_min": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "number_max": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "number_step": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "number_unit": { "type": "string", "maxLength": 32 },
+        "price_scalings": {
+          "type": "object",
+          "description": "Quantity-driven PRICE scaling for numbered options. Same descriptor shapes as option_scalings (legacy bare numeric, ratio {opt, part}, range {areas: [{min, max, part}]}). Keys are stringified option ids (the option's own id at apply time)."
+        },
+        "area_overrides": {
           "type": "array",
+          "description": "Per-area overrides beyond simple price. Each entry maps to ensure_area_config (PUT /options/{id}/area-config?area_id=…). The 9 REST-overridable fields are: price, option_key, option_description, recommended, is_numbered, number_min, number_max, number_step, number_unit.",
           "items": {
             "type": "object",
-            "required": ["option_name", "factor"],
+            "required": ["area_name"],
             "properties": {
-              "option_name": { "type": "string", "minLength": 1 },
-              "factor": { "type": "number", "exclusiveMinimum": 0 }
+              "area_name": { "type": "string", "minLength": 1 },
+              "price": { "$ref": "#/$defs/decimal_string" },
+              "option_key": { "type": "string", "maxLength": 255 },
+              "option_description": { "type": "string" },
+              "recommended": { "type": "boolean" },
+              "is_numbered": { "type": "boolean" },
+              "number_min": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+              "number_max": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+              "number_step": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+              "number_unit": { "type": "string", "maxLength": 32 }
             },
             "additionalProperties": false
           }
@@ -108,9 +131,57 @@
       },
       "additionalProperties": false
     },
+    "bom_rule": {
+      "type": "object",
+      "required": ["child_part_name"],
+      "description": "A variant-BOM line. Two flavours: PartPlacement (set `area_name` and omit `parent_part_name`) and BomItem (set `parent_part_name` and omit `area_name`). Use `usage_subclauses` for conditional inclusion and `option_scalings` for quantity scaling.",
+      "properties": {
+        "child_part_name": { "type": "string", "minLength": 1 },
+        "parent_part_name": {
+          "type": "string",
+          "description": "Parent part for a BomItem (Parent↔Child edge). Mutually exclusive with area_name."
+        },
+        "area_name": {
+          "type": "string",
+          "description": "Area for a PartPlacement (Part↔Area edge). Mutually exclusive with parent_part_name."
+        },
+        "quantity": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000000000, "default": 1 },
+        "uom": { "type": "string", "maxLength": 16, "default": "pcs" },
+        "scrap_percent": { "type": "number", "minimum": 0, "maximum": 100, "default": 0 },
+        "alt_group": { "type": ["string", "null"], "maxLength": 50 },
+        "priority": { "type": "integer" },
+        "ghost_part": { "type": "boolean" },
+        "note": { "type": ["string", "null"], "maxLength": 1000 },
+        "usage_subclauses": {
+          "type": "array",
+          "description": "Full DSL: see skills/rattle-bom-builder/references/usage-subclauses.md. Recommendation-time entries can use a simplified per-option shape (apply-config resolves option_name → option_id):",
+          "items": {
+            "type": "object",
+            "anyOf": [
+              {
+                "required": ["option_name", "factor"],
+                "properties": {
+                  "option_name": { "type": "string", "minLength": 1 },
+                  "factor": { "type": "number", "exclusiveMinimum": 0 }
+                }
+              },
+              {
+                "description": "Full clause shape (operator + groupSelections / areaStatuses / areaSubclauses). Pass-through to the backend."
+              }
+            ]
+          }
+        },
+        "option_scalings": {
+          "type": "object",
+          "description": "Quantity-scaling dict. Three descriptor shapes: legacy bare numeric, ratio {opt, part}, range {areas: [{min, max, part}]}. Keys are stringified option ids (apply-config resolves names to ids when the recommendation uses {option_name, descriptor} entries)."
+        }
+      },
+      "additionalProperties": false
+    },
     "forbidden_pair": {
       "type": "object",
       "required": ["option_name_1", "option_name_2"],
+      "description": "Pair-level forbidden combination. Apply-config resolves option names to ids and submits ALL pairs for the product in ONE atomic POST /constraints (body field 'forbidden').",
       "properties": {
         "option_name_1": { "type": "string", "minLength": 1 },
         "option_name_2": { "type": "string", "minLength": 1 },
@@ -121,28 +192,40 @@
     "constraint_rule": {
       "type": "object",
       "required": ["description", "rule_json"],
+      "description": "Conditional rule. The runtime evaluator (app/utils/constraint_solver._rule_active and ForbiddenRule.violates) consumes a single object {requires: [<clause>...], invalid: [<option_id>...]} — NOT an array, and NOT the legacy {if, then} shape.",
       "properties": {
-        "description": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "area_name": {
+          "type": ["string", "null"],
+          "description": "Optional area scope (matches ForbiddenRule.area_id; null for product-wide rules)."
+        },
         "rule_json": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "if": {
+          "type": "object",
+          "required": ["requires", "invalid"],
+          "properties": {
+            "requires": {
+              "type": "array",
+              "description": "Array of clauses. ALL must be satisfied for the rule to fire. Each clause uses anyOf / allOf / groupSelections (apply-config resolves option_name lists to ids).",
+              "items": {
                 "type": "object",
                 "properties": {
-                  "option_selected": { "type": "string" }
-                }
-              },
-              "then": {
-                "type": "object",
-                "properties": {
-                  "forbid_options": {
-                    "type": "array",
-                    "items": { "type": "string" }
+                  "operator": { "enum": ["AND", "OR"] },
+                  "anyOf": { "type": "array", "items": { "type": ["integer", "string"] } },
+                  "allOf": { "type": "array", "items": { "type": ["integer", "string"] } },
+                  "groupSelections": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": { "type": ["integer", "string"] }
+                    }
                   }
                 }
               }
+            },
+            "invalid": {
+              "type": "array",
+              "description": "Option ids (or option names — apply-config resolves) that become forbidden when 'requires' is satisfied.",
+              "items": { "type": ["integer", "string"] }
             }
           }
         }

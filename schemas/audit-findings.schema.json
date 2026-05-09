@@ -2,72 +2,90 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rattleapp.de/schemas/audit-findings.schema.json",
   "title": "Rattle Audit Findings",
-  "description": "Output of the rattle-audit workflow. Each finding cites a check id and matching configuration rule(s) so downstream tools can group and trend.",
+  "description": "Output of the rattle-auditor (configurator domain) and rattle-techdoc-auditor (techdoc domain) workflows. The two domains share this envelope but use different check-id sets and different severity ladders; the `domain` discriminator selects which.",
   "type": "object",
-  "required": ["tenant", "ran_at", "summary", "findings"],
-  "properties": {
-    "tenant": { "type": "string", "minLength": 1 },
-    "ran_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "ISO 8601 / RFC 3339 UTC timestamp."
+  "required": ["summary", "findings"],
+  "oneOf": [
+    {
+      "title": "Configurator audit",
+      "required": ["tenant", "ran_at", "summary", "findings"],
+      "properties": {
+        "domain": { "enum": ["configurator"] },
+        "tenant": { "type": "string", "minLength": 1 },
+        "ran_at": { "type": "string", "format": "date-time", "description": "ISO 8601 / RFC 3339 UTC timestamp." },
+        "summary": { "$ref": "#/$defs/configurator_summary" },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      },
+      "additionalProperties": false
     },
-    "summary": {
+    {
+      "title": "Techdoc audit",
+      "required": ["domain", "summary", "findings"],
+      "properties": {
+        "domain": { "const": "techdoc" },
+        "audit_id": { "type": "string" },
+        "tenant": { "type": "string" },
+        "template_id": { "type": ["integer", "null"] },
+        "template_name": { "type": "string" },
+        "doc_type": {
+          "type": "string",
+          "description": "Backend doc_type (technical_doc on writes; the legacy alias technical_documentation may appear on read-only fields)."
+        },
+        "checked_at": { "type": "string", "format": "date-time" },
+        "ran_at": { "type": "string", "format": "date-time" },
+        "summary": { "$ref": "#/$defs/techdoc_summary" },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "configurator_summary": {
       "type": "object",
       "required": ["errors", "warnings", "info"],
       "properties": {
         "errors":   { "type": "integer", "minimum": 0 },
         "warnings": { "type": "integer", "minimum": 0 },
-        "info":     { "type": "integer", "minimum": 0 }
+        "info":     { "type": "integer", "minimum": 0 },
+        "checks_run": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
     },
-    "findings": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/finding" }
-    }
-  },
-  "additionalProperties": false,
-  "$defs": {
+    "techdoc_summary": {
+      "type": "object",
+      "required": ["checks_run"],
+      "description": "Techdoc severity ladder mirrors the audit-checks.md tier (CRITICAL/HIGH/MEDIUM/LOW/passed). The structural pass runs 14 checks (12 numbered + 10b default-fallback-symbol + 10c mismatched-ghs-pictogram); the full pass adds safety-notice + HP-statement + language-quality sub-checks (~30 total).",
+      "properties": {
+        "checks_run": { "type": "integer", "minimum": 0 },
+        "critical": { "type": "integer", "minimum": 0 },
+        "high":     { "type": "integer", "minimum": 0 },
+        "medium":   { "type": "integer", "minimum": 0 },
+        "low":      { "type": "integer", "minimum": 0 },
+        "passed":   { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
     "finding": {
       "type": "object",
-      "required": ["check_id", "severity", "entity_type", "message"],
+      "required": ["check_id", "severity", "message"],
+      "description": "Cross-domain finding. The `check_id` is open-ended (configurator domain emits the 6 ids enumerated in skills/rattle-configurator/references/structural-checks.md; techdoc domain emits the 14 ids in skills/rattle-techdoc/references/audit-checks.md plus safety-notice / HP-statement / language-quality sub-check ids). The `severity` value's allowed set depends on the domain: configurator uses error/warning/info; techdoc uses CRITICAL/HIGH/MEDIUM/LOW (the structural ladder).",
       "properties": {
-        "check_id": {
-          "type": "string",
-          "enum": [
-            "areas-without-groups",
-            "duplicate-group-names",
-            "offer-template-missing-configuration",
-            "duplicate-dynamic-wrappers",
-            "options-with-custom-keys",
-            "options-with-conflicting-area-overrides"
-          ]
-        },
-        "severity": {
-          "type": "string",
-          "enum": ["error", "warning", "info"]
-        },
+        "check_id": { "type": "string", "minLength": 1 },
+        "severity": { "type": "string", "minLength": 1 },
         "entity_type": {
           "type": "string",
-          "enum": [
-            "area",
-            "group",
-            "option",
-            "document_template",
-            "document_content_block",
-            "document_structure_block",
-            "audit"
-          ]
+          "description": "Open-ended discriminator. Configurator emits {area, group, option, document_template, document_content_block, document_structure_block, audit}. Techdoc emits additionally {template_attachment, safety_notice, hp_statement, block_locale, paragraph}."
         },
         "entity_id":   { "type": ["integer", "string", "null"] },
         "entity_name": { "type": "string" },
-        "message":     { "type": "string", "minLength": 1 },
-        "related_rules": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "minimum_fix": { "type": "string" }
+        "structure_block_id":   { "type": ["integer", "null"], "description": "Techdoc only: the structure block the finding targets." },
+        "structure_block_slug": { "type": ["string", "null"], "description": "Techdoc only: stable slug for the structure block." },
+        "message":     { "type": "string" },
+        "evidence":    { "type": "string", "description": "Techdoc only: quoted text or block-id pointer." },
+        "correction":  { "type": "string", "description": "Techdoc only: one-line action that resolves the finding." },
+        "minimum_fix": { "type": "string", "description": "Configurator only: minimum action to remediate." },
+        "related_rules": { "type": "array", "items": { "type": "string" } },
+        "secondary_check_ids": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
     }

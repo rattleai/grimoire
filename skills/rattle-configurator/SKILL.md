@@ -58,7 +58,7 @@ Product
   │   └── BOM items (parent→child, quantity, usage_subclauses)
   ├── Constraints (forbidden combinations: pairs + conditional rules)
   └── Documents
-      └── Document templates (offer, datasheet, …)
+      └── Document templates (offer, quote, technical_doc, ccms, custom)
           └── Structure blocks (chapters, sections, placeholders)
               └── Attachments
                   └── Content blocks (static EditorJS or system dynamic like 'dynamic:document_configuration')
@@ -75,7 +75,7 @@ When asked to do anything Rattle-related, work in this order:
 3. **Scan for anti-patterns**: before designing, look for the patterns in `references/anti-patterns.md`. If the input contains implicit-base-config or addon-only-options indicators, surface them first and propose explicit-option restructuring.
 4. **Reuse before you create**: per the `reuse-over-duplicate` rule, prefer linking an existing group to a new area (and using option area-config for per-area price overrides) over creating a duplicate group. When the user has an existing catalogue, ask to see it (or load it) before proposing new groups.
 5. **Plan the BOM at the same time as the configuration**: each option that affects physical parts must have a `usage_subclauses` plan. Options for software, services, or pure-cosmetics may have empty BOM rules — that is normal and expected.
-6. **Consider constraints**: identify forbidden combinations. Use pair-level constraints (`POST /constraints` with `{option_id1, option_id2}`) for simple exclusions, conditional rules (`POST /constraints/rules`) for "if A then forbid B and C".
+6. **Consider constraints**: identify forbidden combinations. Use pair-level constraints — `POST /constraints` body `{"product_id": <id>, "forbidden": [{"option_id1": <a>, "option_id2": <b>}, ...]}` (atomic-replace; uses `X-Constraints-Version` OCC header → 409 on conflict) — for simple exclusions; use conditional rules (`POST /constraints/rules` with `rule_json: {"requires": [...], "invalid": [...]}`) for "if A then forbid B and C". Both shapes are detailed in `references/data-model.md`.
 7. **For offer/document work**: the `offer` doc_type **requires** a structure block attachment to the system dynamic content block `dynamic:document_configuration`. Read `references/structural-checks.md` for the full contract.
 
 ## Reference files
@@ -114,7 +114,7 @@ When you produce a configuration recommendation, structure it as JSON with these
       "bom_rules": [
         {"child_part_name": "string", "usage_subclauses": [{"option_name": "string", "factor": 1.0}]}
       ],
-      "forbidden_pairs": [
+      "forbidden": [
         {"option_name_1": "string", "option_name_2": "string", "reason": "string"}
       ],
       "constraint_rules": [

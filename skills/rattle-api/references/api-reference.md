@@ -85,7 +85,7 @@ while True:
 
 A handful of bulk-replace endpoints accept an `X-<Resource>-Version` header so concurrent clients cannot silently overwrite each other:
 
-- `POST /constraints` uses `X-Constraints-Version` (read latest from `GET /constraints?product_id=…`, send back). Server returns `412 Precondition Failed` if stale.
+- `POST /constraints` uses `X-Constraints-Version` (read latest from `GET /constraints?product_id=…`, send back). Server returns **`409 Conflict`** if stale (problem-detail body's `detail` contains `Version conflict:` to distinguish stale-version from other 409 conflicts; NOT `412 Precondition Failed`). Same OCC pattern applies to `POST /constraints/area` (`X-Areas-Version`) and `POST /price-lists/*` writes (`X-Price-Lists-Version`).
 
 Other replace-style endpoints follow the same convention where applicable — see the operation's parameter list for `X-*-Version` headers.
 

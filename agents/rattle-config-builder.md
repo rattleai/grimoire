@@ -42,7 +42,7 @@ A single payload may mix tiers (e.g. an offer template that depends on options, 
 
 4. **Use sub-resource endpoints.** Per `skills/rattle-api/references/client-patterns.md` § 4: link group → area via `POST /groups/{id}/areas`, attach content block via `POST /documents/templates/{id}/structure/blocks/{block_id}/attachments`, etc. Do not PATCH parent entities with `*_ids` arrays.
 
-5. **Batch constraints with optimistic concurrency.** `POST /constraints` atomically replaces all pairs for a product — read `X-Constraints-Version`, send it back, retry once on 412.
+5. **Batch constraints with optimistic concurrency.** `POST /constraints` atomically replaces all pairs for a product — read `X-Constraints-Version`, send it back, retry once on **409 Conflict** (the server returns 409 with a problem-detail body whose `detail` contains `Version conflict:` for stale-version, NOT 412 Precondition Failed). The same OCC pattern + `X-Areas-Version` applies to `POST /constraints/area`; `X-Price-Lists-Version` applies to `POST /price-lists/*` writes.
 
 6. **Honour tenant memory.** Before each `ensure_option`, check `memory/<tenant>/profile.md`:
    - If `- **custom-keys**: never`, strip any `key` field from the operation.
@@ -62,7 +62,7 @@ The configurator tier is fully specified in `rattle-apply-config/SKILL.md` (seve
 |---|---|---|
 | `ensure_part` | `(company_id, part_number)` | `GET /api/v1/parts?search=<part_number>` → `POST /api/v1/parts` (create) or `PATCH /api/v1/parts/{id}` (diff). Body fields per `skills/rattle-bom-builder/references/api-endpoints.md` "Body (Create part)". `part_cost` is integer; `bom_structure` is `"normal"` or `"ghost"`; `extra="forbid"` rejects unknown fields. |
 | `ensure_part_placement` | `(part_id, area_id)` | `GET /api/v1/parts/{part_id}/placements` → filter on `area_id` → `POST /api/v1/parts/{part_id}/placements` (create) or `PATCH /api/v1/parts/placements/{placement_id}` (diff). `quantity > 0` enforced server-side. |
-| `ensure_bom_item` | `(parent_part_id, child_part_id, alt_group, effective_from, effective_to)` | `GET /api/v1/parts/{parent_part_id}/bom` → filter on the key → `POST /api/v1/parts/{parent_part_id}/bom` (create) or `PATCH /api/v1/parts/bom/{bom_id}` (diff). **Do not include `part_group_id`** on create or update — `extra="forbid"` rejects it. `quantity > 0` enforced. |
+| `ensure_bom_item` | `(parent_part_id, child_part_id, alt_group, effective_from, effective_to)` | `GET /api/v1/parts/{parent_part_id}/bom` → filter on the key → `POST /api/v1/parts/{parent_part_id}/bom` (create) or `PATCH /api/v1/parts/bom/{bom_id}` (diff). **Do not include `part_group_id`** on create or update — `extra="forbid"` rejects it. `quantity > 0` enforced. **Backend defect to track:** at `app/routes/api_v1/parts.py:633-647` (POST) and `:691-737` (PATCH), the route handler silently drops `effective_from` / `effective_to` even though `BomItemCreateRequest` accepts them. Date-scoped variants will all collapse onto the `(NULL, NULL)` key until the route handler is patched. After every BOM POST that sends effective dates, GET the row back and verify the dates landed before relying on the natural key. |
 
 Pre-flight: run `python skills/rattle-bom-builder/scripts/validate_variant_bom.py <variant-bom.json>` first; do not proceed on errors.
 

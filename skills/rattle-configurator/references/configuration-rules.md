@@ -1,6 +1,6 @@
 # Configuration rules — full reference
 
-Mirror of `rattle_api.knowledge.CONFIGURATION_RULES`. Twelve rules, ranked roughly by impact. Cite by `id` in any recommendation, audit finding, or commit message that touches configuration shape.
+Mirror of `rattle_api.knowledge.CONFIGURATION_RULES`. Eleven rules, ranked roughly by impact. Cite by `id` in any recommendation, audit finding, or commit message that touches configuration shape.
 
 ---
 
@@ -80,7 +80,7 @@ Mirror of `rattle_api.knowledge.CONFIGURATION_RULES`. Twelve rules, ranked rough
 
 **Rule.** When attaching dynamic content (configuration, pricing, company_contacts, document_summary, document_line_items, document_agreements), reference the pre-existing system content block by id. NEVER create a new content block whose only locale wraps `template_name: 'dynamic:...'` — that produces a duplicate shadow of a built-in resource.
 
-**Rationale.** System dynamic blocks are registered with `is_dynamic=true` and well-known keys. Look them up via `GET /documents/content-blocks?is_dynamic=true` and reference the id directly in attachments. Wrapping them fragments the catalogue, breaks rendering, and causes duplicate-dynamic-wrappers anti-pattern findings.
+**Rationale.** System dynamic blocks have a computed `is_dynamic=true` flag (membership in `DYNAMIC_BLOCK_KEYS`) and well-known keys. Look them up by paginating `GET /documents/content-blocks?search=dynamic:` and filtering on `is_dynamic=true && key=='dynamic:<name>'` client-side (the route does NOT honour `?is_dynamic=` as a query param). Reference the resolved id directly in attachments. Wrapping them fragments the catalogue, breaks rendering, and causes duplicate-dynamic-wrappers anti-pattern findings.
 
 **Applies to**: document_content_block, document_attachment.
 

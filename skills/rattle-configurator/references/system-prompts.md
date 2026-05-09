@@ -4,7 +4,7 @@ Mirror of the `system_prompt_*` builders in `rattle_api/knowledge.py`. Each sect
 
 A prompt always has three layers, in order:
 
-1. **Base layer** (`system_prompt_base`) — Rattle data model summary + the #1 rule + 12 configuration rules + 4 anti-pattern names. **Every** task prompt prefixes this.
+1. **Base layer** (`system_prompt_base`) — Rattle data model summary + the #1 rule + 11 configuration rules + 4 anti-pattern names. **Every** task prompt prefixes this.
 2. **Tenant layer** (optional) — `## Tenant preferences` block injected from `memory/<tenant>/profile.md` plus the last 5 decisions. Overrides defaults where they conflict.
 3. **Task layer** — the specific instruction (analyse pricelist, suggest config, build offer template, audit findings, apply config).
 
@@ -95,7 +95,7 @@ The user-facing message holding the pricelist contents is appended after the sys
       "bom_rules": [
         {"child_part_name": "...", "usage_subclauses": [{"option_name": "...", "factor": 1.0}]}
       ],
-      "forbidden_pairs": [
+      "forbidden": [
         {"option_name_1": "...", "option_name_2": "...", "reason": "..."}
       ],
       "constraint_rules": [
@@ -118,7 +118,7 @@ When the AI marks `reuse_existing=true`, it must set `existing_group_id` and may
 **Inputs**
 
 - `doc_type_layout` (optional dict) — single entry from `GET /documents/doc-types`, the one with `key == "offer"`. Provides `default_layout` and `requires_configuration` flag.
-- `dynamic_content_blocks` (optional list) — system content blocks from `GET /documents/content-blocks?is_dynamic=true`. Referenced by id in the AI's output.
+- `dynamic_content_blocks` (optional list) — system content blocks resolved by paginating `GET /documents/content-blocks?search=dynamic:` and filtering on `is_dynamic=true` client-side (the route does NOT honour `?is_dynamic=` as a query param). Referenced by id in the AI's output.
 - `language` (default `de`).
 - `tenant_profile` (optional).
 

@@ -13,7 +13,7 @@ Product
   │   └── BOM items              (parent→child, quantity, usage_subclauses → options)
   ├── Constraints                (pair-level + conditional rule_json)
   └── Documents                  (replaces deprecated offer-sections)
-      └── Document templates     (doc_type=offer/datasheet/…)
+      └── Document templates     (doc_type=offer/quote/technical_doc/ccms/custom)
           └── Structure blocks   (chapter / section / container / repeater / placeholder)
               └── Attachments
                   └── Content blocks  (static EditorJS or system-dynamic like 'dynamic:document_configuration')
@@ -103,27 +103,29 @@ Forbidden option combinations. Two mechanisms.
 ### Pair-level
 
 - **Endpoint**: `POST /constraints`
-- **Behaviour**: atomically replaces all pairs for a product. Use the `X-Constraints-Version` header for optimistic concurrency.
-- **Shape**: each pair is `{option_id1, option_id2}` — selecting one forbids the other.
-- **Check**: `POST /constraints/check {"product_id", "option_id1", "option_id2"}`.
+- **Behaviour**: ATOMICALLY REPLACES ALL pairs for the product in one call. Use the `X-Constraints-Version` header for optimistic concurrency (read the version on the prior `GET /constraints?product_id=…`, echo it back, retry once on **409 Conflict**).
+- **Body shape**: `{"product_id": <id>, "forbidden": [{"option_id1": <a>, "option_id2": <b>}, ...]}`. The body field is `forbidden` (`ReplaceOptionConstraintsRequest.forbidden`); sending `pairs` returns 422.
+- **Check (read-only)**: `POST /constraints/check {"product_id", "option_id1", "option_id2"}`.
+- **Area-pair sibling**: `POST /constraints/area` with `X-Areas-Version` and body `{"product_id": <id>, "forbidden": [{"area_id1", "area_id2"}, ...]}`. `AreaForbiddenCombination.product_id` is required for new writes (allowed nullable on the model only for legacy migration); the constraint engine cannot evaluate area pairs without it.
 
 ### Rule-level
 
-- **Endpoint**: `/constraints/rules`
-- **Shape**: each rule has `rule_json: [{"if": {"option_selected": X}, "then": {"forbid_options": [Y, Z]}}]`.
-- **Scope**: `product_id` and optionally `area_id`.
+- **Endpoint**: `POST /constraints/rules`, `PATCH /constraints/rules/{id}`, `DELETE /constraints/rules/{id}`.
+- **Shape**: `rule_json` is a single object `{"requires": [<clause>...], "invalid": [<option_id>...]}` — NOT an array, and NOT the legacy `{if, then}` shape some old OpenAPI examples show. Each clause uses `anyOf` (any of the listed option ids), `allOf` (all listed option ids), or `groupSelections` (map of stringified group_id → list of allowed option ids). Clauses are AND-folded by `app/utils/constraint_solver._rule_active`; ALL must be satisfied for the rule to fire. `invalid` is the set of option ids forbidden when `requires` is satisfied. The runtime evaluator is `app/models.py` `ForbiddenRule.violates`.
+- **Scope**: `product_id` (required on create) and optionally `area_id`. `product_id` is immutable on update.
 
 ---
 
 ## Option area-config (`/options/{id}/area-config`)
 
-Per-area override for an option's price, key, description, or `recommended` flag. Allows reusing the same group/option across areas while adjusting properties per area. **Primary tool for avoiding duplicated groups.**
+Per-area override for an option. The same option (same id, same group) shows different attributes in different areas — the **primary tool for avoiding duplicated groups**.
 
-- **Endpoint**: `/options/{id}/area-config?area_id=X`
-- **Key fields**: `option_id`, `area_id`, `price`, `key`, `description`, `recommended`
-- **Relationships**: `option`, `area`
+- **Endpoint family**: `GET / PUT / DELETE /options/{option_id}/area-config?area_id=<area_id>` — the `?area_id=` query param is **required** on every method (missing returns 400).
+- **9 REST-overridable fields** (the `OVERRIDE_FIELDS` set on `OptionAreaConfig`): `price`, `option_key`, `option_description`, `recommended`, `is_numbered`, `number_min`, `number_max`, `number_step`, `number_unit`. The field name is `option_description` (NOT `description` — `AreaConfigUpdateRequest` has `extra="forbid"`). The model also supports overriding `image` and `price_scalings`, but those are intentionally NOT exposed via the area-config REST endpoint (set them via the dedicated image-upload route and the option's own `price_scalings` field).
+- **Clear semantics**: `DELETE /options/{id}/area-config?area_id=<a>&field=<field_name>` clears one specific override (must be in `OVERRIDE_FIELDS`); omit `?field=` to clear every override and remove the row.
+- **NULL = inherit**: every override field is nullable on the model; NULL means "inherit from base Option". Sending `null` on a PUT is a no-op (use DELETE to clear).
 
-When an option's price varies by product tier or area, keep a single option and set per-area prices via `PUT /options/{id}/area-config?area_id=…` — do **not** duplicate the option per tier.
+When an option's price (or `recommended` flag, numbered-option bounds, description) varies by product tier or area, keep a single option and set per-area overrides via `PUT /options/{id}/area-config?area_id=…` — do **not** duplicate the option per tier.
 
 ---
 
@@ -133,7 +135,7 @@ The documents system replaces the deprecated offer-sections. It is the canonical
 
 ### Document template (`/documents/templates`)
 
-A reusable template that defines the structure of a document (offer, quote, datasheet, …). Each template has a `doc_type` (e.g. `offer`), an optional `product_id` binding, a tree of structure blocks, and an `is_published` / `status` lifecycle.
+A reusable template that defines the structure of a document. The 5 canonical `doc_type` values are `offer`, `quote`, `technical_doc`, `ccms`, `custom` (legacy plurals `offers`/`quotes` accepted on writes; `technical_documentation` is a read-only legacy alias for `technical_doc`). Each template has an optional `product_id` binding, a tree of structure blocks, and an `is_published` / `status` lifecycle. `inheritance_mode` is one of `standalone | link | extend | fork` (default `standalone`). The string `datasheet` is NOT a registered doc_type; datasheet-style assets ride on `custom`.
 
 - **Endpoint**: `/documents/templates`
 - **Key fields**: `id`, `doc_type`, `name`, `product_id`, `is_published`, `status`, `inheritance_mode`
@@ -146,7 +148,7 @@ A reusable content unit referenced by document templates. Each content block has
 
 - **Endpoint**: `/documents/content-blocks`
 - **Key fields**: `id`, `key`, `title`, `is_dynamic`, `locales`, `tags`, `product_id`
-- **Discover system blocks**: `GET /documents/content-blocks?is_dynamic=true`
+- **Discover system blocks**: paginate `GET /documents/content-blocks?search=dynamic:` and filter on `is_dynamic=true && key='dynamic:<name>'` client-side. The route does NOT honour `?is_dynamic=` as a query param — `is_dynamic` is a COMPUTED field (membership in `DYNAMIC_BLOCK_KEYS`), not a stored column. Do NOT send `is_dynamic=true` on POST — use the canonical key (e.g. `dynamic:document_configuration`) instead.
 - **Rule**: NEVER wrap a system dynamic block in a new content block — attach it by id (see `use-system-dynamic-blocks`).
 
 ### Document structure block (`/documents/templates/{id}/structure/blocks`)

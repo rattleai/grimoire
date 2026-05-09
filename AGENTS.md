@@ -14,7 +14,7 @@ When the user asks anything Rattle-related, **read these files before answering*
 |---|---|
 | `skills/rattle-configurator/SKILL.md` | The #1 rule + workflow entry point. Always load this first. |
 | `skills/rattle-configurator/references/data-model.md` | Full schema for every entity. |
-| `skills/rattle-configurator/references/configuration-rules.md` | 12 configuration rules with rationales. |
+| `skills/rattle-configurator/references/configuration-rules.md` | 11 configuration rules with rationales. |
 | `skills/rattle-configurator/references/anti-patterns.md` | 4 anti-patterns with indicator keywords. |
 | `skills/rattle-configurator/references/structural-checks.md` | 6 live-tenant audit checks. |
 | `skills/rattle-configurator/references/system-prompts.md` | Canonical prompt templates for any LLM. |
@@ -24,7 +24,7 @@ When the user asks anything Rattle-related, **read these files before answering*
 | `skills/rattle-api/references/client-patterns.md` | List-all, idempotent ensure, multipart upload, optimistic concurrency. |
 | `skills/rattle-pricelist-analysis/SKILL.md` | Workflow: analyse a pricelist for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
 | `skills/rattle-suggest-config/SKILL.md` | Workflow: produce a BOM-aware config recommendation. |
-| `skills/rattle-document-templates/SKILL.md` | Workflow: build offer/datasheet templates. |
+| `skills/rattle-document-templates/SKILL.md` | Workflow: build offer/quote/custom/ccms templates. (Use `rattle-techdoc` for `doc_type=technical_doc`; `datasheet` is not a registered backend doc_type — it rides on `custom`.) |
 | `skills/rattle-techdoc/SKILL.md` | Workflow: build full technical documentations (`doc_type=technical_doc` — write canonical; legacy alias `technical_documentation` accepted on filters only) from input manuals. 15-chapter normative structure (DIN EN ISO 20607, IEC/IEEE 82079-1, MRL/MVO). Includes 4 reference files and `scripts/inventory_techdocs.py`. |
 | `skills/rattle-techdoc/references/chapter-reference.md` | Master template — every canonical chapter and section, mandatory content callouts, norm refs, reusable content-block keys. |
 | `skills/rattle-techdoc/references/audit-checks.md` | 14 structural checks for technical docs (12 numbered + 10b + 10c) (CRITICAL/HIGH/MEDIUM/LOW). |

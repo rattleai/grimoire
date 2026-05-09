@@ -243,11 +243,15 @@ def validate(recommendation: dict[str, Any], tenant_prefs: dict[str, str]) -> li
                         f"{bloc}.usage_subclauses[{si}]",
                     )
 
-        # Validate forbidden_pairs — both options must exist on the product.
-        for fi, pair in enumerate(product.get("forbidden_pairs") or []):
-            ploc = f"products[{pi}].forbidden_pairs[{fi}]"
+        # Validate forbidden — both options must exist on the product.
+        # Accept the canonical `forbidden` field name AND the legacy `forbidden_pairs`
+        # alias for backward compatibility with pre-round-3 recommendations.
+        forbidden_pairs_list = product.get("forbidden") or product.get("forbidden_pairs") or []
+        forbidden_field_name = "forbidden" if product.get("forbidden") is not None else "forbidden_pairs"
+        for fi, pair in enumerate(forbidden_pairs_list):
+            ploc = f"products[{pi}].{forbidden_field_name}[{fi}]"
             if not isinstance(pair, dict):
-                add(violations, "schema", "forbidden_pair must be an object", ploc)
+                add(violations, "schema", "forbidden entry must be an object", ploc)
                 continue
             for key in ("option_name_1", "option_name_2"):
                 name = (pair.get(key) or "").lower()
@@ -255,7 +259,7 @@ def validate(recommendation: dict[str, Any], tenant_prefs: dict[str, str]) -> li
                     add(
                         violations,
                         RULE_IDS["VALID_FORBIDDEN_PAIR"],
-                        f"forbidden_pair.{key} = '{pair.get(key)}' is not a defined option on this product.",
+                        f"forbidden entry .{key} = '{pair.get(key)}' is not a defined option on this product.",
                         ploc,
                     )
 

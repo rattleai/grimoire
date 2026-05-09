@@ -13,7 +13,7 @@
 
 ## Offer documents
 - doc_type: `offer`
-- Required chapters: Product Overview (static content block) + Configuration (dynamic:document_configuration) + Pricing (dynamic:document_line_items)
+- Required chapters: Product Overview (static content block) + Configuration (dynamic:document_configuration) + Pricing (dynamic:document_pricing — the offer doc_type's default_layout uses dynamic:document_pricing; dynamic:document_line_items belongs to quote, not offer)
 - Hero image: `acme-logo.png` from `/files/`
 
 ## Suppressions

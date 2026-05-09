@@ -66,7 +66,7 @@ Body (Create part) — every field accepted by `PartCreateRequest` (`extra="forb
 | `custom_fields` | no | JSON object (default `{}`) | Tenant-defined extensions; ≤ 16 KB serialised, ≤ 100 keys, key pattern `[a-zA-Z0-9][a-zA-Z0-9_]{0,49}` |
 | `integration_metadata` | no | JSON object\|null | ERP / external-system pass-through |
 
-> **Notable absences from the create schema.** `PartCreateRequest` does NOT accept `part_img` (the field is on `PartResponse` and is set via the dedicated image-upload route, not the create body). `extra="forbid"` returns 422 on any unknown field. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
+> **Notable absences from the create schema.** `PartCreateRequest` does NOT accept `part_img`. The field is exposed on `PartResponse` (resolved as a URL) but **there is no public REST upload route for `Part.part_img` today** — `app/routes/api_v1/images.py` only has upload routes for products, areas, and options. `part_img` is set only by the connector ingest pipeline (`app/connectors/engine.py`); for parts created via the public API, the field stays NULL. `extra="forbid"` returns 422 on any unknown field on POST/PATCH. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
 
 ## Part placements
 

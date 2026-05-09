@@ -1,16 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rattleapp.de/schemas/offer-template.schema.json",
-  "title": "Rattle Document (Offer/Datasheet/Quote) Template",
-  "description": "Output of the rattle-document-templates workflow. Describes a document template with chapters and attachments. Honours the doc_type contract from GET /documents/doc-types.",
+  "title": "Rattle Document Template (Offer / Quote / Custom / CCMS)",
+  "description": "Output of the rattle-document-templates workflow. Describes a document template with chapters and attachments. Honours the doc_type contract from GET /documents/doc-types. For technical documentations (doc_type=technical_doc) use the dedicated rattle-techdoc skill instead — it emits a richer 15-chapter scaffold against the same template surface.",
   "type": "object",
   "required": ["template_name", "chapters"],
   "properties": {
     "template_name": { "type": "string", "minLength": 1 },
     "doc_type": {
-      "type": "string",
-      "description": "Must match an existing doc_type key from GET /documents/doc-types (e.g. 'offer', 'datasheet', 'quote').",
-      "minLength": 1
+      "enum": ["offer", "quote", "custom", "ccms", "offers", "quotes"],
+      "description": "Must match an entry from app/services/document_types.py: 'offer', 'quote', 'custom', or 'ccms' (legacy plurals 'offers'/'quotes' are also accepted on writes). 'technical_doc' is intentionally excluded here — that doc_type uses the techdoc-template schema in skills/rattle-techdoc/. The string 'datasheet' is NOT a backend doc_type; datasheet-style assets ride on 'custom'."
     },
     "product_id": { "type": ["integer", "null"] },
     "chapters": {
@@ -53,7 +52,7 @@
       "properties": {
         "content_block_id": {
           "type": ["integer", "null"],
-          "description": "Existing content block id. Use this for system dynamic blocks (look up by key via GET /documents/content-blocks?is_dynamic=true)."
+          "description": "Existing content block id. Resolve system dynamic blocks by paginating GET /documents/content-blocks?search=dynamic: and matching the response's is_dynamic=true && key='dynamic:<name>' entry — the route does NOT honour ?is_dynamic= as a query param."
         },
         "dynamic_key": {
           "type": ["string", "null"],
