@@ -1,6 +1,6 @@
 ---
 name: rattle-tenant-memory
-description: Use this skill whenever the user names a Rattle tenant or asks the AI to "remember" something about a tenant's preferences, decisions, or audit history. Documents the file-based memory model (profile.md, decisions.jsonl, audit_history.jsonl, catalogue_state.json), how preferences are read into every system prompt, the explicit-write rule, and how to set / record / show / edit memory via the rattle CLI. Pair with rattle-configurator (which honours the preferences) and rattle-apply-config (which reads minimal-keys before any write).
+description: Use this skill whenever the user names a Rattle tenant or asks the AI to "remember" something about a tenant's preferences, decisions, or audit history. Documents the file-based memory model (profile.md, decisions.jsonl, audit_history.jsonl), how preferences are read into every system prompt, the explicit-write rule, and how to set / record / show / edit memory via the rattle CLI. Pair with rattle-configurator (which honours the preferences) and rattle-apply-config (which reads minimal-keys before any write).
 license: MIT
 ---
 
@@ -23,8 +23,9 @@ memory/<tenant>/
   profile.md           Curated preferences and style (committed-or-not depending on the project — gitignored in this repo)
   decisions.jsonl      Append-only log of explicit decisions (UTC timestamps)
   audit_history.jsonl  Append-only log of audit findings batches
-  catalogue_state.json Idempotent-build id cache (optional, populated by builder)
 ```
+
+> **Note.** Earlier drafts mentioned a `catalogue_state.json` id-cache file — that was a planned feature that was never implemented (no script writes it, no script reads it). Removed from this layout. The builder agent (`rattle-config-builder`) re-resolves names → ids on every run via `GET ?search=` calls; there is no persistent cross-run id cache.
 
 `memory/README.md` documents the gitignore policy. **Treat every file as private tenant data** — never commit, never log, never paste into chat verbatim.
 
@@ -75,10 +76,6 @@ One JSON object per line; each line is one audit run:
 ```
 
 Used to track "did this finding appear in the last run?" over time. Not auto-injected into prompts (size).
-
-## catalogue_state.json
-
-Optional id cache used by `rattle-apply-config` to short-circuit name lookups across runs. Plain JSON dict `{<entity_name>: <id>}`. Safe to delete — the builder will rebuild on the next run.
 
 ## Reading memory (every consulting session)
 

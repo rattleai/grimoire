@@ -108,7 +108,7 @@ def list_all(
             if isinstance(item, dict):
                 yield item
         meta = page.get("meta") or {}
-        if not meta.get("has_next"):
+        if not meta.get("has_more"):
             return
         cursor = meta.get("next_cursor")
         if not cursor:
@@ -273,8 +273,10 @@ def check_offer_template_missing_configuration(base_url: str, token: str) -> lis
                     "Offer template has no attachment to dynamic:document_configuration",
                     ["offer-requires-configuration-block"],
                     "Add a structure block (node_type=section) and attach the system content block "
-                    "whose key='dynamic:document_configuration'. Look up its id via "
-                    "GET /documents/content-blocks?is_dynamic=true. Set is_required=true.",
+                    "whose key='dynamic:document_configuration'. Look up its id by paginating "
+                    "GET /documents/content-blocks?search=dynamic:document_configuration and "
+                    "matching the response's is_dynamic=true && key='dynamic:document_configuration' entry "
+                    "(the route does not honour ?is_dynamic= as a filter). Set is_required=true.",
                 )
             )
     return findings
@@ -282,7 +284,15 @@ def check_offer_template_missing_configuration(base_url: str, token: str) -> lis
 
 def check_duplicate_dynamic_wrappers(base_url: str, token: str) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
-    for cb in list_all(base_url, "documents/content-blocks", token):
+    # `?include_locales=true` is required — the default ContentBlockResponse omits the
+    # `locales` array (see app/schemas/v1/document_content.py), so without this
+    # parameter the loop below would always observe `cb.get("locales") == []`.
+    for cb in list_all(
+        base_url,
+        "documents/content-blocks",
+        token,
+        params={"include_locales": "true"},
+    ):
         if cb.get("is_dynamic"):
             continue
         for locale in cb.get("locales") or []:
@@ -330,11 +340,24 @@ def check_options_with_custom_keys(base_url: str, token: str) -> list[dict[str, 
 
 
 def check_options_with_conflicting_area_overrides(base_url: str, token: str) -> list[dict[str, Any]]:
+    """Walk every option, then every area its group is linked to, then GET the
+    area-config row (one per option×area pair). Flag overrides that drop the
+    price to 0 / empty when the base price is non-zero.
+
+    The REST endpoint is `GET /options/{oid}/area-config?area_id=<aid>` — the
+    `?area_id=` query param is REQUIRED; calling without it returns 400. The
+    endpoint returns one override row (or 404 if no override exists for that
+    option×area pair). There is no list-all-overrides endpoint for an option,
+    so we must iterate the option's group's area links.
+    """
     findings: list[dict[str, Any]] = []
+    # Cache groups so we don't refetch per option
+    group_areas: dict[int, list[int]] = {}
     for opt in list_all(base_url, "options", token):
         oid = opt.get("id")
+        gid = opt.get("group_id")
         base_price = opt.get("price")
-        if oid is None or base_price in (None, 0):
+        if oid is None or gid is None or base_price in (None, 0):
             continue
         try:
             base_price_num = float(base_price)
@@ -342,11 +365,21 @@ def check_options_with_conflicting_area_overrides(base_url: str, token: str) -> 
             continue
         if base_price_num <= 0:
             continue
-        try:
-            configs = get_list(base_url, f"options/{oid}/area-config", token)
-        except RattleHttpError:
-            continue
-        for cfg in configs:
+        if gid not in group_areas:
+            try:
+                group = get_one(base_url, f"groups/{gid}", token)
+            except RattleHttpError:
+                group_areas[gid] = []
+                continue
+            group_areas[gid] = [int(a) for a in (group.get("area_ids") or []) if a]
+        for aid in group_areas[gid]:
+            try:
+                cfg = get_one(base_url, f"options/{oid}/area-config?area_id={aid}", token)
+            except RattleHttpError:
+                # 404 = no override for this (option, area) pair — skip
+                continue
+            if not cfg:
+                continue
             cfg_price = cfg.get("price")
             if cfg_price in (None, "", 0, "0"):
                 findings.append(
@@ -356,12 +389,11 @@ def check_options_with_conflicting_area_overrides(base_url: str, token: str) -> 
                         "option",
                         oid,
                         opt.get("name", "?"),
-                        f"Option base price={base_price_num} but area_id={cfg.get('area_id')} "
+                        f"Option base price={base_price_num} but area_id={aid} "
                         f"override price is {cfg_price!r} — option silently drops to free in that area.",
                         ["price-on-option", "area-config-for-scaled-prices"],
                         f"Verify whether the zero price was intentional. If unintentional, "
-                        f"PUT /options/{oid}/area-config?area_id={cfg.get('area_id')} with the "
-                        f"correct price.",
+                        f"PUT /options/{oid}/area-config?area_id={aid} with the correct price.",
                     )
                 )
     return findings

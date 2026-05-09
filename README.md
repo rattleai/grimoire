@@ -2,7 +2,7 @@
   <img src="rattle_logos/rattle_long_black_transparent.png" width="320" alt="Rattle">
   <br>
   <strong>Grimoire</strong><br>
-  <em>AI-native consulting workspace for the Rattle product configurator</em>
+  <em>AI-native consulting workspace for the Rattle product configurator and technical-documentation system</em>
 </p>
 
 <p align="center">
@@ -12,36 +12,69 @@
 </p>
 
 <p align="center">
-  Skills, subagents, slash commands, and rules that teach <strong>any AI model</strong><br>
-  how to produce correct, BOM-aware product configurations on the Rattle SaaS platform (rattleapp.de).
+  <strong>13 skills · 6 subagents · 7 slash commands</strong><br>
+  that teach <strong>any AI model</strong> how to produce correct, BOM-aware product configurations<br>
+  <em>and</em> CE-compliant technical documentations on the Rattle SaaS platform (rattleapp.de).
 </p>
 
 ---
 
 ## What is Grimoire?
 
-A **portable consulting brain** for the Rattle product configurator. Two layers:
+A **portable consulting brain** that covers two domains on the Rattle SaaS platform:
+
+```
+        ┌────────────────────┐    ┌────────────────────────────┐
+        │   CONFIGURATOR     │    │   TECHNICAL DOCUMENTATION  │
+        │  (groups, options, │    │  (Betriebsanleitung, IFU,  │
+        │   BOM, constraints)│    │   safety notices, GHS)     │
+        └────────────────────┘    └────────────────────────────┘
+                  ▲                            ▲
+                  └────── shared API + tenant-memory ──────┘
+```
+
+Two layers:
 
 1. **AI knowledge layer** — Anthropic-format Skills, Claude Code subagents, slash commands, JSON Schemas, golden I/O examples, the `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT-4/5, Llama, Mistral, …) can read these and follow the same workflow.
 2. **Python execution layer** — `rattle_api/` package + `rattle` CLI, a reference implementation that wires the same prompts up to OpenAI / Anthropic / Ollama / custom-HTTP providers.
 
-Goal: every AI model gets the same consulting expertise — the #1 rule, the data model, configuration rules, anti-patterns, structural checks, REST API conventions — without retraining.
+Goal: every AI model gets the same consulting expertise — the #1 configurator rule, the data model, configuration rules, anti-patterns, structural checks, the 15-chapter normative technical-documentation structure (DIN EN ISO 20607, IEC/IEEE 82079-1, MRL/MVO), the EditorJS `safety_notice` + `hp_statement` block contracts, the ISO 7010 + GHS pictogram catalogues, and the REST API conventions — without retraining.
 
 ## What's inside
 
 ```
 rattle_api/                    Python execution layer (CLI, RattleClient, providers, prompts)
-skills/                        8 Anthropic-format Skills (model-agnostic)
+skills/                        13 Anthropic-format Skills (model-agnostic)
+  ├─ Configurator domain (9) ─
   rattle-configurator/         Core consulting knowledge (the #1 rule, rules, anti-patterns)
-  rattle-api/                  REST API surface (443 ops, OpenAPI spec, client patterns)
+  rattle-api/                  REST API surface (443+ ops, OpenAPI spec, Safety Reference)
   rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
   rattle-document-templates/   Workflow: build offer/datasheet templates
+  rattle-bom-builder/          Variant-BOM expert: usage_subclauses + option_scalings + numbered options
   rattle-apply-config/         Workflow: apply a recommendation idempotently
   rattle-audit/                Workflow: scan a live tenant against 6 structural checks
   rattle-tenant-memory/        Per-tenant preferences (file-based, explicit-write only)
-agents/                        3 Claude Code subagents (consultant, auditor, config-builder)
-commands/                      4 Claude Code slash commands (/rattle-analyse, /rattle-audit, …)
+  ├─ Technical-documentation domain (4) ─
+  rattle-techdoc/              Host skill: 15-chapter structure (DIN EN ISO 20607, IEC 82079-1)
+  rattle-safety-notices/       ISO 7010 + ISO 3864-2 + ANSI Z535.6, EditorJS safety_notice block
+  rattle-ghs-statements/       CLP H/P/EUH codes + 9 GHS pictograms, EditorJS hp_statement block
+  rattle-techdoc-language/     IEC/IEEE 82079-1 §7 quality criteria, mood, tone, terminology
+agents/                        6 Claude Code subagents
+  rattle-consultant            Senior configurator consultant (strategic decisions)
+  rattle-auditor               Live-tenant configurator auditor (read-only)
+  rattle-config-builder        Idempotent builder — only agent allowed to write to the API
+  rattle-bom-architect         Senior variant-BOM architect (parts → placements → bom_items)
+  rattle-techdoc-author        Senior tech writer (inventory → audit → plan → build → translate)
+  rattle-techdoc-auditor       Tech-doc auditor (~30 checks, read-only)
+commands/                      7 Claude Code slash commands
+  /rattle-analyse              Pricelist anti-pattern analysis
+  /rattle-suggest-config       Produce a BOM-aware configuration JSON
+  /rattle-audit                Audit a live tenant catalogue
+  /rattle-build-offer          Build / fix an offer or datasheet template
+  /rattle-build-bom            Design / fix / validate a variant BOM (usage_subclauses + option_scalings)
+  /rattle-build-techdoc        Build a technical documentation from N input manuals
+  /rattle-audit-techdoc        Audit a tech-doc template against ISO 20607 / IEC 82079-1 / MRL/MVO
 schemas/                       JSON Schemas for every output contract
 examples/                      Synthetic golden I/O for every workflow
 .claude-plugin/                Plugin + marketplace manifest (Claude Code distribution)
@@ -53,6 +86,18 @@ docs/API_REFERENCE.md          Full Rattle REST reference (also bundled into the
 memory/                        Per-tenant style preferences (gitignored)
 tests/                         262 tests, ~97% coverage
 ```
+
+## What you can do with it
+
+1. **Drop in 1…N existing pricelists** → get an analysis of every implicit-baseline / addon-only-options anti-pattern, with the questions that block configuration design.
+2. **Get a configuration recommendation** → BOM-aware groups + options + parts + constraints, ready to apply via the idempotent `ensure_*` operations.
+3. **Audit a live Rattle tenant** → 6 structural checks across products / areas / groups / options / BOM / templates.
+4. **Build offer / quote / datasheet templates** that honour the doc_type contract (every offer attaches `dynamic:document_configuration`).
+5. **Drop in 1…N existing product manuals (PDF / Word)** → get a coverage matrix against the 15 canonical chapters, an audit of every CRITICAL / HIGH legal gap (missing safety chapter, residual-risks table, declaration of conformity, …), a modular content plan (shared LOTO / signal-word legend / target groups + product-specific blocks), the EditorJS payload for every chapter, and the per-locale translation plan.
+6. **Audit a published technical documentation** against ~30 checks (structure + safety-notice rules + GHS rules + language quality).
+7. **Author normatively-correct safety notices** — symbol selection + signal-word locale + SAFE-principle structure resolved live from `/api/v1/safety-logos` and `/api/v1/safety-notices/signal-words`.
+8. **Author normatively-correct chemical hazard statements** — H/P/EUH codes + GHS pictograms resolved live from `/api/v1/hp-statements`.
+9. **Translate any document** to any of the 24+ supported EU locales while preserving normative wording (signal words, CLP statements) byte-identical from the official tables.
 
 ## Install
 
@@ -67,7 +112,7 @@ Inside Claude Code:
 /plugin install grimoire
 ```
 
-Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`. The 8 skills auto-load when you mention Rattle. The 3 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`) become invocable.
+Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`, `/rattle-build-bom`, `/rattle-build-techdoc`, `/rattle-audit-techdoc`. The 13 skills auto-load when you mention Rattle, technical documentation, safety notices, GHS statements, or variant BOMs (usage_subclauses, option_scalings, numbered options). The 6 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`, `rattle-bom-architect`, `rattle-techdoc-author`, `rattle-techdoc-auditor`) become invocable.
 
 ### 2. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
 
@@ -153,6 +198,23 @@ BOM:
 ```
 
 Full reasoning + 11 more rules in `skills/rattle-configurator/references/configuration-rules.md`.
+
+## The technical-documentation domain
+
+A second normative rule governs every operating manual / Betriebsanleitung the workspace produces:
+
+> **Safety information lives in two places: a global Safety chapter (Chapter 2) AND a phase-specific Safety section (.1) at the start of every life-cycle chapter (4–11).** Never collapse the global safety into the phase-specific safety, and never leave a life-cycle chapter without its own `.1` safety section.
+
+Templates follow the **15-chapter normative structure** (Cover · TOC · 1 About · 2 Safety · 3 Product · 4 Transport · 5 Assembly · 6 Commissioning · 7 Operation · 8 Troubleshooting · 9 Maintenance · 10 Modifications · 11 Decommissioning · 12 Conformity · 13 Appendix) with all sections defined in `skills/rattle-techdoc/references/chapter-reference.md`.
+
+Two block types replace prose for normative content:
+
+- **`safety_notice`** (ISO 3864-2 / ANSI Z535.6) — `level / title / hazard / consequences[] / avoidance[] / isoSymbol`. Symbols resolved live from `GET /api/v1/safety-logos` (no fallback to a default `W001_general_warning_sign.svg`).
+- **`hp_statement`** (CLP EC 1272/2008) — `codes[]` validated live via `GET /api/v1/hp-statements/{code}`. Statement text and GHS pictogram are server-resolved per locale; never hand-typed or AI-translated.
+
+12 structural audit checks (CRITICAL / HIGH / MEDIUM / LOW) across `missing-safety-chapter`, `missing-phase-safety-section`, `missing-residual-risks-table`, `missing-declaration-of-conformity`, `default-fallback-symbol`, `mismatched-ghs-pictogram`, `unknown-hp-code`, … cover everything an MRL/MVO conformity assessment expects.
+
+Full reasoning in `skills/rattle-techdoc/SKILL.md` and `skills/rattle-techdoc/references/legal-basis.md`.
 
 ## Python CLI commands
 

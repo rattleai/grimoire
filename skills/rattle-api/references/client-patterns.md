@@ -83,9 +83,17 @@ Content-Type: image/jpeg
 
 Field name is **always** `file`. Accepted: JPEG, PNG, WebP, GIF; max 10 MB. Returns the updated entity with the image URL.
 
-## 6. Optimistic concurrency: `POST /constraints`
+## 6. Optimistic concurrency: version headers (`X-…-Version`)
 
-`POST /constraints` atomically replaces all pair constraints for a product. To avoid the lost-update problem:
+Three write surfaces use atomic-replace + optimistic concurrency. All three share the same shape: GET to read the current version, POST to atomically replace with the version echoed back, retry once on **409 Conflict**.
+
+| Resource | GET endpoint | POST endpoint | Version header (response on GET, request on POST) | Body field |
+|---|---|---|---|---|
+| Forbidden option pairs | `GET /constraints?product_id=<id>` | `POST /constraints` | `X-Constraints-Version` | `{product_id, forbidden: [{option_id1, option_id2}, …]}` |
+| Forbidden area pairs | `GET /constraints/area?product_id=<id>` | `POST /constraints/area` | `X-Areas-Version` | `{product_id, forbidden: [{area_id1, area_id2}, …]}` |
+| Price-list contents | `GET /price-lists/{id}` | `POST /price-lists/{id}/items/replace` (and similar replace routes) | `X-Price-Lists-Version` | `{items: [...]}` (per-route) |
+
+Worked example (option constraints):
 
 ```
 GET /constraints?product_id=42
@@ -93,11 +101,12 @@ GET /constraints?product_id=42
 
 POST /constraints
 X-Constraints-Version: 17
-{"product_id": 42, "pairs": [{"option_id1": 100, "option_id2": 200}, ...]}
-→ 200 OK if version still 17, 412 Precondition Failed otherwise
+{"product_id": 42, "forbidden": [{"option_id1": 100, "option_id2": 200}, ...]}
+→ 200 OK if version still 17
+→ 409 Conflict otherwise (problem-detail body includes "Version conflict: expected 17, current is N…")
 ```
 
-On 412: re-read `GET /constraints`, merge your changes with the new state, retry. Do not blindly retry with the old version — you would clobber another writer's changes.
+On **409 Conflict**: re-read the GET, merge your changes with the new state, retry. Do not blindly retry with the old version — you would clobber another writer's changes. Distinguish stale-version 409 from other 409 conflicts (duplicate-key, etc.) by checking the `detail` substring `"Version conflict"`. The server does NOT use 412 Precondition Failed for any of these surfaces — anyone wired to retry on 412 will silently never retry.
 
 ## 7. Error handling
 
@@ -115,8 +124,7 @@ Translate to client exceptions by `status`:
 | 401 | `Unauthenticated` (missing/wrong token) |
 | 403 | `Forbidden` (token lacks scope) |
 | 404 | `NotFound` (id doesn't exist for this tenant) |
-| 409 | `Conflict` (concurrent write or constraint violation) |
-| 412 | `StaleVersion` (re-read and retry) |
+| 409 | `Conflict` (concurrent write, OCC stale-version, or duplicate-key — distinguish via the `detail` substring `"Version conflict"` for the OCC case) |
 | 422 | `ValidationFailed` (per-field errors) |
 | 429 | `RateLimited` (honour `Retry-After`) |
 | 5xx | `ServerError` (retry with backoff up to N times) |
@@ -126,6 +134,6 @@ Translate to client exceptions by `status`:
 Where the model has runtime contracts, prefer reading them over hard-coding:
 
 - `GET /documents/doc-types` — returns each registered doc_type with `default_layout` and `requires_configuration`. Use this to validate offer templates before publishing instead of hard-coding which dynamic blocks are required.
-- `GET /documents/content-blocks?is_dynamic=true` — returns the system dynamic content blocks. Look up `dynamic:document_configuration` and similar by key, never by hard-coded id.
+- `GET /documents/content-blocks?search=dynamic:` — paginate the response and filter on `is_dynamic=true && key=='dynamic:<name>'` client-side. The route does NOT honour `?is_dynamic=` as a query param. Look up `dynamic:document_configuration` and similar by key, never by hard-coded id.
 
 This is what makes the consulting workflow tenant-portable — the contract lives on the server.

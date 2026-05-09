@@ -1,15 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rattleapp.de/schemas/apply-operations.schema.json",
-  "title": "Rattle Apply-Config Operations",
-  "description": "Idempotent ensure_* operations executed by rattle-apply-config / rattle-config-builder. Seven operation types, name-matched, get-or-create. See skills/rattle-apply-config/references/operations-contract.md for the canonical narrative.",
+  "title": "Rattle Apply Operations (Configurator + BOM + Document tiers)",
+  "description": "Idempotent ensure_* operations executed by rattle-config-builder. 15 operation types across 3 tiers (configurator: 7, BOM: 3, documents: 5). Each operation is name-keyed → get-or-create-or-PATCH; a second run is a safe no-op. See agents/rattle-config-builder.md § 'Document- and BOM-tier operations' and skills/rattle-apply-config/references/operations-contract.md for the canonical narrative.",
   "type": "object",
   "required": ["operations"],
   "properties": {
     "tenant": { "type": "string", "minLength": 1 },
     "recommendation_source": {
       "type": "string",
-      "description": "Path or hash identifying where the recommendation came from."
+      "description": "Path or hash identifying where the payload came from (recommendation, variant-bom, techdoc-template, or hand-edited)."
     },
     "operations": {
       "type": "array",
@@ -31,75 +31,132 @@
         { "$ref": "#/$defs/ensure_option" },
         { "$ref": "#/$defs/ensure_area_config" },
         { "$ref": "#/$defs/ensure_constraint_pair" },
-        { "$ref": "#/$defs/ensure_constraint_rule" }
+        { "$ref": "#/$defs/ensure_constraint_rule" },
+        { "$ref": "#/$defs/ensure_part" },
+        { "$ref": "#/$defs/ensure_part_placement" },
+        { "$ref": "#/$defs/ensure_bom_item" },
+        { "$ref": "#/$defs/ensure_template" },
+        { "$ref": "#/$defs/ensure_structure_block" },
+        { "$ref": "#/$defs/ensure_attachment" },
+        { "$ref": "#/$defs/ensure_content_block" },
+        { "$ref": "#/$defs/ensure_block_locale" }
       ]
     },
+
+    "decimal_string": {
+      "description": "Backend stores prices as Numeric(10,2) and serialises them as decimal strings on the wire (e.g. \"500.00\"). Accept either a numeric value or the canonical 2-decimal string; the builder coerces.",
+      "oneOf": [
+        { "type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$" },
+        { "type": "number", "minimum": 0 }
+      ]
+    },
+
     "ensure_product": {
       "type": "object",
       "required": ["type", "name"],
       "properties": {
         "type": { "const": "ensure_product" },
-        "name": { "type": "string", "minLength": 1 },
-        "base_price": { "type": "number", "minimum": 0 },
-        "description": { "type": "string" }
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "base_price": { "$ref": "#/$defs/decimal_string" },
+        "description": { "type": "string" },
+        "language": { "type": "string", "minLength": 2, "maxLength": 10, "default": "DE" },
+        "is_active": { "type": "boolean" }
       },
       "additionalProperties": false
     },
+
     "ensure_area": {
       "type": "object",
-      "required": ["type", "name", "parent_product"],
+      "required": ["type", "name"],
       "properties": {
         "type": { "const": "ensure_area" },
-        "name": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
         "description": { "type": "string" },
-        "parent_product": { "type": "string", "minLength": 1 }
+        "price": { "$ref": "#/$defs/decimal_string" },
+        "language": { "type": "string", "minLength": 2, "maxLength": 10, "default": "DE" },
+        "allow_disable": { "type": "boolean" },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "area_group_id": { "type": ["integer", "null"] },
+        "parent_product": {
+          "type": "string",
+          "description": "Convenience: link the area to a single product on creation. Maps to AreaCreateRequest.product_id (looked up by name). For multi-product areas, omit and use a separate POST /products/{id}/areas call."
+        }
       },
       "additionalProperties": false
     },
+
     "ensure_group": {
       "type": "object",
       "required": ["type", "name", "is_multi"],
       "properties": {
         "type": { "const": "ensure_group" },
-        "name": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
         "is_multi": { "type": "boolean" },
         "description": { "type": "string" },
+        "key": { "type": "string", "maxLength": 255 },
+        "language": { "type": "string", "minLength": 2, "maxLength": 10, "default": "DE" },
+        "order_index": { "type": "integer", "minimum": 0 },
         "link_to_areas": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Names of every area across all products that this group should be linked to (POST /groups/{id}/areas one call per area)."
+          "description": "Names of every area across all products that this group should be linked to. The builder resolves names to ids and posts the full id array in ONE call (POST /groups/{id}/areas with body {area_ids: [int, ...]}) — not one call per area."
         }
       },
       "additionalProperties": false
     },
+
     "ensure_option": {
       "type": "object",
       "required": ["type", "name", "group", "price"],
       "properties": {
         "type": { "const": "ensure_option" },
-        "name": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
         "group": { "type": "string", "minLength": 1 },
-        "price": { "type": "number", "minimum": 0 },
+        "price": { "$ref": "#/$defs/decimal_string" },
         "recommended": { "type": "boolean" },
-        "description": { "type": "string" }
+        "description": { "type": "string" },
+        "key": { "type": "string", "maxLength": 255 },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "is_numbered": { "type": "boolean" },
+        "number_min": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "number_max": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "number_step": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "number_unit": { "type": "string", "maxLength": 32 },
+        "price_scalings": {
+          "type": "object",
+          "description": "JSON dict keyed by stringified option id, mapping to a scaling descriptor. Same three shapes as option_scalings: legacy bare numeric, ratio {opt, part}, range {areas: [{min, max, part}]}. See skills/rattle-bom-builder/references/option-scalings.md."
+        }
       },
       "additionalProperties": false
     },
+
     "ensure_area_config": {
       "type": "object",
-      "required": ["type", "option", "area", "price"],
+      "required": ["type", "option", "area"],
       "properties": {
         "type": { "const": "ensure_area_config" },
         "option": { "type": "string", "minLength": 1 },
         "area":   { "type": "string", "minLength": 1 },
-        "price":  { "type": "number", "minimum": 0 },
-        "description": { "type": "string" }
+        "price":  { "$ref": "#/$defs/decimal_string" },
+        "option_key": { "type": "string", "maxLength": 255 },
+        "option_description": {
+          "type": "string",
+          "description": "Per-area override of Option.description. Backend field is option_description (NOT 'description' — AreaConfigUpdateRequest has extra=forbid)."
+        },
+        "recommended": { "type": "boolean" },
+        "is_numbered": { "type": "boolean" },
+        "number_min": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "number_max": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "number_step": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "number_unit": { "type": "string", "maxLength": 32 }
       },
       "additionalProperties": false
     },
+
     "ensure_constraint_pair": {
       "type": "object",
       "required": ["type", "product", "option_1", "option_2"],
+      "description": "ATOMIC REPLACE semantics: POST /constraints with body {product_id, forbidden: [...]} replaces ALL pairs for the product in one call. The builder accumulates all ensure_constraint_pair operations for the same product and emits a single replace request with read-modify-write + X-Constraints-Version. Server returns 409 Conflict (NOT 412) on stale version.",
       "properties": {
         "type": { "const": "ensure_constraint_pair" },
         "product":  { "type": "string", "minLength": 1 },
@@ -108,36 +165,239 @@
       },
       "additionalProperties": false
     },
+
     "ensure_constraint_rule": {
       "type": "object",
       "required": ["type", "product", "description", "rule_json"],
       "properties": {
         "type": { "const": "ensure_constraint_rule" },
         "product": { "type": "string", "minLength": 1 },
-        "description": { "type": "string", "minLength": 1 },
+        "area": {
+          "type": ["string", "null"],
+          "description": "Optional area scope (matches ForbiddenRule.area_id; null for product-wide rules)."
+        },
+        "description": { "type": "string", "minLength": 1, "maxLength": 255 },
         "rule_json": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "if": {
-                "type": "object",
-                "properties": {
-                  "option_selected": { "type": "string" }
-                }
-              },
-              "then": {
-                "type": "object",
-                "properties": {
-                  "forbid_options": {
-                    "type": "array",
-                    "items": { "type": "string" }
-                  }
-                }
-              }
+          "type": "object",
+          "description": "Conditional-rule shape evaluated by app/utils/constraint_solver._rule_active and app/models.py ForbiddenRule.violates. Shape: {requires: [<clause>...], invalid: [<option_id>...]}. NOTE: the {if, then} shape some legacy OpenAPI examples show is REJECTED by the runtime evaluator — the rule will save but never fire.",
+          "required": ["requires", "invalid"],
+          "properties": {
+            "requires": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/rule_clause" },
+              "description": "Array of clauses. The rule fires only when EVERY clause is satisfied; clauses are AND-folded by the solver."
+            },
+            "invalid": {
+              "type": "array",
+              "items": { "type": "integer" },
+              "description": "Set of option ids that become forbidden when 'requires' is satisfied."
             }
           }
         }
+      },
+      "additionalProperties": false
+    },
+    "rule_clause": {
+      "type": "object",
+      "description": "Rule clause as evaluated by app/utils/constraint_solver._clause_true. Use exactly one of anyOf / allOf / groupSelections per clause; default operator is OR.",
+      "properties": {
+        "operator": { "enum": ["AND", "OR"] },
+        "anyOf": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Clause is satisfied when ANY of these option ids is selected."
+        },
+        "allOf": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Clause is satisfied when ALL of these option ids are selected."
+        },
+        "groupSelections": {
+          "type": "object",
+          "description": "Map of stringified group_id → list of allowed option ids; clause is satisfied when at least one option per listed group is selected.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "usage_subclauses": {
+      "type": "array",
+      "description": "Conditional-inclusion DSL evaluated by app/utils/conditions.evaluate_subclauses. See skills/rattle-bom-builder/references/usage-subclauses.md for the full grammar.",
+      "items": { "type": "object" }
+    },
+    "option_scalings": {
+      "type": "object",
+      "description": "Quantity-scaling dict keyed by stringified option id. Three descriptor shapes: legacy bare numeric, ratio {opt, part}, range {areas: [{min, max, part}]}. See skills/rattle-bom-builder/references/option-scalings.md."
+    },
+
+    "ensure_part": {
+      "type": "object",
+      "required": ["type", "part_number", "part_name"],
+      "description": "Natural key (company_id, part_number). Maps to PartCreateRequest (extra=forbid). part_cost is INTEGER (not decimal). Ghost parts (bom_structure='ghost') are forced to part_cost=0 server-side.",
+      "properties": {
+        "type": { "const": "ensure_part" },
+        "part_number": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "part_name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "part_cost": { "type": "integer", "minimum": 0 },
+        "part_type": { "enum": ["raw", "purchased", "manufactured", "assembly", "consumable"] },
+        "part_description": { "type": "string", "maxLength": 5000 },
+        "make_or_buy": { "enum": ["make", "buy"] },
+        "commodity_code": { "type": "string", "maxLength": 64 },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1000000000 },
+        "weight_unit": { "type": "string", "maxLength": 8, "default": "kg" },
+        "status": { "enum": ["active", "inactive", "deprecated"], "default": "active" },
+        "bom_structure": { "enum": ["normal", "ghost"], "default": "normal" },
+        "phantom_resolve_mode": { "enum": ["smart_reuse", "always_new", "dissolve"], "default": "smart_reuse" },
+        "custom_fields": { "type": "object" },
+        "integration_metadata": { "type": ["object", "null"] }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_part_placement": {
+      "type": "object",
+      "required": ["type", "part_number", "area"],
+      "description": "Natural key (part_id, area_id). Maps to PartPlacementCreateRequest (extra=forbid). quantity > 0 enforced server-side.",
+      "properties": {
+        "type": { "const": "ensure_part_placement" },
+        "part_number": { "type": "string", "minLength": 1 },
+        "area": { "type": "string", "minLength": 1, "description": "Area name; the builder resolves to area_id." },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "quantity": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000000000, "default": 1 },
+        "uom": { "type": "string", "maxLength": 16, "default": "pcs" },
+        "ghost_part": { "type": "boolean" },
+        "usage_subclauses": { "$ref": "#/$defs/usage_subclauses" },
+        "option_scalings": { "$ref": "#/$defs/option_scalings" }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_bom_item": {
+      "type": "object",
+      "required": ["type", "parent_part_number", "child_part_number"],
+      "description": "Natural key (parent_part_id, child_part_id, alt_group, effective_from, effective_to). Maps to BomItemCreateRequest (extra=forbid). part_group_id is read-only on the wire — do NOT include it. quantity > 0 enforced. NOTE: at the time of writing, app/routes/api_v1/parts.py:633-647 silently drops effective_from / effective_to on POST and PATCH — agents relying on date-scoped variants should verify post-write that the dates landed.",
+      "properties": {
+        "type": { "const": "ensure_bom_item" },
+        "parent_part_number": { "type": "string", "minLength": 1 },
+        "child_part_number": { "type": "string", "minLength": 1 },
+        "quantity": { "type": "number", "exclusiveMinimum": 0, "maximum": 1000000000, "default": 1 },
+        "uom": { "type": "string", "maxLength": 16, "default": "pcs" },
+        "scrap_percent": { "type": "number", "minimum": 0, "maximum": 100, "default": 0 },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "alt_group": { "type": ["string", "null"], "maxLength": 50 },
+        "priority": { "type": "integer" },
+        "effective_from": { "type": ["string", "null"], "format": "date" },
+        "effective_to":   { "type": ["string", "null"], "format": "date" },
+        "note": { "type": ["string", "null"], "maxLength": 1000 },
+        "usage_subclauses": { "$ref": "#/$defs/usage_subclauses" },
+        "option_scalings": { "$ref": "#/$defs/option_scalings" },
+        "ghost_part": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_template": {
+      "type": "object",
+      "required": ["type", "name", "doc_type"],
+      "description": "Natural key (company_id, name). Maps to DocumentTemplateCreateRequest. doc_type values: offer, quote, technical_doc, ccms, custom (legacy plurals offers/quotes also accepted; the legacy alias technical_documentation is rejected on writes).",
+      "properties": {
+        "type": { "const": "ensure_template" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "doc_type": { "enum": ["offer", "quote", "technical_doc", "ccms", "custom", "offers", "quotes"] },
+        "product_id": { "type": ["integer", "null"] },
+        "origin_template_id": { "type": ["integer", "null"] },
+        "inheritance_mode": { "enum": ["standalone", "link", "extend", "fork"], "default": "standalone" }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_structure_block": {
+      "type": "object",
+      "required": ["type", "template_name", "slug"],
+      "description": "Natural key (template_id, slug) — the StructureBlock UniqueConstraint. parent_id is NOT in the unique constraint; siblings under different parents that share a slug collide → 409.",
+      "properties": {
+        "type": { "enum": ["ensure_structure_block", "ensure_chapter"] },
+        "template_name": { "type": "string", "minLength": 1 },
+        "parent_slug": { "type": ["string", "null"], "description": "Slug of parent structure block (null for root chapters)." },
+        "node_type": { "enum": ["chapter", "section", "container", "repeater", "placeholder"], "default": "section" },
+        "slug": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 255 },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "is_active": { "type": "boolean" },
+        "repeat_for": { "enum": ["areas", "groups", "selections", "none"] },
+        "visibility": { "type": "object" },
+        "conditions": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_attachment": {
+      "type": "object",
+      "required": ["type", "structure_block_slug", "content_block_key"],
+      "description": "Natural key (structure_block_id, content_block_id). Maps to AttachmentCreateRequest (extra=forbid). conditions is a list of dicts (NOT condition_json — wrong field name returns 422).",
+      "properties": {
+        "type": { "const": "ensure_attachment" },
+        "template_name": { "type": "string", "minLength": 1 },
+        "structure_block_slug": { "type": "string", "minLength": 1 },
+        "content_block_key": { "type": "string", "minLength": 1, "description": "Resolved to content_block_id by the builder." },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "is_active": { "type": "boolean", "default": true },
+        "is_required": { "type": "boolean", "default": false },
+        "conditions": { "type": "array", "maxItems": 200, "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_content_block": {
+      "type": "object",
+      "required": ["type", "key", "title"],
+      "description": "Natural key (company_id, key). Shared blocks have product_id=null. is_dynamic is COMPUTED (membership in DYNAMIC_BLOCK_KEYS) — do NOT send is_dynamic=true on writes; use the canonical key (e.g. 'dynamic:document_configuration') instead.",
+      "properties": {
+        "type": { "const": "ensure_content_block" },
+        "key": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 64 },
+          "maxItems": 50
+        },
+        "directory_id": { "type": ["integer", "null"] },
+        "product_id":   { "type": ["integer", "null"] },
+        "is_active": { "type": "boolean", "default": true },
+        "order_index": { "type": "integer", "minimum": 0 },
+        "conditions": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+
+    "ensure_block_locale": {
+      "type": "object",
+      "required": ["type", "language"],
+      "description": "Locale upsert. Two flavours: structure_block_locale (URL-encoded language segment, body just {title}) and content_block_locale (body {language, version?, blocks?, template_name?, is_active?} — 'blocks' is the WIRE field for the block_json column; 'blocks' and 'template_name' are mutually exclusive on create). The structure-block locale URL upper-cases the language.",
+      "properties": {
+        "type": { "const": "ensure_block_locale" },
+        "scope": { "enum": ["structure", "content"] },
+        "template_name": { "type": "string", "description": "For scope='structure': the template the structure block belongs to." },
+        "structure_block_slug": { "type": "string", "description": "For scope='structure'." },
+        "content_block_key": { "type": "string", "description": "For scope='content'." },
+        "language": { "type": "string", "minLength": 1, "maxLength": 10 },
+        "version": { "type": "integer", "minimum": 1, "default": 1 },
+        "title": { "type": "string", "maxLength": 500, "description": "For scope='structure': the only payload field." },
+        "blocks": {
+          "type": ["array", "null"],
+          "description": "For scope='content': EditorJS array (mutually exclusive with template_name). Wire field is 'blocks'; storage column is 'block_json'."
+        },
+        "template_name_dynamic_slot": {
+          "type": ["string", "null"],
+          "maxLength": 255,
+          "description": "For scope='content': dynamic slot name like 'dynamic:document_configuration' (mutually exclusive with blocks). Sent as 'template_name' on the wire — renamed here only to avoid collision with the structure-block 'template_name' key."
+        },
+        "is_active": { "type": "boolean", "default": true }
       },
       "additionalProperties": false
     }

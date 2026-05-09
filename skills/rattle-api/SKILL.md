@@ -102,9 +102,13 @@ The bundled Python `RattleClient.list_all(endpoint, per_page=100)` helper in `ra
 
 ### Optimistic concurrency
 
-Some bulk write endpoints accept an `X-<Resource>-Version` header for optimistic concurrency, most notably:
+Three write surfaces accept an `X-<Resource>-Version` header for optimistic concurrency. Read the version from the prior GET, echo it on the POST, retry once on **`409 Conflict`** (the server returns 409 with a problem-detail body whose `detail` contains `Version conflict:` for stale-version, NOT 412 Precondition Failed):
 
-- `POST /constraints` uses `X-Constraints-Version` — atomically replaces all pairs for a product. Read the current version from the latest `GET /constraints?product_id=…`, send it back on `POST`. Server rejects with `412 Precondition Failed` if the version is stale.
+- `POST /constraints` ↔ `X-Constraints-Version` — atomically replaces all forbidden option pairs for a product (body `{product_id, forbidden: [{option_id1, option_id2}, ...]}`).
+- `POST /constraints/area` ↔ `X-Areas-Version` — atomically replaces all forbidden area pairs for a product.
+- `POST /price-lists/*` (replace endpoints) ↔ `X-Price-Lists-Version` — bulk-replace price-list contents.
+
+See `references/client-patterns.md` § 6 for the full read-modify-write recipe.
 
 ## How to use this skill
 

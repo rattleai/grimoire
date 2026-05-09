@@ -97,7 +97,7 @@
           "usage_subclauses": [{"option_name": "HSK-63F mit Encoder", "factor": 1.0}]
         }
       ],
-      "forbidden_pairs": [
+      "forbidden": [
         {
           "option_name_1": "19 inch",
           "option_name_2": "ISO 30 Standard",
@@ -107,12 +107,12 @@
       "constraint_rules": [
         {
           "description": "Multistep cyclic testing requires HSK-63F spindle with encoder.",
-          "rule_json": [
-            {
-              "if": {"option_selected": "Multistep cyclic testing module"},
-              "then": {"forbid_options": ["ISO 30 Standard", "HSK-63F ohne Encoder"]}
-            }
-          ]
+          "rule_json": {
+            "requires": [
+              {"anyOf": ["Multistep cyclic testing module"]}
+            ],
+            "invalid": ["ISO 30 Standard", "HSK-63F ohne Encoder"]
+          }
         }
       ]
     }

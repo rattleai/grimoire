@@ -23,7 +23,7 @@ If the user wants to explore *whether* the input has issues, run `rattle-priceli
    - `rattle-configurator/references/anti-patterns.md` — make sure no proposed group itself reproduces an anti-pattern.
    - `rattle-configurator/references/system-prompts.md` § `system_prompt_suggest_configuration` — the prompt template you are following.
 
-2. **Fetch the existing catalogue (if a tenant is named).** Call `GET /groups` (with options inlined or via `?include=options`) for the tenant. The first 50 groups go into the prompt's "Existing Groups & Options (MUST check for reuse)" section. When a proposed group's name matches or is very similar to an existing one, set:
+2. **Fetch the existing catalogue (if a tenant is named).** Call `GET /groups` (paginated with `?cursor=` / `?limit=`; the route does NOT accept `?include=options`). For each group, fetch options separately via `GET /groups/{id}/options`, OR fetch the whole product graph in one shot via `GET /products/{id}?expand=areas.groups.options`. The first 50 groups go into the prompt's "Existing Groups & Options (MUST check for reuse)" section. When a proposed group's name matches or is very similar to an existing one, set:
    - `reuse_existing: true`
    - `existing_group_id: <id>`
    - `price_overrides`: a map of `area_name → option_name → price` for area-specific pricing differences (these become `option-area-config` writes downstream).
@@ -37,7 +37,7 @@ If the user wants to explore *whether* the input has issues, run `rattle-priceli
 
 4. **Plan the BOM.** For every option that affects physical parts, emit a `bom_rules` entry with `child_part_name` and `usage_subclauses: [{option_name, factor}]`. Software / services / cosmetic options can have no BOM rule — that is normal. Do **not** invent part numbers; if a part name is unclear, propose a placeholder and flag it in `notes`.
 
-5. **Identify forbidden combinations.** Walk every pair of options across groups; flag combinations that are physically or contractually impossible. Output as `forbidden_pairs` (simple option-option exclusion → `POST /constraints` with pairs) or `constraint_rules` (conditional `if ... then forbid_options ...` → `POST /constraints/rules`).
+5. **Identify forbidden combinations.** Walk every pair of options across groups; flag combinations that are physically or contractually impossible. Output as `forbidden` (simple option-option exclusion — apply-config submits as `POST /constraints` body `{product_id, forbidden: [{option_id1, option_id2}, ...]}` atomic-replace; the body field is `forbidden`, not the legacy `forbidden_pairs` or `pairs`) or `constraint_rules` (conditional rule whose `rule_json` body is `{requires: [<clause>...], invalid: [<option_id>...]}` evaluated by `app/utils/constraint_solver._rule_active` and `ForbiddenRule.violates` — NOT the legacy `[{if, then}]` shape).
 
 6. **Honour tenant memory.** If the tenant profile specifies "always set German names verbatim", "never use custom keys", "doc_type=offer with X chapter", apply those overrides before producing the final JSON.
 
@@ -46,7 +46,7 @@ If the user wants to explore *whether* the input has issues, run `rattle-priceli
    - No two groups share the same lower-cased name (would violate `duplicate-group-names`).
    - No proposed area is empty of groups (`no-empty-areas`).
    - Every `usage_subclause` references an option that exists in the proposed groups.
-   - `forbidden_pairs` reference options that exist.
+   - `forbidden` (formerly `forbidden_pairs`) references options that exist.
 
 ## Output contract
 
@@ -74,7 +74,7 @@ If the user wants to explore *whether* the input has issues, run `rattle-priceli
           "usage_subclauses": [{"option_name": "...", "factor": 1.0}]
         }
       ],
-      "forbidden_pairs": [
+      "forbidden": [
         {"option_name_1": "...", "option_name_2": "...", "reason": "..."}
       ],
       "constraint_rules": [

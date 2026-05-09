@@ -54,7 +54,7 @@ flag_when:   no attachment has content_block_key == 'dynamic:document_configurat
 related_rules: [offer-requires-configuration-block]
 ```
 
-**Fix.** Add a structure block (`node_type=section` is fine), then attach the system content block whose `key=='dynamic:document_configuration'`. Look up its id via `GET /documents/content-blocks?is_dynamic=true&key=dynamic:document_configuration`. Set the attachment's `is_required=true`.
+**Fix.** Add a structure block (`node_type=section` is fine), then attach the system content block whose `key=='dynamic:document_configuration'`. Look up its id by paginating `GET /documents/content-blocks?search=dynamic:document_configuration` and filtering on `is_dynamic=true && key=='dynamic:document_configuration'` client-side (the route does NOT honour `?is_dynamic=` as a query param — `is_dynamic` is a computed field, membership in `DYNAMIC_BLOCK_KEYS`). Set the attachment's `is_required=true`.
 
 ---
 

@@ -14,6 +14,8 @@ Convert an approved recommendation into live-tenant writes. This is the only wor
 - The user is fixing a single audit finding and wants the matching `ensure_*` operations.
 - The user is migrating a "Description" area to documents (often emits both an `ensure_area` removal and a document-template build).
 
+> **Scope note.** This skill covers the **configurator tier** (7 `ensure_*` operations: `ensure_product`, `ensure_area`, `ensure_group`, `ensure_option`, `ensure_area_config`, `ensure_constraint_pair`, `ensure_constraint_rule`). The same builder agent (`rattle-config-builder`) also speaks the **BOM tier** (`ensure_part`, `ensure_part_placement`, `ensure_bom_item`) consumed from `rattle-bom-architect` output, and the **document tier** (`ensure_template`, `ensure_structure_block`, `ensure_attachment`, `ensure_content_block`, `ensure_block_locale`) consumed from `rattle-techdoc-author` output — for those operation grammars see `agents/rattle-config-builder.md` § "Document- and BOM-tier operations". A single payload may mix tiers; the builder processes them in dependency order.
+
 If the recommendation has not been validated yet, run `scripts/validate_recommendation.py` first — it catches rule violations without hitting the API.
 
 ## Workflow
@@ -55,7 +57,7 @@ If the recommendation has not been validated yet, run `scripts/validate_recommen
    - If present and identical → skip (`noop`).
    - Use sub-resource endpoints for associations (`POST /groups/{id}/areas`, `POST /products/{productId}/areas`, etc.) — never PATCH parent entities with `*_ids` arrays.
 
-6. **Optimistic concurrency for constraints.** `POST /constraints` atomically replaces all pairs. Read `X-Constraints-Version` from the prior `GET /constraints?product_id=…`, send it back, retry once on `412 Precondition Failed`.
+6. **Optimistic concurrency for constraints.** `POST /constraints` atomically replaces all pairs. Read `X-Constraints-Version` from the prior `GET /constraints?product_id=…`, send it back, retry once on **409 Conflict** (the server returns 409 with a problem-detail body whose `detail` contains `Version conflict:` for stale-version, NOT 412). The same OCC pattern + `X-Areas-Version` applies to `POST /constraints/area`; `X-Price-Lists-Version` applies to `POST /price-lists/*` writes — see `skills/rattle-api/references/client-patterns.md` § 6.
 
 7. **Stop on the first error.** On any 4xx/5xx, abort the remaining operations. Restate what was applied so far (with `request_id`s) and the failed operation. Ask the user how to proceed.
 
