@@ -38,7 +38,9 @@ Two layers:
 1. **AI knowledge layer** — Anthropic-format Skills, Claude Code subagents, slash commands, JSON Schemas, golden I/O examples, the `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT-4/5, Llama, Mistral, …) can read these and follow the same workflow.
 2. **Python execution layer** — `rattle_api/` package + `rattle` CLI, a reference implementation that wires the same prompts up to OpenAI / Anthropic / Ollama / custom-HTTP providers.
 
-Goal: every AI model gets the same consulting expertise — the #1 configurator rule, the data model, configuration rules, anti-patterns, structural checks, the 15-chapter normative technical-documentation structure (DIN EN ISO 20607, IEC/IEEE 82079-1, MRL/MVO), the EditorJS `safety_notice` + `hp_statement` block contracts, the ISO 7010 + GHS pictogram catalogues, and the REST API conventions — without retraining.
+Goal: every AI model gets the same consulting expertise — the #1 configurator rule, the data model, the **11 configuration rules**, anti-patterns, **6 configurator structural checks**, the 15-chapter normative technical-documentation structure (DIN EN ISO 20607, IEC/IEEE 82079-1 **Clause 5**, MRL/MVO) emitted as `doc_type=technical_doc` on writes, **14 technical-documentation audit checks**, the EditorJS `safety_notice` + `hp_statement` block contracts, the **5 ISO 7010 categories** plus the separate CLP/GHS pictogram set, the **32-locale signal-word catalogue**, the **24-locale CLP H/P/EUH catalogue**, and the REST API conventions (OCC `409 Conflict`, the **15 idempotent `ensure_*` operations** across configurator / BOM / documents tiers) — without retraining.
+
+> **Production-grade precision.** Every endpoint, schema, and field name in this bundle is verified byte-for-byte against the rattleapp Pydantic / SQLAlchemy source (round-3 audit, 2026-05-09). Three rounds of audits removed phantom endpoints (`?include=options`, `?search=` on `/documents/templates`), aligned the rule_json shape (`{requires, invalid}` — the legacy `{if, then}` is silently dropped by the runtime evaluator), corrected the OCC error to `409` (was `412`), expanded the operation grammar to 15 ops across 3 tiers, dropped the phantom `datasheet` doc_type, and scoped MDR / IVDR firmly **out** of the machinery scaffold (a future `rattle-techdoc-medical` will own that domain). See `ROADMAP.md` for the prioritised backlog of next-tier expert depth.
 
 ## What's inside
 
@@ -50,7 +52,7 @@ skills/                        13 Anthropic-format Skills (model-agnostic)
   rattle-api/                  REST API surface (443+ ops, OpenAPI spec, Safety Reference)
   rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
-  rattle-document-templates/   Workflow: build offer/datasheet templates
+  rattle-document-templates/   Workflow: build offer/quote/ccms/custom templates
   rattle-bom-builder/          Variant-BOM expert: usage_subclauses + option_scalings + numbered options
   rattle-apply-config/         Workflow: apply a recommendation idempotently
   rattle-audit/                Workflow: scan a live tenant against 6 structural checks
@@ -71,7 +73,7 @@ commands/                      7 Claude Code slash commands
   /rattle-analyse              Pricelist anti-pattern analysis
   /rattle-suggest-config       Produce a BOM-aware configuration JSON
   /rattle-audit                Audit a live tenant catalogue
-  /rattle-build-offer          Build / fix an offer or datasheet template
+  /rattle-build-offer          Build / fix an offer / quote / ccms / custom template
   /rattle-build-bom            Design / fix / validate a variant BOM (usage_subclauses + option_scalings)
   /rattle-build-techdoc        Build a technical documentation from N input manuals
   /rattle-audit-techdoc        Audit a tech-doc template against ISO 20607 / IEC 82079-1 / MRL/MVO
@@ -92,7 +94,7 @@ tests/                         262 tests, ~97% coverage
 1. **Drop in 1…N existing pricelists** → get an analysis of every implicit-baseline / addon-only-options anti-pattern, with the questions that block configuration design.
 2. **Get a configuration recommendation** → BOM-aware groups + options + parts + constraints, ready to apply via the idempotent `ensure_*` operations.
 3. **Audit a live Rattle tenant** → 6 structural checks across products / areas / groups / options / BOM / templates.
-4. **Build offer / quote / datasheet templates** that honour the doc_type contract (every offer attaches `dynamic:document_configuration`).
+4. **Build offer / quote / ccms / custom templates** that honour the doc_type contract (every offer attaches `dynamic:document_configuration`; every quote attaches `dynamic:document_line_items`). The phantom `datasheet` doc_type was removed in the round-3 audit — the real backend registry is `{offer, quote, technical_doc, ccms, custom}` (plus the legacy plurals on read-side filters).
 5. **Drop in 1…N existing product manuals (PDF / Word)** → get a coverage matrix against the 15 canonical chapters, an audit of every CRITICAL / HIGH legal gap (missing safety chapter, residual-risks table, declaration of conformity, …), a modular content plan (shared LOTO / signal-word legend / target groups + product-specific blocks), the EditorJS payload for every chapter, and the per-locale translation plan.
 6. **Audit a published technical documentation** against ~30 checks (structure + safety-notice rules + GHS rules + language quality).
 7. **Author normatively-correct safety notices** — symbol selection + signal-word locale + SAFE-principle structure resolved live from `/api/v1/safety-logos` and `/api/v1/safety-notices/signal-words`.
@@ -205,14 +207,16 @@ A second normative rule governs every operating manual / Betriebsanleitung the w
 
 > **Safety information lives in two places: a global Safety chapter (Chapter 2) AND a phase-specific Safety section (.1) at the start of every life-cycle chapter (4–11).** Never collapse the global safety into the phase-specific safety, and never leave a life-cycle chapter without its own `.1` safety section.
 
-Templates follow the **15-chapter normative structure** (Cover · TOC · 1 About · 2 Safety · 3 Product · 4 Transport · 5 Assembly · 6 Commissioning · 7 Operation · 8 Troubleshooting · 9 Maintenance · 10 Modifications · 11 Decommissioning · 12 Conformity · 13 Appendix) with all sections defined in `skills/rattle-techdoc/references/chapter-reference.md`.
+Templates ship as `doc_type=technical_doc` on POST/PUT (the legacy alias `technical_documentation` is accepted only on `GET ?doc_type=…` filters — the create/update validator with `extra="forbid"` rejects it on writes) and follow the **15-chapter normative structure** (Cover · TOC · 1 About · 2 Safety · 3 Product · 4 Transport · 5 Assembly · 6 Commissioning · 7 Operation · 8 Troubleshooting · 9 Maintenance · 10 Modifications · 11 Decommissioning · 12 Conformity · 13 Appendix). All sections are defined in `skills/rattle-techdoc/references/chapter-reference.md`.
 
 Two block types replace prose for normative content:
 
 - **`safety_notice`** (ISO 3864-2 / ANSI Z535.6) — `level / title / hazard / consequences[] / avoidance[] / isoSymbol`. Symbols resolved live from `GET /api/v1/safety-logos` (no fallback to a default `W001_general_warning_sign.svg`).
-- **`hp_statement`** (CLP EC 1272/2008) — `codes[]` validated live via `GET /api/v1/hp-statements/{code}`. Statement text and GHS pictogram are server-resolved per locale; never hand-typed or AI-translated.
+- **`hp_statement`** (CLP EC 1272/2008) — `codes[]` validated live via `GET /api/v1/hp-statements/{code}`. Statement text and GHS pictogram are server-resolved per locale; never hand-typed or AI-translated. Translations are ECHA-traceable to Annex III/IV/VI on EUR-Lex.
 
-12 structural audit checks (CRITICAL / HIGH / MEDIUM / LOW) across `missing-safety-chapter`, `missing-phase-safety-section`, `missing-residual-risks-table`, `missing-declaration-of-conformity`, `default-fallback-symbol`, `mismatched-ghs-pictogram`, `unknown-hp-code`, … cover everything an MRL/MVO conformity assessment expects.
+**14 audit checks** (CRITICAL / HIGH / MEDIUM / LOW) — `missing-safety-chapter`, `missing-phase-safety-section`, `missing-residual-risks-table`, `missing-declaration-of-conformity`, `default-fallback-symbol`, `mismatched-ghs-pictogram`, `unknown-hp-code`, `unlabeled-original-language`, MRL Anh. I §1.7.4 lettered-content gaps, … — cover everything an MRL/MVO conformity assessment expects. The **MVO Article 10(7) digital-provision rule** (consumer-machinery paper mandate, ≥10 year online availability, paper-on-request within one month) is encoded for the cut-over on 20 January 2027.
+
+> **MDR scope mismatch.** The 15-chapter scaffold targets **machinery** (MRL 2006/42/EC, MVO (EU) 2023/1230). It is **not** an MDR-compliant Instructions for Use (IFU) — that domain (ISO 20417 + ISO 15223-1 + IEC 62366-1 usability) is owned by a future `rattle-techdoc-medical` skill. The agents are wired to refuse the machinery scaffold and surface the scope mismatch when handed a medical device disguised as machinery (sterilising washer, powered hospital bed, UV cabinet).
 
 Full reasoning in `skills/rattle-techdoc/SKILL.md` and `skills/rattle-techdoc/references/legal-basis.md`.
 
@@ -282,6 +286,7 @@ Full conventions: `AGENTS.md` (cross-platform) and `CLAUDE.md` (Claude-Code-spec
 
 - [`AGENTS.md`](AGENTS.md) — cross-platform agent rules and the full knowledge map.
 - [`CLAUDE.md`](CLAUDE.md) — Claude Code project instructions.
+- [`ROADMAP.md`](ROADMAP.md) — prioritised backlog (P0/P1/P2) of skills, agents, and slash commands needed to close the value-chain gaps the PR #14 audits identified.
 - [`PUBLISHING.md`](PUBLISHING.md) — how to release to npm, PyPI, and the Claude Code marketplace.
 - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (443 operations).
 - [`SETUP.md`](SETUP.md) — beginner-friendly setup guide.
