@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>12 skills · 5 subagents · 6 slash commands</strong><br>
+  <strong>13 skills · 6 subagents · 7 slash commands</strong><br>
   that teach <strong>any AI model</strong> how to produce correct, BOM-aware product configurations<br>
   <em>and</em> CE-compliant technical documentations on the Rattle SaaS platform (rattleapp.de).
 </p>
@@ -44,13 +44,14 @@ Goal: every AI model gets the same consulting expertise — the #1 configurator 
 
 ```
 rattle_api/                    Python execution layer (CLI, RattleClient, providers, prompts)
-skills/                        12 Anthropic-format Skills (model-agnostic)
-  ├─ Configurator domain (8) ─
+skills/                        13 Anthropic-format Skills (model-agnostic)
+  ├─ Configurator domain (9) ─
   rattle-configurator/         Core consulting knowledge (the #1 rule, rules, anti-patterns)
   rattle-api/                  REST API surface (443+ ops, OpenAPI spec, Safety Reference)
   rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
   rattle-document-templates/   Workflow: build offer/datasheet templates
+  rattle-bom-builder/          Variant-BOM expert: usage_subclauses + option_scalings + numbered options
   rattle-apply-config/         Workflow: apply a recommendation idempotently
   rattle-audit/                Workflow: scan a live tenant against 6 structural checks
   rattle-tenant-memory/        Per-tenant preferences (file-based, explicit-write only)
@@ -59,17 +60,19 @@ skills/                        12 Anthropic-format Skills (model-agnostic)
   rattle-safety-notices/       ISO 7010 + ISO 3864-2 + ANSI Z535.6, EditorJS safety_notice block
   rattle-ghs-statements/       CLP H/P/EUH codes + 9 GHS pictograms, EditorJS hp_statement block
   rattle-techdoc-language/     IEC/IEEE 82079-1 §7 quality criteria, mood, tone, terminology
-agents/                        5 Claude Code subagents
+agents/                        6 Claude Code subagents
   rattle-consultant            Senior configurator consultant (strategic decisions)
   rattle-auditor               Live-tenant configurator auditor (read-only)
   rattle-config-builder        Idempotent builder — only agent allowed to write to the API
+  rattle-bom-architect         Senior variant-BOM architect (parts → placements → bom_items)
   rattle-techdoc-author        Senior tech writer (inventory → audit → plan → build → translate)
   rattle-techdoc-auditor       Tech-doc auditor (~30 checks, read-only)
-commands/                      6 Claude Code slash commands
+commands/                      7 Claude Code slash commands
   /rattle-analyse              Pricelist anti-pattern analysis
   /rattle-suggest-config       Produce a BOM-aware configuration JSON
   /rattle-audit                Audit a live tenant catalogue
   /rattle-build-offer          Build / fix an offer or datasheet template
+  /rattle-build-bom            Design / fix / validate a variant BOM (usage_subclauses + option_scalings)
   /rattle-build-techdoc        Build a technical documentation from N input manuals
   /rattle-audit-techdoc        Audit a tech-doc template against ISO 20607 / IEC 82079-1 / MRL/MVO
 schemas/                       JSON Schemas for every output contract
@@ -109,7 +112,7 @@ Inside Claude Code:
 /plugin install grimoire
 ```
 
-Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`, `/rattle-build-techdoc`, `/rattle-audit-techdoc`. The 12 skills auto-load when you mention Rattle, technical documentation, safety notices, or GHS statements. The 5 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`, `rattle-techdoc-author`, `rattle-techdoc-auditor`) become invocable.
+Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`, `/rattle-build-bom`, `/rattle-build-techdoc`, `/rattle-audit-techdoc`. The 13 skills auto-load when you mention Rattle, technical documentation, safety notices, GHS statements, or variant BOMs (usage_subclauses, option_scalings, numbered options). The 6 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`, `rattle-bom-architect`, `rattle-techdoc-author`, `rattle-techdoc-auditor`) become invocable.
 
 ### 2. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
 

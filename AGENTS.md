@@ -33,6 +33,13 @@ When the user asks anything Rattle-related, **read these files before answering*
 | `skills/rattle-safety-notices/SKILL.md` | Knowledge: ISO 7010 + ISO 3864-2 + ANSI Z535.6 safety notices. EditorJS `safety_notice` block contract. Signal-word locales (31), 6 ISO 7010 categories, SAFE-principle. |
 | `skills/rattle-ghs-statements/SKILL.md` | Knowledge: CLP Regulation EC 1272/2008 H/P/EUH statements + 9 GHS pictograms. EditorJS `hp_statement` block contract. 24-locale resolution, combined and enhanced statements. |
 | `skills/rattle-techdoc-language/SKILL.md` | Knowledge: language, tone, mood, terminology rules per IEC/IEEE 82079-1 §7. Imperative-mood, original-language obligation, MVO digital provision. |
+| `skills/rattle-bom-builder/SKILL.md` | Variant-BOM expert: usage_subclauses DSL, option_scalings (legacy / ratio / range), numbered-option scaling patterns, alt_group alternates, ghost depth-transparency, BOM explosion semantics. Includes 6 references and `scripts/validate_variant_bom.py`. |
+| `skills/rattle-bom-builder/references/usage-subclauses.md` | Conditional-inclusion DSL — clauses, AND/OR fold, groupSelections, areaStatuses, areaSubclauses; 9 worked examples. |
+| `skills/rattle-bom-builder/references/option-scalings.md` | Three scaling descriptors (legacy numeric, ratio opt:part, range areas[]); multiplicative vs. additive resolution; 12 worked examples. |
+| `skills/rattle-bom-builder/references/numbered-options.md` | 12 numbered-option scaling patterns (one-to-one, many-to-one, length-scaled, threshold-stepped, multi-option composition, area-scoped). |
+| `skills/rattle-bom-builder/references/bom-explosion.md` | Runtime semantics — per-edge evaluation order, alt_group selection, ghost depth-transparency, aggregation. |
+| `skills/rattle-bom-builder/references/data-model.md` | Every field of Part / PartPlacement / BomItem / BomLineRev / Option lifted from `app/models.py`. |
+| `skills/rattle-bom-builder/references/api-endpoints.md` | REST endpoints, idempotent ensure operations, bulk import / export, validation errors. |
 | `skills/rattle-apply-config/SKILL.md` | Workflow: apply a recommendation idempotently via 7 `ensure_*` ops. Includes `scripts/validate_recommendation.py`. |
 | `skills/rattle-audit/SKILL.md` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/SKILL.md` | Per-tenant preferences, decisions, audit history (file-based, explicit-write only). |

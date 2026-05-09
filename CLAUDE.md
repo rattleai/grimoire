@@ -24,6 +24,7 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `skills/rattle-apply-config/` | Workflow: apply a recommendation idempotently. Includes `scripts/validate_recommendation.py`. |
 | `skills/rattle-audit/` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/` | Per-tenant preferences and decisions (file-based, explicit-write only). |
+| `skills/rattle-bom-builder/` | Variant-BOM expert: usage_subclauses DSL, option_scalings (legacy / ratio / range), numbered-option scaling patterns, alt_group + priority alternates, ghost depth-transparency, BOM explosion semantics. Includes `scripts/validate_variant_bom.py` and 6 reference docs. |
 | `schemas/` | JSON Schemas for the 4 output contracts (recommendation, audit-findings, offer-template, apply-operations). |
 | `examples/` | Synthetic golden I/O for every workflow. |
 | `agents/rattle-consultant.md` | Senior consultant subagent — orchestrates strategic decisions. |
@@ -31,12 +32,14 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `agents/rattle-config-builder.md` | Idempotent builder. Only agent allowed to write to the API. |
 | `agents/rattle-techdoc-author.md` | Senior technical-writer subagent. Walks the inventory → audit → plan → build → translate workflow for technical documentations. |
 | `agents/rattle-techdoc-auditor.md` | Read-only auditor for technical documentations. Runs ~30 checks across structural, safety-notice, GHS, and language rules. |
+| `agents/rattle-bom-architect.md` | Senior variant-BOM architect. Walks parts → placements → bom_items → validation, produces the canonical variant-bom.json for `rattle-config-builder` to apply. |
 | `commands/rattle-analyse.md` | `/rattle-analyse` slash command. |
 | `commands/rattle-suggest-config.md` | `/rattle-suggest-config` slash command. |
 | `commands/rattle-audit.md` | `/rattle-audit` slash command. |
 | `commands/rattle-build-offer.md` | `/rattle-build-offer` slash command. |
 | `commands/rattle-build-techdoc.md` | `/rattle-build-techdoc` slash command — build technical docs from input manuals. |
 | `commands/rattle-audit-techdoc.md` | `/rattle-audit-techdoc` slash command — audit a technical-doc template against ISO 20607 / IEC 82079-1 / MRL/MVO. |
+| `commands/rattle-build-bom.md` | `/rattle-build-bom` slash command — design / fix / validate a variant BOM with usage_subclauses + option_scalings. |
 | `AGENTS.md` | Cross-platform agent rules (Cursor, Codex, Aider, Continue). |
 
 The Markdown content under `skills/rattle-configurator/references/` is the source of truth for rules / anti-patterns / checks. `rattle_api/knowledge.py` mirrors it as Python data structures so the CLI's prompts stay in sync. **When they conflict, the Markdown wins — update the Python to match.**
