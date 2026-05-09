@@ -10,6 +10,47 @@ Every safety-relevant message inside a Rattle technical documentation MUST be ex
 
 This skill encodes the rules and the catalogue: when to use which level, which symbol, which locale word, and which structure.
 
+## Live API for symbol selection (use this first)
+
+**Before picking a symbol, query the API.** The platform exposes the complete safety-logo catalogue (ISO 7010 + GHS, with EN + DE descriptions) at:
+
+```
+GET /api/v1/safety-logos[?category=warning|prohibition|mandatory|safe_condition|fire_protection|gefahrstoffe]
+```
+
+Response shape (excerpt):
+
+```json
+{
+  "data": {
+    "categories": [{
+      "id": "warning",
+      "label": "Warning (W...)",
+      "files": [{
+        "file": "W024_crushing_of_hands.svg",
+        "code": "W024",
+        "label": "W024 crushing of hands",
+        "description": "Crushing of hands",
+        "description_de": "Quetschgefahr für die Hände",
+        "url": "/safety_logos/warning/W024_crushing_of_hands.svg"
+      }]
+    }]
+  }
+}
+```
+
+Use `description` / `description_de` to match the hazard semantically; use the returned `file` value verbatim as `safety_notice.isoSymbol.file`. **Never invent filenames or fall back to `W001_general_warning_sign.svg` without first checking whether a more specific code matches.** The audit `unmatched-iso-symbol` and `addressless-pictogram` are direct consequences of skipping this step.
+
+For signal words, the same module exposes:
+
+```
+GET /api/v1/safety-notices/signal-words[?locale=de]
+```
+
+This is the same data as the static catalogue in `references/signal-words.md` but live. Use it to pre-fill `safety_notice.signalWord` in batch authoring (or to confirm the locale is supported before publishing the document in that locale).
+
+The static catalogue in `references/iso-7010-symbols.md` is still useful for **offline reasoning** (which W-code applies to "crushing"?), but the live API is the source of truth for the exact filename and the human description, and it lists the manifest descriptions the `description` / `description_de` matching depends on.
+
 ## When to use this skill
 
 Activate when the user:
@@ -159,11 +200,36 @@ When an input manual contains a non-normative warning like:
 Walk these steps:
 
 1. **Pick the level.** "Quetschgefahr für Hände" + serious injury possible = `warning` (not `danger`, since it is not imminent — only when the user is currently working on the machine).
-2. **Pick the ISO 7010 symbol.** "Quetschen / Hände" → category `warning`, code W024 `W024_crushing_of_hands.svg`. If the hazard is generic moving parts, W001 `W001_general_warning_sign.svg` is acceptable but specific is better.
+2. **Query the symbol catalogue.** `GET /api/v1/safety-logos?category=warning` → scan the `files[]` array for a `description` / `description_de` matching "crushing of hands" / "Quetschgefahr Hände". The match is `W024 / W024_crushing_of_hands.svg`. **Always pick by API match, never by guess.** If the API returns no good match, only then fall back to W001 (`W001_general_warning_sign.svg`) — and flag the imprecision in the `notes` field.
 3. **Decompose into SAFE.** title = "Quetschgefahr durch bewegliche Maschinenteile". hazard = "Bewegliche Teile können Hände und Finger einklemmen.". consequences = ["Schwere Quetschverletzungen", "Knochenbrüche"]. avoidance = ["Vor Wartungsarbeiten Strom abschalten.", "Gegen Wiedereinschalten sichern.", "Schutzhandschuhe tragen."].
 4. **Set `ref`.** Cross-reference the chapter the hazard belongs to. For maintenance-context warnings, `ref: "Kap. 9.4"`.
-5. **Emit the block.** As shown in the example above.
-6. **Replace the original prose.** Remove the entire "ACHTUNG! …" paragraph; the `safety_notice` block carries the message normatively.
+5. **(Optional) Resolve the locale signal word.** `GET /api/v1/safety-notices/signal-words?locale=de` → `signal_words.warning = "WARNUNG"`. Set `safety_notice.signalWord` to this value when you author multiple locales in one batch.
+6. **Emit the block.** As shown in the example above (with `isoSymbol.category="warning"`, `isoSymbol.file="W024_crushing_of_hands.svg"` from the API result).
+7. **Replace the original prose.** Remove the entire "ACHTUNG! …" paragraph; the `safety_notice` block carries the message normatively.
+
+### One-shot Python helper
+
+```python
+import requests
+
+def pick_iso_symbol(api_base, token, category, hazard_keywords, locale="en"):
+    """Return the best (file, code, description) for a hazard description."""
+    r = requests.get(
+        f"{api_base}/api/v1/safety-logos",
+        params={"category": category},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    r.raise_for_status()
+    files = r.json()["data"]["categories"][0]["files"]
+    desc_field = "description_de" if locale.startswith("de") else "description"
+    needle = " ".join(hazard_keywords).lower()
+    scored = sorted(
+        files,
+        key=lambda f: -sum(1 for w in needle.split() if w in (f.get(desc_field) or "").lower()),
+    )
+    return scored[0] if scored else None
+```
 
 ## Audit-related rules this skill enforces
 
@@ -174,7 +240,8 @@ When this skill is loaded, these violations should be flagged:
 - `addressless-pictogram` — image whose URL hits `/safety_logos/` or `/ghs/` without an adjacent W-/P-/M-/E-/F-/GHS code.
 - `wrong-level-for-severity` — DANGER used for non-imminent hazards (heuristic: DANGER appears > 5× per chapter).
 - `incomplete-safe-structure` — `safety_notice` block without all of `title` / `hazard` / `consequences[]` / `avoidance[]`.
-- `unmatched-iso-symbol` — `isoSymbol.file` not present in the symbol catalogue for the declared `isoSymbol.category`.
+- `unmatched-iso-symbol` — `isoSymbol.file` not present in the symbol catalogue for the declared `isoSymbol.category`. Verify by `GET /api/v1/safety-logos?category=<cat>` and confirming the `file` value appears in `categories[].files[].file`.
+- `default-fallback-symbol` — `isoSymbol.file` is `W001_general_warning_sign.svg` (or another generic) when a more specific code is available in the API response. Re-run the symbol picker against `description` / `description_de`.
 
 ## Output contract — `safety-notices.json`
 
@@ -210,8 +277,11 @@ When asked to enumerate or produce safety notices in batch, output:
 
 ## Related references
 
-- `references/iso-7010-symbols.md` — full SVG-filename catalogue per category.
-- `references/signal-words.md` — 31 locale signal-word table.
+- **API** `GET /api/v1/safety-logos[?category=...]` — live catalogue with EN+DE descriptions for hazard matching. **Source of truth.**
+- **API** `GET /api/v1/safety-notices/signal-words[?locale=...]` — live signal-word lookup.
+- `references/iso-7010-symbols.md` — full SVG-filename catalogue per category (offline reference).
+- `references/signal-words.md` — 31 locale signal-word table (offline reference).
 - `references/safe-principle.md` — extended SAFE-principle authoring guide with bad-vs-good rewrite examples.
 - `rattle-techdoc/SKILL.md` — host skill that uses this one.
 - `rattle-ghs-statements/SKILL.md` — chemical hazards (sister skill).
+- `rattle-api/references/api-reference.md` — full Safety Reference endpoint reference.

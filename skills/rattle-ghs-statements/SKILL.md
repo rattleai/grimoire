@@ -10,6 +10,41 @@ Every chemical hazard reference in a Rattle technical documentation MUST be expr
 
 This skill encodes the rules and the catalogue: what an H-code / P-code / EUH-code means, which GHS pictogram it carries, how combined statements work, and how the EditorJS block consumes them.
 
+## Live API for code resolution (use this first)
+
+**Before emitting an `hp_statement` block, validate the codes against the API.** The platform exposes the full CLP catalogue (with locale-correct text + GHS pictogram mapping) at:
+
+```
+GET /api/v1/hp-statements?locale=de&include_ghs_map=true
+```
+
+Returns the entire H/P/EUH dictionary for the requested locale (≈ 280 entries) plus the H-code → GHS pictogram map. Use it to: enumerate codes, confirm a code exists in the locale, and pre-compute the pictogram badge a block will display.
+
+For a single code (with optional combined-key or enhanced slot resolution):
+
+```
+GET /api/v1/hp-statements/H315?locale=de
+GET /api/v1/hp-statements/H300+H310?locale=de
+GET /api/v1/hp-statements/H340?locale=de&slot_1=beim+Einatmen
+```
+
+Response shape:
+
+```json
+{
+  "data": {
+    "code": "H315",
+    "locale_requested": "de",
+    "text": "Verursacht Hautreizungen.",
+    "ghs_pictogram": "GHS07"
+  }
+}
+```
+
+Use `data.text` to populate `hp_statement.resolvedText` (or leave it empty and let the server resolve at render time). Use `data.ghs_pictogram` for previewing which icon will appear; the rendered block always re-derives this from `codes[]` via the same map, so it's a sanity check.
+
+The static catalogues in `references/hp-statement-codes.md` (top 50) and `references/hp-statement-locales.md` are still useful for **offline reasoning** (which H-code applies to "skin irritation"?), but the live API is the source of truth and reflects every locale shipped. Falling back to a hand-typed CLP text is the audit finding `inline-hp-text` and `unknown-hp-code`.
+
 ## When to use this skill
 
 Activate when the user:
@@ -164,9 +199,10 @@ Fallback chain: `xx-YY` → alias → primary subtag → `en`.
 1. **Identify the substance.** Get its trade name + CAS no + the SDS H/P statements from Section 2 of the safety data sheet.
 2. **Pick the H-codes.** From SDS Section 2.2 ("Label elements"). These are normative — copy verbatim.
 3. **Pick the P-codes.** From SDS Section 2.2 ("Precautionary statements"). Group into prevention (P2xx), response (P3xx), storage (P4xx), disposal (P5xx).
-4. **Check for combined statements.** If two H-codes have a CLP-defined combined key, prefer the combined block over two single-code blocks.
-5. **Emit the blocks.** One `hp_statement` block per code (or combined-key group). Group H-codes first, then P-codes, in code order.
-6. **Insert in Section 11.5** under the substance heading. Pre-amble paragraph: substance name, CAS no, where used in the machine.
+4. **Validate every code against the API.** For each H/P/EUH code, call `GET /api/v1/hp-statements/<code>?locale=<doc-locale>`. A 404 means the code is not recognised — re-check the SDS. A 200 confirms the code resolves and returns the GHS pictogram (for H-codes).
+5. **Check for combined statements.** If two H-codes have a CLP-defined combined key, prefer the combined block over two single-code blocks. Validate the combined key the same way: `GET /api/v1/hp-statements/H300+H310?locale=de`.
+6. **Emit the blocks.** One `hp_statement` block per code (or combined-key group). Group H-codes first, then P-codes, in code order. Leave `resolvedText` empty (the renderer fills it) — or pre-populate it from the API response if you want byte-identical text in the saved JSON.
+7. **Insert in Section 11.5** under the substance heading. Pre-amble paragraph: substance name, CAS no, where used in the machine.
 
 Example output for a cleaning agent (H315, H319, P264, P302+P352, P305+P351+P338):
 
@@ -186,7 +222,8 @@ Example output for a cleaning agent (H315, H319, P264, P302+P352, P305+P351+P338
 
 - `addressless-pictogram` — GHS pictogram in an `image` block without an `hp_statement` peer.
 - `inline-hp-text` — Paragraph hand-typed with H/P-code text (e.g. "H315: Verursacht Hautreizungen.") instead of an `hp_statement` block.
-- `unknown-hp-code` — `codes` contains a code not in the active locale's table.
+- `unknown-hp-code` — `codes` contains a code not in the active locale's table. Verify by `GET /api/v1/hp-statements/<code>?locale=<locale>`; a 404 confirms the finding.
+- `mismatched-ghs-pictogram` — A `paragraph`/`image` block displays a GHS pictogram different from the one the H-codes resolve to. Re-derive via `data.ghs_pictogram` from `GET /api/v1/hp-statements/<code>`.
 - `untranslated-hp-resolved-text` — `resolvedText` set in one locale but document is being rendered in another locale.
 
 ## Output contract — `hp-statements.json`
@@ -209,8 +246,11 @@ Example output for a cleaning agent (H315, H319, P264, P302+P352, P305+P351+P338
 
 ## Related references
 
-- `references/hp-statement-codes.md` — top 50 most-used H/P/EUH codes with EN + DE text and GHS mapping.
+- **API** `GET /api/v1/hp-statements[?locale=...]` — full code catalogue + GHS pictogram map. **Source of truth.**
+- **API** `GET /api/v1/hp-statements/{code}[?locale=...&slot_1=...]` — resolve a single code; supports combined and enhanced variants.
+- `references/hp-statement-codes.md` — top 50 most-used H/P/EUH codes with EN + DE text and GHS mapping (offline reference).
 - `references/hp-statement-locales.md` — full list of available locales and aliases.
 - `references/ghs-mapping.md` — H-code → GHS pictogram mapping reference.
 - `rattle-techdoc/SKILL.md` — host skill.
 - `rattle-safety-notices/SKILL.md` — non-chemical safety notices.
+- `rattle-api/references/api-reference.md` — full Safety Reference endpoint reference.

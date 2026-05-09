@@ -4,7 +4,9 @@ Quick-reference catalogue of the H/P/EUH codes most often appearing in industria
 
 **The text below is for redactor reference only.** When emitting an `hp_statement` block, set `codes` and let the renderer resolve the official locale text from `app/utils/hp_statements.py`. Do not hand-type the localised text into `resolvedText`.
 
-For the complete catalogue (~280 codes per locale), consult the source JSON files at `app/static/data/hp_statements/hpstatements-<lang>-latest.json`.
+> **Live API.** For runtime resolution, call `GET /api/v1/hp-statements?locale=<locale>` for the full dictionary or `GET /api/v1/hp-statements/<code>?locale=<locale>` for a single code (supports combined keys like `H300+H310` and `slot_1` / `slot_2` placeholders for enhanced variants). Returns the locale-correct text plus the GHS pictogram for H-codes. See `rattle-api/references/api-reference.md` § Safety Reference.
+
+For the complete catalogue (~280 codes per locale), consult the source JSON files at `app/static/data/hp_statements/hpstatements-<lang>-latest.json` — or, equivalently, `GET /api/v1/hp-statements?locale=<lang>` which serves the same data.
 
 ---
 

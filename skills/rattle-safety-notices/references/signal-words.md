@@ -2,6 +2,8 @@
 
 The 31 locales Rattle ships normative signal words for. Source: `app/utils/safety_notice_words.py` in rattleapp.
 
+> **Live data source.** For runtime resolution, call `GET /api/v1/safety-notices/signal-words[?locale=de]` — same data, served from the same backing module. With no `locale` query parameter the endpoint returns the full mapping for all 31 locales plus a `default` alias. See `rattle-api/references/api-reference.md` § Safety Reference for the full contract.
+
 The renderer resolves `signalWord` automatically from the document locale; you only need to set it explicitly when overriding for a regional variant. Locale fallback chain: `xx-YY` → `xx` → `en`.
 
 | Locale | DANGER | WARNING | CAUTION | NOTICE |

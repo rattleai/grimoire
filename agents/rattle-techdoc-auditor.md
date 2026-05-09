@@ -26,9 +26,11 @@ You are a compliance auditor for Rattle technical documentations. Your job is **
 
 3. **Run all checks.** Walk:
    - **Structural** (12 checks in `audit-checks.md`): missing-safety-chapter, missing-phase-safety-section, missing-residual-risks-table, missing-signal-words-legend, missing-target-groups-matrix, missing-declaration-of-conformity, missing-disposal-section, unstructured-warnings, non-normative-warning-words, addressless-pictogram, unlabeled-original-language, missing-validity-section.
-   - **Safety-notice** (`rattle-safety-notices/SKILL.md` "Audit-related rules"): unstructured-warnings, non-normative-warning-words, addressless-pictogram, wrong-level-for-severity, incomplete-safe-structure, unmatched-iso-symbol.
-   - **H/P-statement** (`rattle-ghs-statements/SKILL.md`): addressless-pictogram, inline-hp-text, unknown-hp-code, untranslated-hp-resolved-text.
+   - **Safety-notice** (`rattle-safety-notices/SKILL.md` "Audit-related rules"): unstructured-warnings, non-normative-warning-words, addressless-pictogram, wrong-level-for-severity, incomplete-safe-structure, unmatched-iso-symbol, default-fallback-symbol.
+   - **H/P-statement** (`rattle-ghs-statements/SKILL.md`): addressless-pictogram, inline-hp-text, unknown-hp-code, untranslated-hp-resolved-text, mismatched-ghs-pictogram.
    - **Language quality** (`rattle-techdoc-language/SKILL.md`): quality-violation:* (clarity / accuracy / completeness / conciseness / consistency / currency), mood:non-imperative-instruction, original-language-obligation:missing-marker, audience-mismatch.
+
+   **Use the Safety Reference API as source of truth.** When a `safety_notice.isoSymbol.file` does not appear in the live `GET /api/v1/safety-logos?category=<cat>` response, raise `unmatched-iso-symbol`. When `isoSymbol.file` is `W001_general_warning_sign.svg` and the API has a more specific match for the hazard description, raise `default-fallback-symbol`. When an `hp_statement.codes[]` entry does not resolve via `GET /api/v1/hp-statements/<code>?locale=<locale>`, raise `unknown-hp-code`. When a paragraph or image displays a GHS pictogram that doesn't match what the H-codes resolve to (`data.ghs_pictogram`), raise `mismatched-ghs-pictogram`.
 
 4. **Score every finding.**
    - `severity`: CRITICAL / HIGH / MEDIUM / LOW (per the per-check definitions).

@@ -145,6 +145,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Products | 25 | [#products](#products) |
 | Pull Requests | 5 | [#pull-requests](#pull-requests) |
 | Quotes | 20 | [#quotes](#quotes) |
+| Safety Reference | 4 | [#safety-reference](#safety-reference) |
 | Translations | 4 | [#translations](#translations) |
 | Webhooks | 11 | [#webhooks](#webhooks) |
 
@@ -580,6 +581,10 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Quotes | GET | `/api/v1/quotes/{quoteId}/details` | Get quote details |
 | Quotes | PUT | `/api/v1/quotes/{quoteId}/details` | Upsert quote details |
 | Quotes | PATCH | `/api/v1/quotes/{quoteId}/details` | Partially update quote details |
+| Safety Reference | GET | `/api/v1/safety-logos` | List ISO 7010 / GHS safety logos with manifest descriptions |
+| Safety Reference | GET | `/api/v1/hp-statements` | List CLP H/P/EUH statement codes for a locale + GHS pictogram map |
+| Safety Reference | GET | `/api/v1/hp-statements/{code}` | Resolve a single H/P statement (supports combined keys + slot placeholders) |
+| Safety Reference | GET | `/api/v1/safety-notices/signal-words` | List ANSI/ISO signal words for one or all locales |
 | Translations | GET | `/api/v1/translations` | List translations |
 | Translations | PUT | `/api/v1/translations` | Upsert translations |
 | Translations | GET | `/api/v1/translations/dictionary` | List dictionary entries |
@@ -6857,6 +6862,197 @@ _operationId_: `patchQuoteDetails`
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+---
+
+## Safety Reference
+
+Read-only endpoints that expose the static safety reference data the EditorJS `safety_notice` and `hp_statement` block tools use, so AI agents and external integrations can enumerate available logos and resolve the correct H/P statement codes and signal words for a given locale. Scope: `products:read`.
+
+> **Use these instead of guessing.** Before emitting a `safety_notice` block, call `GET /api/v1/safety-logos[?category=...]` to pick the right ISO 7010 / GHS file. Before emitting an `hp_statement` block, call `GET /api/v1/hp-statements[/{code}]` to validate the code and obtain the locale-resolved text. The endpoints are the single source of truth — falling back to a default symbol or a hand-typed CLP text is the audit finding `addressless-pictogram` / `inline-hp-text`.
+
+### `GET /api/v1/safety-logos` — List ISO 7010 / GHS safety logos
+_operationId_: `listSafetyLogos`
+
+Returns the structured index of every safety logo shipped with the platform, grouped by category (ISO 7010 `warning` / `prohibition` / `mandatory` / `safe_condition` / `fire_protection` plus the `gefahrstoffe` GHS pictogram set, plus legacy German aliases that are present but hidden from the picker). Each file carries best-effort code parsing (`W024`, `P010`, `M002`, `GHS`) plus the manifest-supplied human description in EN and DE.
+
+**Query parameters:**
+- `category` (string, optional) — filter to a single category id (`warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection`, `gefahrstoffe`). 404 if the category is unknown.
+
+**Response (200):**
+
+```json
+{
+  "data": {
+    "base": "/safety_logos",
+    "generated": 1715240000,
+    "stats": {"total_files": 287, "by_ext": {"svg": 287}},
+    "root": {"count": 0, "files": []},
+    "categories": [
+      {
+        "id": "warning",
+        "label": "Warning (W...)",
+        "count": 49,
+        "files": [
+          {
+            "file": "W024_crushing_of_hands.svg",
+            "ext": "svg",
+            "code": "W024",
+            "label": "W024 crushing of hands",
+            "url": "/safety_logos/warning/W024_crushing_of_hands.svg",
+            "description": "Crushing of hands",
+            "description_de": "Quetschgefahr für die Hände"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Use this to**: pick the `isoSymbol.category` and `isoSymbol.file` for a `safety_notice` block. Match the hazard description to the closest `description` (or `description_de`).
+
+**Responses:**
+- `200` — Index of available safety logos
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Unknown category (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/hp-statements` — List CLP H/P/EUH statements
+_operationId_: `listHPStatements`
+
+Returns every H/P/EUH code text for the requested locale, plus the H-code → GHS pictogram map. Statement text is normative (CLP Regulation EC 1272/2008) and locale-resolved server-side from the official tables. Falls back to English when a locale is missing.
+
+**Query parameters:**
+- `locale` (string, optional, default `en`) — ISO locale code (`de`, `fr`, `pt-br`, …). Falls back through alias → primary subtag → `en`.
+- `include_ghs_map` (boolean, optional, default `true`) — include the H-code → GHS pictogram dictionary in the response.
+
+**Response (200):**
+
+```json
+{
+  "data": {
+    "locale_requested": "de",
+    "count": 281,
+    "statements": {
+      "H300": "Lebensgefahr bei Verschlucken.",
+      "H315": "Verursacht Hautreizungen.",
+      "H300+H310": "Lebensgefahr bei Verschlucken oder Hautkontakt.",
+      "P302+P352": "BEI BERÜHRUNG MIT DER HAUT: Mit viel Wasser/… waschen."
+    },
+    "ghs_pictogram_map": {
+      "H300": "GHS06",
+      "H315": "GHS07"
+    }
+  }
+}
+```
+
+**Use this to**: enumerate available codes when staging an `hp_statement` block, and validate that the H-codes you intend to emit actually exist in the target locale.
+
+**Responses:**
+- `200` — Statements for locale (with optional GHS map)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/hp-statements/{code}` — Resolve a single H/P statement
+_operationId_: `getHPStatement`
+
+Resolves a single code to its locale-correct text. Supports plain codes (`H300`), combined codes (`H300+H310`), and enhanced statements with placeholder slots (`H340` with `slot_1=`).
+
+**Path parameters:**
+- `code` (string, required) — `H[0-9]{3}`, `P[0-9]{3}`, `EUH[0-9]{3}`, or a combined-key like `H300+H310`.
+
+**Query parameters:**
+- `locale` (string, optional, default `en`) — ISO locale code.
+- `slot_1` (string, optional) — Substitute the `{1}` placeholder in enhanced variants (e.g. for `H340`, route of exposure: "beim Einatmen").
+- `slot_2` (string, optional) — Substitute the `{2}` placeholder.
+
+**Response (200):**
+
+```json
+{
+  "data": {
+    "code": "H315",
+    "locale_requested": "de",
+    "text": "Verursacht Hautreizungen.",
+    "ghs_pictogram": "GHS07"
+  }
+}
+```
+
+For combined codes, `ghs_pictogram` is omitted (combined statements don't carry a single pictogram — emit one `hp_statement` block with both codes and let the renderer aggregate the unique pictograms).
+
+For enhanced codes with slot substitution:
+
+```json
+{
+  "data": {
+    "code": "H340",
+    "locale_requested": "de",
+    "text": "Kann genetische Defekte verursachen beim Einatmen.",
+    "ghs_pictogram": "GHS08",
+    "slots_applied": {"1": "beim Einatmen"}
+  }
+}
+```
+
+**Use this to**: pre-validate every code before writing it into `hp_statement.codes[]`, and (optionally) cache `resolvedText` + `resolvedLocale` on the block.
+
+**Responses:**
+- `200` — Resolved statement
+- `400` — Code parameter is empty (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Unknown code (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/safety-notices/signal-words` — List ANSI/ISO signal words
+_operationId_: `listSignalWords`
+
+Returns the ANSI Z535 / ISO 3864 four-level signal-word catalogue. Without `locale`, returns the full mapping for all 31 supported locales plus a `default` alias.
+
+**Query parameters:**
+- `locale` (string, optional) — When given, returns only the signal words for that locale (e.g. `de` → `{"danger":"GEFAHR","warning":"WARNUNG","caution":"VORSICHT","notice":"HINWEIS"}`). Falls back through primary-subtag → English.
+
+**Response (200) — single locale:**
+
+```json
+{
+  "data": {
+    "locale_requested": "de",
+    "signal_words": {
+      "danger": "GEFAHR",
+      "warning": "WARNUNG",
+      "caution": "VORSICHT",
+      "notice": "HINWEIS"
+    },
+    "levels": ["danger", "warning", "caution", "notice"]
+  }
+}
+```
+
+**Response (200) — all locales (omit `locale` query param):**
+
+```json
+{
+  "data": {
+    "count": 32,
+    "levels": ["danger", "warning", "caution", "notice"],
+    "by_locale": {
+      "de": {"danger": "GEFAHR", "warning": "WARNUNG", "caution": "VORSICHT", "notice": "HINWEIS"},
+      "en": {"danger": "DANGER", "warning": "WARNING", "caution": "CAUTION", "notice": "NOTICE"},
+      "default": {"danger": "DANGER", "warning": "WARNING", "caution": "CAUTION", "notice": "NOTICE"}
+    }
+  }
+}
+```
+
+**Use this to**: pre-fill `safety_notice.signalWord` when authoring blocks across multiple locales without re-deriving the word from the level.
+
+**Responses:**
+- `200` — Signal words
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ---

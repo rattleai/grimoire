@@ -2,6 +2,8 @@
 
 The Rattle distribution ships official CLP (EC 1272/2008) H/P/EUH statement texts for **24 EU locales** plus locale aliases. Source files: `app/static/data/hp_statements/hpstatements-<lang>-latest.json`.
 
+> **Live API.** For runtime locale resolution, call `GET /api/v1/hp-statements?locale=<locale>` — the endpoint applies the same alias / fallback chain documented below and returns the resolved dictionary. A 200 with a `count > 0` confirms the locale is supported. See `rattle-api/references/api-reference.md` § Safety Reference.
+
 ## Primary locales
 
 | Locale | Language | File present |

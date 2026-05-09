@@ -4,6 +4,13 @@ The complete mapping from `app/static/data/ghs_pictogram_map.json` (CLP Regulati
 
 The mapping is **automatic**: the `hp_statement` EditorJS block resolves the pictogram from the H-code at render time. You do not specify pictograms manually. This file is a redactor reference for understanding which icon will appear.
 
+> **Live API.** Two endpoints expose this mapping:
+>
+> - `GET /api/v1/hp-statements?include_ghs_map=true` returns `data.ghs_pictogram_map` — the entire H-code → `GHS0X` dictionary.
+> - `GET /api/v1/hp-statements/<code>` returns `data.ghs_pictogram` for the single code (when one exists; combined codes and P/EUH codes have no pictogram).
+>
+> Use the API when you want a sanity check on which icon will display for a given block. See `rattle-api/references/api-reference.md` § Safety Reference.
+
 ## The 9 GHS pictograms
 
 | ID | SVG file | Symbol | Hazard category |

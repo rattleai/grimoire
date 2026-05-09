@@ -2,7 +2,9 @@
 
 Complete catalogue of the safety symbols Rattle ships with. Pick a symbol by its **code** (W024, P010, M002, …), never by visual interpretation. Filenames in this catalogue match the SVG files in `app/static/img/safety_logos/<category>/<file>.svg` in rattleapp.
 
-The `isoSymbol.category` field on a `safety_notice` EditorJS block must be one of: `warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection`, `gefahrstoffe`. The `isoSymbol.file` field must be one of the filenames listed below for that category.
+> **Live data source.** This file is an offline reference for reasoning about codes. **For runtime symbol selection, query `GET /api/v1/safety-logos[?category=...]`** — the API response carries the complete file list **plus EN and DE manifest descriptions** that let an AI agent match a hazard description (e.g. "crushing of hands") to the right SVG file (`W024_crushing_of_hands.svg`). See `rattle-api/references/api-reference.md` § Safety Reference for the full endpoint contract. Use this file when you need to reason about codes without a live API connection.
+
+The `isoSymbol.category` field on a `safety_notice` EditorJS block must be one of: `warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection`, `gefahrstoffe`. The `isoSymbol.file` field must be one of the filenames listed below for that category — or, equivalently, one of the `file` values returned by `GET /api/v1/safety-logos`.
 
 > **Coverage note.** The catalogue below is the *currently shipped* set in rattleapp. ISO 7010 itself defines a slightly larger set (~230 signs). When a hazard has no exact match, fall back to the most specific available; for "moving parts" without a finer match, `W001_general_warning_sign.svg` is acceptable but always note the imprecision in the audit `notes` field.
 

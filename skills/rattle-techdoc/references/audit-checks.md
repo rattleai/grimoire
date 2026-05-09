@@ -124,7 +124,31 @@ Findings are emitted against `schemas/audit-findings.schema.json` (the existing 
 
 **Detection.** Check every `image` URL whose path contains `/safety_logos/` or `/ghs/` against the alt text or surrounding paragraph for a code reference. Flag if absent.
 
-**Correction.** Convert to a `safety_notice` block (preferred) or add the code reference inline.
+**Correction.** Convert to a `safety_notice` block (preferred) or add the code reference inline. For chemical pictograms in image form, convert to an `hp_statement` block — the API endpoint `GET /api/v1/hp-statements/<code>` returns the GHS pictogram automatically.
+
+---
+
+## 10b · `default-fallback-symbol` *(MEDIUM)*
+
+**Definition.** A `safety_notice` block has `isoSymbol.file = "W001_general_warning_sign.svg"` (or another generic placeholder) when the live `GET /api/v1/safety-logos?category=<cat>` response contains a more specific entry whose `description` / `description_de` matches the block's `title` / `hazard`.
+
+**Why MEDIUM.** Generic symbols dilute the warning's salience and make audits harder. ISO 7010 / IEC 82079-1 prefer the most specific symbol available.
+
+**Detection.** For every `safety_notice` block with the generic file, run a substring match between the hazard description and every `description` / `description_de` returned by the API for the declared `category`. If a more specific match exists (≥ 2 matching tokens), flag.
+
+**Correction.** Update `isoSymbol.file` to the API-suggested specific filename. The agent `rattle-techdoc-author` step 6 covers the canonical picker workflow.
+
+---
+
+## 10c · `mismatched-ghs-pictogram` *(HIGH)*
+
+**Definition.** An `hp_statement` block has `codes[]` whose `GET /api/v1/hp-statements/<code>` response gives a `data.ghs_pictogram` that does NOT match a sibling `image` block's GHS file.
+
+**Why HIGH.** Mismatched GHS pictograms create chemical-hazard misinformation — a regulatory non-conformance under CLP labelling rules.
+
+**Detection.** Walk every `hp_statement` block; resolve `data.ghs_pictogram` for each code via the API. If a peer `image` block in the same content-block locale references a GHS file (`/ghs/GHSXX.svg`) that is not in the resolved pictogram set, flag.
+
+**Correction.** Either remove the standalone `image` block (the `hp_statement` block already renders the pictogram), or correct the `codes[]` to match the displayed pictogram.
 
 ---
 

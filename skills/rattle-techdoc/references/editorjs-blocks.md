@@ -140,6 +140,8 @@ For safety symbols (ISO 7010, GHS), prefer the dedicated `safety_notice` / `hp_s
 
 ANSI Z535.6 / ISO 3864-2 hazard warning. **Single source of truth for every safety-relevant message.**
 
+> **Validate before emitting.** Before writing a `safety_notice` block, call `GET /api/v1/safety-logos[?category=<cat>]` and pick the `isoSymbol.file` from the returned `categories[].files[].file` list — match by `description` / `description_de`. Call `GET /api/v1/safety-notices/signal-words?locale=<doc-locale>` to pre-fill `signalWord`. See `rattle-safety-notices/SKILL.md` for the full picker workflow and `rattle-api/references/api-reference.md` § Safety Reference for the endpoint contracts.
+
 ```json
 {
   "type": "safety_notice",
@@ -183,6 +185,8 @@ Audit checks `unstructured-warnings` and `addressless-pictogram` flag deviations
 ### `hp_statement`
 
 EU CLP Regulation EC 1272/2008 hazard / precautionary statement. **Statement text is normative and MUST NOT be hand-edited or AI-translated** — it is resolved server-side from the official locale tables.
+
+> **Validate before emitting.** For every `code` in the block, call `GET /api/v1/hp-statements/<code>?locale=<doc-locale>`. A 200 confirms the code is valid and returns the locale-correct text + GHS pictogram. A 404 means the code is unknown — re-check the SDS. For combined codes use the joined key (`H300+H310`); for enhanced codes pass `slot_1` / `slot_2`. See `rattle-ghs-statements/SKILL.md` for the full workflow and `rattle-api/references/api-reference.md` § Safety Reference for the endpoint contracts.
 
 ```json
 {
