@@ -1,12 +1,14 @@
 ---
 name: rattle-document-templates
-description: Use this skill when the user is building, auditing, or restructuring an offer/quote/datasheet document template in Rattle's documents system. Knows the doc_type contract (offer requires a 'dynamic:document_configuration' attachment), the structure-block tree (chapters → sections → attachments → content blocks), how to reuse system dynamic blocks instead of wrapping them, and how to fetch the live doc_type contract via GET /documents/doc-types. Pair with rattle-configurator (rules) and rattle-api (REST writes).
+description: Use this skill when the user is building, auditing, or restructuring an offer/quote/custom document template in Rattle's documents system. Knows the doc_type contract — backend registers exactly five doc_types (offer, quote, technical_doc, ccms, custom; legacy plurals offers/quotes also accepted; technical_documentation is a read-only legacy alias for technical_doc) — the offer requires a 'dynamic:document_configuration' attachment, the quote requires a 'dynamic:document_line_items' attachment, the structure-block tree (chapters → sections → attachments → content blocks), how to reuse system dynamic blocks instead of wrapping them, and how to fetch the live doc_type contract via GET /documents/doc-types. Pair with rattle-configurator (rules), rattle-api (REST writes), and rattle-techdoc (separate skill for the doc_type=technical_doc 15-chapter scaffold).
 license: MIT
 ---
 
 # Rattle document templates
 
-Document templates produce offer PDFs, datasheets, quotes, and other rendered documents. The documents system replaces the deprecated offer-sections. Every offer template MUST attach the system dynamic content block `dynamic:document_configuration` — without it, the live product configuration is missing from the rendered offer.
+Document templates produce offer PDFs, quotes, ccms outputs, and other rendered documents. The documents system replaces the deprecated offer-sections. Every offer template MUST attach the system dynamic content block `dynamic:document_configuration`; every quote template MUST attach `dynamic:document_line_items` — without these, the live configuration / line items are missing from the rendered output.
+
+> **Backend doc_type registry.** `app/services/document_types.py` registers exactly five canonical doc_types: `offer`, `quote`, `technical_doc`, `ccms`, `custom` (plus the legacy plurals `offers`/`quotes` and the read-only legacy alias `technical_documentation` accepted on GET filters but rejected on POST). **The string `datasheet` is NOT a backend doc_type.** Datasheet-style assets ride on `doc_type=custom` (or `offer` if they ship with a configuration). For technical documentations / Betriebsanleitungen, use the dedicated `rattle-techdoc` skill instead — it covers the 15-chapter ISO 20607 / IEC 82079-1 scaffold.
 
 ## When to use this skill
 
@@ -23,7 +25,7 @@ Document templates produce offer PDFs, datasheets, quotes, and other rendered do
    - `requires_configuration` (bool): the offer doc_type has this `true` and so MUST include `dynamic:document_configuration`.
    - `requires_quote` (bool): some doc_types additionally require `dynamic:document_line_items`.
 
-2. **Discover system dynamic blocks.** `GET /documents/content-blocks?is_dynamic=true`. Every dynamic block in the `default_layout` (pricing, configuration, company_contacts, document_summary, document_line_items, document_agreements, …) is registered here with a stable `key` like `dynamic:document_configuration`. Reference these by `id` in attachments — never wrap them in a new content block (`use-system-dynamic-blocks`).
+2. **Discover system dynamic blocks.** `GET /documents/content-blocks?search=dynamic:` (the route does NOT honour `is_dynamic` as a query param — supported filters are `cursor`, `limit`, `product_id`, `directory_id`, `tag`, `search`, `is_active`; paginate the result and inspect each block's `is_dynamic` field client-side). Every dynamic block in the `default_layout` (pricing, configuration, company_contacts, document_summary, document_line_items, document_agreements, …) is registered with a stable `key` like `dynamic:document_configuration`. Reference these by `id` in attachments — never wrap them in a new content block (`use-system-dynamic-blocks`).
 
 3. **Plan the structure tree.** A minimum offer template:
    - Chapter 1: **Product Overview** (`node_type=chapter`, `slug=product-overview`)
@@ -80,7 +82,7 @@ Document templates produce offer PDFs, datasheets, quotes, and other rendered do
     }
   ],
   "notes": [
-    "Use system dynamic block id from GET /documents/content-blocks?is_dynamic=true&key=dynamic:document_configuration"
+    "Resolve the system dynamic block id by paginating GET /documents/content-blocks?search=dynamic:document_configuration and matching the response's is_dynamic=true && key=dynamic:document_configuration entry (the route does not honour ?is_dynamic= as a filter — search + client-side filter is the supported pattern)."
   ]
 }
 ```

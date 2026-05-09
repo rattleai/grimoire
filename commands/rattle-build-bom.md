@@ -27,7 +27,7 @@ Design / fix / validate a variant BOM for the configuration at `$ARGUMENTS`.
 4. **Author the variant-bom.json.** For each line, set:
    - `usage_subclauses` — the conditional inclusion (use empty `[]` for "always include").
    - `option_scalings` — quantity scaling for numbered options (ratio `{opt, part}` for proportional, range `{areas: [...]}` for bracketed).
-   - `quantity` — base quantity (often `0` for range-mode lines, since the range value is absolute).
+   - `quantity` — base quantity. **Must be > 0** (Pydantic `BomItemCreateRequest.quantity` is `Field(1.0, gt=0, le=1e9)`; the API rejects `quantity=0` with 422 even when range-mode `option_scalings` would override at explosion time). Use `quantity=1` and document the absolute-vs-additive intent in the line's `note`.
    - `scrap_percent` — manufacturing scrap allowance (BomItem only).
    - `alt_group` + `priority` — for true alternates.
    - `ghost_part` — only for legitimate phantom assemblies.

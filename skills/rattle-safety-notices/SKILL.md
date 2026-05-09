@@ -291,7 +291,7 @@ When asked to enumerate or produce safety notices in batch, output:
 - **API** `GET /api/v1/safety-logos[?category=...]` — live catalogue with EN+DE descriptions for hazard matching. **Source of truth.**
 - **API** `GET /api/v1/safety-notices/signal-words[?locale=...]` — live signal-word lookup.
 - `references/iso-7010-symbols.md` — full SVG-filename catalogue per category (offline reference).
-- `references/signal-words.md` — 31 locale signal-word table (offline reference).
+- `references/signal-words.md` — 32 locale signal-word table (offline reference).
 - `references/safe-principle.md` — extended SAFE-principle authoring guide with bad-vs-good rewrite examples.
 - `rattle-techdoc/SKILL.md` — host skill that uses this one.
 - `rattle-ghs-statements/SKILL.md` — chemical hazards (sister skill).

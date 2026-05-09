@@ -12,22 +12,22 @@ The product-independent master record. Source: `app/models.py` `class Part`. Pyd
 | `part_number` | string | — | Unique within company (the canonical identifier) |
 | `part_name` | string | — | Display name |
 | `part_cost` | int | 0 | **Integer** (`Field(ge=0)`), not numeric — currency unit per company config |
-| `part_img` | string\|null | null | URL |
-| `part_type` | string\|null | null | Free-form class (`raw`/`purchased`/`manufactured`/`assembly`/`consumable`/…) |
-| `part_description` | text\|null | null | |
-| `make_or_buy` | string\|null | null | Typically `make` / `buy` |
-| `commodity_code` | string\|null | null | HS / ECCN code |
-| `weight` | numeric(12,3)\|null | null | |
+| `part_img` | string\|null | null | URL — present on `PartResponse` only; `PartCreateRequest` / `PartUpdateRequest` reject it (set via the dedicated image-upload route) |
+| `part_type` | string\|null (≤ 32) | null | Enum (validator): `{"raw", "purchased", "manufactured", "assembly", "consumable"}` |
+| `part_description` | text\|null (≤ 5000) | null | |
+| `make_or_buy` | string\|null (≤ 8) | null | Enum (validator): `{"make", "buy"}` |
+| `commodity_code` | string\|null (≤ 64) | null | HS / ECCN code |
+| `weight` | float\|null (`ge=0, le=1e9`) | null | |
 | `weight_unit` | string(8) | `"kg"` | |
-| `status` | string | `"Draft"` | Lifecycle (`Draft`/`Review`/`Released`/`Obsolete`); name varies per tenant |
-| `bom_structure` | string(16) | `"normal"` | `"normal"` or `"ghost"` (phantom assembly) |
-| `phantom_resolve_mode` | string(24) | `"smart_reuse"` | `"smart_reuse"` / `"always_new"` / `"dissolve"` — only honoured when `bom_structure="ghost"` |
-| `custom_fields` | JSON object | `{}` | Tenant-defined extensions |
-| `integration_metadata` | JSON object | `{}` | ERP / connector pass-through |
+| `status` | string (≤ 32) | `"active"` | Enum (validator): `{"active", "inactive", "deprecated"}` |
+| `bom_structure` | string(16) | `"normal"` | Enum: `{"normal", "ghost"}` (phantom assembly) |
+| `phantom_resolve_mode` | string(24) | `"smart_reuse"` | Enum: `{"smart_reuse", "always_new", "dissolve"}` — only honoured when `bom_structure="ghost"` |
+| `custom_fields` | JSON object | `{}` | Tenant-defined extensions; ≤ 16 KB serialised, ≤ 100 keys, key pattern `[a-zA-Z0-9][a-zA-Z0-9_]{0,49}` |
+| `integration_metadata` | JSON object\|null | null | ERP / connector pass-through |
 
 `Part` does not carry `usage_subclauses` itself — only its **edges** (`PartPlacement`, `BomItem`) do. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
 
-> **Fields that are NOT on `Part`:** `uom`, `lifecycle_state`, `is_purchased`, `is_made`, `is_service`, `tags`. Earlier drafts of this skill listed them; they do not exist on the model and `extra="forbid"` rejects them. Use `part_type` / `make_or_buy` / `status` / `commodity_code` / `custom_fields` instead.
+> **Fields that are NOT on `PartCreateRequest` (`extra="forbid"` rejects them):** `part_img` (use the image-upload route); the legacy/invented `uom`, `lifecycle_state`, `is_purchased`, `is_made`, `is_service`, `tags`. Use `part_type` / `make_or_buy` / `status` / `commodity_code` / `custom_fields` instead.
 
 ## PartPlacement (Part ↔ Area edge)
 

@@ -1,6 +1,6 @@
 ---
-description: Build or audit an offer/quote/datasheet document template for a Rattle product. Honours the doc_type contract (offer requires a 'dynamic:document_configuration' attachment), reuses system dynamic blocks instead of wrapping them, and produces the canonical chapter+attachment JSON.
-argument-hint: <tenant> <product-name> [--doc-type offer|datasheet|quote] [--language de|en]
+description: Build or audit an offer/quote/custom document template for a Rattle product. Honours the doc_type contract (offer requires a 'dynamic:document_configuration' attachment; quote requires 'dynamic:document_line_items'), reuses system dynamic blocks instead of wrapping them, and produces the canonical chapter+attachment JSON. Backend doc_type registry: offer / quote / technical_doc / ccms / custom (datasheet rides on custom; technical documentations use the dedicated /rattle-build-techdoc command instead).
+argument-hint: <tenant> <product-name> [--doc-type offer|quote|custom|ccms] [--language de|en]
 ---
 
 # /rattle-build-offer
@@ -17,11 +17,11 @@ Propose a document template for the named product (`$ARGUMENTS`).
    ```
    Find the entry matching the requested `doc_type` (default `offer`). Note `requires_configuration`, `requires_quote`, and the `default_layout` chapter list.
 
-3. **Discover system dynamic blocks** — Always:
+3. **Discover system dynamic blocks** — The route does NOT honour `?is_dynamic=` as a query param. Use:
    ```
-   GET /documents/content-blocks?is_dynamic=true
+   GET /documents/content-blocks?search=dynamic:
    ```
-   Use these by `id` in attachments. NEVER wrap them in a new content block.
+   then paginate the response (cursor-based, `limit ≤ 100`) and filter on `is_dynamic=true && key=dynamic:<name>` client-side. Use the resolved `id` in attachments. NEVER wrap a system dynamic block in a new content block.
 
 4. **Plan the structure tree** — Minimum offer template:
    - Chapter 1 "Product Overview" — static EditorJS content block (intro, mechanics/sensors/electronics/software, core-features table, hero image).

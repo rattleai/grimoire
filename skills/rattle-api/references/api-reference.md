@@ -7010,7 +7010,7 @@ For enhanced codes with slot substitution:
 ### `GET /api/v1/safety-notices/signal-words` — List ANSI/ISO signal words
 _operationId_: `listSignalWords`
 
-Returns the ANSI Z535 / ISO 3864 four-level signal-word catalogue. Without `locale`, returns the full mapping for all 31 supported locales plus a `default` alias.
+Returns the ANSI Z535 / ISO 3864 four-level signal-word catalogue. Without `locale`, returns the full mapping for all 32 supported locales plus a `default` alias.
 
 **Query parameters:**
 - `locale` (string, optional) — When given, returns only the signal words for that locale (e.g. `de` → `{"danger":"GEFAHR","warning":"WARNUNG","caution":"VORSICHT","notice":"HINWEIS"}`). Falls back through primary-subtag → English.

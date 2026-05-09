@@ -1,6 +1,6 @@
 # Chapter reference — 15-chapter normative structure
 
-This document is the canonical chapter and section list for every Rattle `doc_type=technical_doc` template. Slugs match the seed data in `app/utils/techdoc_seed_data.py` of rattleapp. The legacy alias `technical_documentation` is accepted on `GET /documents/doc-types?key=…` filters but rejected on POST/PUT — always send `technical_doc` on writes. Use this as the master template every audit reconciles against.
+This document is the canonical chapter and section list for every Rattle `doc_type=technical_doc` template. Slugs match the seed data in `app/utils/techdoc_seed_data.py` of rattleapp. The legacy alias `technical_documentation` is accepted on read-side filters (e.g. `GET /documents/templates?doc_type=technical_documentation`) but rejected on POST/PUT — always send `technical_doc` on writes. To inspect the live registry use `GET /documents/doc-types` (the route accepts no query parameters; filter the response client-side on `key=technical_doc`). Use this file as the master template every audit reconciles against.
 
 Each chapter row shows: slug · title (DE/EN) · norm refs · key sections · mandatory content callouts.
 

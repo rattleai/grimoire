@@ -35,7 +35,7 @@ Build a Rattle technical documentation for the inputs at `$ARGUMENTS`.
 
 Before flipping `is_published=true`, the agent must confirm:
 
-- **All 15 canonical chapters present** (10 mandatory, 1 optional).
+- **All 15 canonical chapters present** (14 mandatory, 1 optional — Chapter 10 `ch-10-modifications` is the only OPT chapter; everything else in the 15-chapter scaffold is required for a CE-marked machine per ISO 20607 / MRL Annex I §1.7.4.2).
 - **All life-cycle chapters (4–11) have their `.1` safety section.**
 - **Section `sec-2-4-residual-risks` contains a residual-hazards table.**
 - **Section `sec-1-6-symbols` contains the four-row signal-word legend (DANGER / WARNING / CAUTION / NOTICE) plus every ISO 7010 category used.**
@@ -56,6 +56,6 @@ The agent produces:
 
 ## Hand-off
 
-For writes, delegate to `rattle-config-builder` with the `techdoc-template.json` payload. The builder agent's contract (`agents/rattle-config-builder.md` § "Document- and BOM-tier operations") covers the document-tier operation grammar — `ensure_template` (keyed by `(company_id, name)`), `ensure_structure_block` / `ensure_chapter` (keyed by `(template_id, slug, parent_id)`), `ensure_content_block` (keyed by `(company_id, key)`), `ensure_attachment` (keyed by `(structure_block_id, content_block_id)`), `ensure_block_locale` (keyed by `(structure_or_content_block_id, language)`). Each is upsert-by-natural-key — a second run is a safe no-op.
+For writes, delegate to `rattle-config-builder` with the `techdoc-template.json` payload. The builder agent's contract (`agents/rattle-config-builder.md` § "Document- and BOM-tier operations") covers the document-tier operation grammar — `ensure_template` (keyed by `(company_id, name)`; the GET route does NOT accept `?search=`, so the builder paginates `?doc_type=&product_id=` and filters on `name` client-side), `ensure_structure_block` / `ensure_chapter` (keyed by `(template_id, slug)` — `parent_id` is NOT in the unique constraint), `ensure_content_block` (keyed by `(company_id, key)`), `ensure_attachment` (keyed by `(structure_block_id, content_block_id)`; carries the `conditions: list[dict]` field for per-option visibility — **not** `condition_json`), `ensure_block_locale` (structure-block locale URL takes the language as a string segment; content-block locale upsert posts `{language, blocks|template_name}` to the locale collection and returns an integer `locale_id`). Each is upsert-by-natural-key — a second run is a safe no-op.
 
 $ARGUMENTS

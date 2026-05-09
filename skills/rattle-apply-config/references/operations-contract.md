@@ -106,7 +106,7 @@ Simple option-option exclusion. **Batch all pairs for a product into one `POST /
 
 1. `GET /constraints?product_id=<id>` → record `X-Constraints-Version` header.
 2. Compute desired set of pairs (existing + new, deduplicated).
-3. `POST /constraints` with `X-Constraints-Version: <version>` and body `{"product_id": <id>, "pairs": [...]}`.
+3. `POST /constraints` with `X-Constraints-Version: <version>` and body `{"product_id": <id>, "forbidden": [...]}`. The `ReplaceOptionConstraintsRequest` schema (`app/schemas/v1/constraint.py`) names the array `forbidden` — sending `pairs` returns 422.
 4. On `412 Precondition Failed`, re-read and retry once.
 
 REST: `GET /constraints`, `POST /constraints` (atomic replace).

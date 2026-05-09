@@ -17,7 +17,7 @@ Audit the technical documentation at `$ARGUMENTS`.
    - **Mixed batch** — audit per-file and aggregate.
 
 3. **Run all checks** — total ~30:
-   - **12 structural checks** (`audit-checks.md`): missing-safety-chapter, missing-phase-safety-section, missing-residual-risks-table, missing-signal-words-legend, missing-target-groups-matrix, missing-declaration-of-conformity, missing-disposal-section, unstructured-warnings, non-normative-warning-words, addressless-pictogram, unlabeled-original-language, missing-validity-section.
+   - **14 structural checks** (`audit-checks.md` — 12 numbered plus 10b and 10c): missing-safety-chapter, missing-phase-safety-section, missing-residual-risks-table, missing-signal-words-legend, missing-target-groups-matrix, missing-declaration-of-conformity, missing-disposal-section, unstructured-warnings, non-normative-warning-words, addressless-pictogram, default-fallback-symbol (10b), mismatched-ghs-pictogram (10c), unlabeled-original-language, missing-validity-section.
    - **Safety-notice rules** (`rattle-safety-notices/SKILL.md`): wrong-level-for-severity, incomplete-safe-structure, unmatched-iso-symbol, plus 3 above.
    - **H/P-statement rules** (`rattle-ghs-statements/SKILL.md`): inline-hp-text, unknown-hp-code, untranslated-hp-resolved-text.
    - **Language-quality rules** (`rattle-techdoc-language/SKILL.md`): quality-violation:* (clarity / accuracy / completeness / conciseness / consistency / currency), mood:non-imperative-instruction, original-language-obligation:missing-marker, audience-mismatch.

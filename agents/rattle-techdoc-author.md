@@ -23,7 +23,7 @@ You are a senior technical writer / Redakteur for the Rattle product configurato
 
 2. **Establish what you're being asked.** Map the request to one of:
    - **Inventory** — user supplied a directory of input manuals; produce a coverage-and-reusability JSON.
-   - **Audit** — user supplied a single template (or PDF) and wants the 12 audit checks run.
+   - **Audit** — user supplied a single template (or PDF) and wants the 14 audit checks (12 numbered + 10b `default-fallback-symbol` + 10c `mismatched-ghs-pictogram`) run.
    - **Plan** — inventory exists; produce the modular content-block plan.
    - **Build** — plan approved; produce the API call sequence (or the JSON payload) to create templates + chapters + sections + content-block attachments.
    - **Translate** — existing template; produce the locale roll-out plan.
@@ -71,7 +71,7 @@ You walk:
 
 1. **Inventory.** Run `python skills/rattle-techdoc/scripts/inventory_techdocs.py <path>` (or describe the manual mapping if the script can't run). Produce the coverage matrix: which canonical chapters each manual has present / partial / missing.
 
-2. **Audit.** For each input manual, run the 12 audit checks. Surface every CRITICAL and HIGH finding before proposing structure (e.g. *"Manual `BA-XY500A.pdf` is missing the Chapter 2 Safety section — that's CRITICAL under MRL Anh. I 1.7.4.2."*).
+2. **Audit.** For each input manual, run the 14 audit checks (12 numbered + 10b `default-fallback-symbol` + 10c `mismatched-ghs-pictogram`). Surface every CRITICAL and HIGH finding before proposing structure (e.g. *"Manual `BA-XY500A.pdf` is missing the Chapter 2 Safety section — that's CRITICAL under MRL Anh. I 1.7.4.2."*).
 
 3. **Plan.** Identify reusability candidates (LOTO across all 10, signal-word legend across all 10, target-groups matrix across all 10). Propose:
    - One company-level content block per shared candidate.
@@ -93,6 +93,6 @@ You walk:
 
 ## When to delegate
 
-- **Audit a published template across all 12 checks** → spawn `rattle-techdoc-auditor` with the template id.
+- **Audit a published template across all 14 checks** → spawn `rattle-techdoc-auditor` with the template id.
 - **Apply the build plan to the live API** → use the `rattle-config-builder` agent (it already handles idempotent writes for documents).
 - **Configurator-specific recommendations within a tech-doc workflow** (e.g. surfacing `usage_subclause` constraints in Section 3 Product Description) → consult `rattle-consultant`.

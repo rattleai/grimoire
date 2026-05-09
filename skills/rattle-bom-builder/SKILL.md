@@ -51,7 +51,10 @@ This is how a part enters the **product context** at all. Without a placement on
 Parent Part  ──(BomItem)──>  Child Part
               { quantity, uom, scrap_percent, usage_subclauses, option_scalings,
                 alt_group, priority, order_index, effective_from, effective_to,
-                ghost_part, part_group_id }
+                ghost_part }
+              # part_group_id is on the model + response shape but NOT
+              # accepted by BomItemCreateRequest / BomItemUpdateRequest
+              # (extra="forbid" rejects it; set out-of-band).
 ```
 
 A `BomItem` says: *"the **parent part** is built from N × **child part**, optionally subject to subclauses, scaling, scrap, alternates, and a date window."*

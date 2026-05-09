@@ -107,7 +107,7 @@ A short Python helper for inventorying lives at `scripts/inventory_techdocs.py`.
 
 ### Step 2 — Audit per the structural checks
 
-Run every input manual against the audit checks in `references/audit-checks.md`. The 12 checks include:
+Run every input manual against the audit checks in `references/audit-checks.md`. The 14 checks (1–12 plus 10b `default-fallback-symbol` and 10c `mismatched-ghs-pictogram`) include:
 
 - `missing-safety-chapter`
 - `missing-phase-safety-section`
@@ -245,7 +245,7 @@ When this skill produces a build plan (without yet calling the API), output:
 - `rattle-document-templates/SKILL.md` — offer/quote/datasheet templates (different doc_type contract).
 - `rattle-api/SKILL.md` — REST API auth, pagination, error envelope; `references/api-reference.md` lists every documents endpoint.
 - `references/chapter-reference.md` — all 15 chapters with EditorJS scaffolds (DE/EN), mandatory content callouts, norm references.
-- `references/audit-checks.md` — 12 structural checks for technical documentations.
+- `references/audit-checks.md` — 14 structural checks for technical documentations (12 numbered + 10b + 10c).
 - `references/editorjs-blocks.md` — every EditorJS block type used in technical documentations with shape, validation, rendering notes.
 - `references/legal-basis.md` — MRL/MVO/IEC/ISO standards, when each applies, what each requires.
 - `scripts/inventory_techdocs.py` — extract chapter map and reusability candidates from input PDF/Word manuals.

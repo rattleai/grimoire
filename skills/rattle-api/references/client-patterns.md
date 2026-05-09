@@ -93,7 +93,7 @@ GET /constraints?product_id=42
 
 POST /constraints
 X-Constraints-Version: 17
-{"product_id": 42, "pairs": [{"option_id1": 100, "option_id2": 200}, ...]}
+{"product_id": 42, "forbidden": [{"option_id1": 100, "option_id2": 200}, ...]}
 → 200 OK if version still 17, 412 Precondition Failed otherwise
 ```
 

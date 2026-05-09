@@ -8,7 +8,7 @@ REST endpoints for parts, placements, and BomItems. All require `products:read` 
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/api/v1/parts` | List parts (filters: `search`, `status`, `part_type`, `make_or_buy`, `bom_structure`; pagination: `cursor`, `limit`) |
+| GET | `/api/v1/parts` | List parts (filters: `search`, `status`, `part_type`; pagination: `cursor`, `limit`). The route in `app/routes/api_v1/parts.py` does NOT honour `make_or_buy` or `bom_structure` as query params — filter on those fields client-side. |
 | POST | `/api/v1/parts` | Create a part |
 | GET | `/api/v1/parts/{id}` | Get a part |
 | PUT | `/api/v1/parts/{id}` | Replace a part |
@@ -28,47 +28,45 @@ REST endpoints for parts, placements, and BomItems. All require `products:read` 
 
 > **There is no `POST /api/v1/parts/import` endpoint.** Bulk authoring goes through repeated calls to the create endpoints above (or via the idempotent `ensure_*` operations from `rattle-apply-config` + the BOM operation grammar in `agents/rattle-config-builder.md`). The only sibling export route is `GET /api/v1/parts/export`.
 
-Body (Create part):
+Body (Create part) — every field accepted by `PartCreateRequest` (`extra="forbid"`):
 
 ```json
 {
   "part_number": "AX-55",
   "part_name": "Axis assembly",
   "part_cost": 1950,
-  "part_img": null,
   "part_type": "assembly",
   "part_description": "Top-level assembly for the X axis",
   "make_or_buy": "make",
   "commodity_code": null,
   "weight": 12.5,
   "weight_unit": "kg",
-  "status": "Released",
+  "status": "active",
   "bom_structure": "normal",
   "phantom_resolve_mode": "smart_reuse",
   "custom_fields": {},
-  "integration_metadata": {}
+  "integration_metadata": null
 }
 ```
 
 | Field | Required | Type | Notes |
 |---|---|---|---|
-| `part_number` | yes | string | Unique within company |
-| `part_name` | yes | string | |
+| `part_number` | yes | string (1..255) | Unique within company |
+| `part_name` | yes | string (1..255) | |
 | `part_cost` | no | int (default 0, `ge=0`) | **Integer**, not numeric — currency unit per company config |
-| `part_img` | no | string\|null | URL |
-| `part_type` | no | string\|null | Free-form (`raw`/`purchased`/`manufactured`/`assembly`/`consumable`/…) |
-| `part_description` | no | string\|null | |
-| `make_or_buy` | no | string\|null | Typically `make`/`buy` |
-| `commodity_code` | no | string\|null | HS / ECCN code |
-| `weight` | no | numeric(12,3)\|null | |
-| `weight_unit` | no | string (default `"kg"`) | |
-| `status` | no | string | Lifecycle (`Draft`/`Review`/`Released`/`Obsolete`); name varies by tenant |
-| `bom_structure` | no | `"normal"`\|`"ghost"` (default `"normal"`) | Phantom assembly flag |
-| `phantom_resolve_mode` | no | `"smart_reuse"`\|`"always_new"`\|`"dissolve"` (default `"smart_reuse"`) | Only honoured when `bom_structure="ghost"` |
-| `custom_fields` | no | JSON object | Tenant-defined extensions |
-| `integration_metadata` | no | JSON object | ERP / external-system pass-through |
+| `part_type` | no | string\|null (≤ 32) | Enum (validator): `{"raw", "purchased", "manufactured", "assembly", "consumable"}` |
+| `part_description` | no | string\|null (≤ 5000) | |
+| `make_or_buy` | no | string\|null (≤ 8) | Enum (validator): `{"make", "buy"}` |
+| `commodity_code` | no | string\|null (≤ 64) | HS / ECCN code |
+| `weight` | no | float\|null (`ge=0, le=1e9`) | |
+| `weight_unit` | no | string (≤ 8, default `"kg"`) | |
+| `status` | no | string (≤ 32, default `"active"`) | Enum (validator): `{"active", "inactive", "deprecated"}` |
+| `bom_structure` | no | string (≤ 16, default `"normal"`) | Enum (validator): `{"normal", "ghost"}` |
+| `phantom_resolve_mode` | no | string (≤ 24, default `"smart_reuse"`) | Enum (validator): `{"smart_reuse", "always_new", "dissolve"}`. Only honoured when `bom_structure="ghost"`. |
+| `custom_fields` | no | JSON object (default `{}`) | Tenant-defined extensions; ≤ 16 KB serialised, ≤ 100 keys, key pattern `[a-zA-Z0-9][a-zA-Z0-9_]{0,49}` |
+| `integration_metadata` | no | JSON object\|null | ERP / external-system pass-through |
 
-> Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
+> **Notable absences from the create schema.** `PartCreateRequest` does NOT accept `part_img` (the field is on `PartResponse` and is set via the dedicated image-upload route, not the create body). `extra="forbid"` returns 422 on any unknown field. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
 
 ## Part placements
 
