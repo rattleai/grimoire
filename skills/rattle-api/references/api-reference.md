@@ -9,7 +9,7 @@
 - **Base URL**: `https://www.rattleapp.de/api/v1` (override via env var `RATTLE_BASE_URL`).
 - **OpenAPI version**: 3.1.0
 - **Spec version**: 1.0.0
-- **Operations**: 443 across 245 paths and 36 resource groups.
+- **Operations**: 462 across 257 paths and 37 resource groups.
 
 ## Authentication
 
@@ -85,7 +85,7 @@ while True:
 
 A handful of bulk-replace endpoints accept an `X-<Resource>-Version` header so concurrent clients cannot silently overwrite each other:
 
-- `POST /constraints` uses `X-Constraints-Version` (read latest from `GET /constraints?product_id=…`, send back). Server returns **`409 Conflict`** if stale (problem-detail body's `detail` contains `Version conflict:` to distinguish stale-version from other 409 conflicts; NOT `412 Precondition Failed`). Same OCC pattern applies to `POST /constraints/area` (`X-Areas-Version`) and `POST /price-lists/*` writes (`X-Price-Lists-Version`).
+- `POST /constraints` uses `X-Constraints-Version` (read latest from `GET /constraints?product_id=…`, send back). Server returns `412 Precondition Failed` if stale.
 
 Other replace-style endpoints follow the same convention where applicable — see the operation's parameter list for `X-*-Version` headers.
 
@@ -125,7 +125,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Company | 14 | [#company](#company) |
 | Configurations | 8 | [#configurations](#configurations) |
 | Connectors | 22 | [#connectors](#connectors) |
-| Constraints | 11 | [#constraints](#constraints) |
+| Constraints | 16 | [#constraints](#constraints) |
 | Customer Links | 6 | [#customer-links](#customer-links) |
 | Customers | 14 | [#customers](#customers) |
 | Documents | 78 | [#documents](#documents) |
@@ -136,17 +136,17 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Item Revisions | 7 | [#item-revisions](#item-revisions) |
 | Languages | 7 | [#languages](#languages) |
 | Opportunities | 7 | [#opportunities](#opportunities) |
-| Options | 14 | [#options](#options) |
+| Options | 15 | [#options](#options) |
 | Part Documents | 11 | [#part-documents](#part-documents) |
-| Parts | 27 | [#parts](#parts) |
+| Parts | 32 | [#parts](#parts) |
 | Price Lists | 8 | [#price-lists](#price-lists) |
 | Price Overrides | 6 | [#price-overrides](#price-overrides) |
 | Product Media | 10 | [#product-media](#product-media) |
 | Products | 25 | [#products](#products) |
 | Pull Requests | 5 | [#pull-requests](#pull-requests) |
 | Quotes | 20 | [#quotes](#quotes) |
-| Safety Reference | 4 | [#safety-reference](#safety-reference) |
-| Translations | 4 | [#translations](#translations) |
+| Safety | 4 | [#safety](#safety) |
+| Translations | 8 | [#translations](#translations) |
 | Webhooks | 11 | [#webhooks](#webhooks) |
 
 ## Quick reference (all operations)
@@ -293,6 +293,11 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Constraints | GET | `/api/v1/constraints/area` | List area-level forbidden combinations |
 | Constraints | POST | `/api/v1/constraints/area` | Replace area-level forbidden combinations |
 | Constraints | POST | `/api/v1/constraints/check` | Check if a combination is forbidden |
+| Constraints | GET | `/api/v1/constraints/combination-rules` | List combination rules |
+| Constraints | POST | `/api/v1/constraints/combination-rules` | Create a combination rule |
+| Constraints | GET | `/api/v1/constraints/combination-rules/{id}` | Get a combination rule |
+| Constraints | PUT | `/api/v1/constraints/combination-rules/{id}` | Update a combination rule |
+| Constraints | DELETE | `/api/v1/constraints/combination-rules/{id}` | Delete a combination rule |
 | Constraints | GET | `/api/v1/constraints/rules` | List constraint rules |
 | Constraints | POST | `/api/v1/constraints/rules` | Create a constraint rule |
 | Constraints | GET | `/api/v1/constraints/rules/{id}` | Get a constraint rule |
@@ -469,6 +474,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Options | DELETE | `/api/v1/options/{optionId}/advanced-prices/{priceId}` | Delete an advanced price |
 | Options | GET | `/api/v1/options/{optionId}/area-config` | Get area-specific config for an option |
 | Options | PUT | `/api/v1/options/{optionId}/area-config` | Set area-specific config for an option |
+| Options | DELETE | `/api/v1/options/{optionId}/area-config` | Clear area-specific config for an option |
 | Part Documents | GET | `/api/v1/part-documents` | List part documents |
 | Part Documents | POST | `/api/v1/part-documents` | Create a part document |
 | Part Documents | GET | `/api/v1/part-documents/{id}` | Get a part document |
@@ -485,6 +491,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Parts | PUT | `/api/v1/parts/bom/{id}` | Update a BOM item |
 | Parts | PATCH | `/api/v1/parts/bom/{id}` | Partially update a BOM item |
 | Parts | DELETE | `/api/v1/parts/bom/{id}` | Delete a BOM item |
+| Parts | GET | `/api/v1/parts/ghosts` | List ghost parts |
 | Parts | GET | `/api/v1/parts/groups` | List part groups |
 | Parts | POST | `/api/v1/parts/groups` | Create part group |
 | Parts | GET | `/api/v1/parts/groups/{groupId}` | Get part group |
@@ -500,9 +507,13 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Parts | DELETE | `/api/v1/parts/{id}` | Delete a part |
 | Parts | GET | `/api/v1/parts/{id}/bom` | List BOM children |
 | Parts | POST | `/api/v1/parts/{id}/bom` | Add a BOM child |
+| Parts | POST | `/api/v1/parts/{id}/bom/explode` | Explode a BOM tree |
 | Parts | GET | `/api/v1/parts/{id}/bom/flat` | Get flattened BOM |
 | Parts | GET | `/api/v1/parts/{id}/bom/tree` | Get multi-level BOM tree |
 | Parts | POST | `/api/v1/parts/{id}/bom/validate` | Validate BOM integrity |
+| Parts | POST | `/api/v1/parts/{id}/ghost/materialize` | Materialize a ghost assembly |
+| Parts | POST | `/api/v1/parts/{id}/ghost/resolve` | Resolve a ghost assembly |
+| Parts | GET | `/api/v1/parts/{id}/ghost/status` | Get ghost status for a part |
 | Parts | GET | `/api/v1/parts/{id}/placements` | List part placements |
 | Parts | POST | `/api/v1/parts/{id}/placements` | Create a part placement |
 | Parts | GET | `/api/v1/parts/{id}/where-used` | Find where a part is used |
@@ -581,14 +592,18 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Quotes | GET | `/api/v1/quotes/{quoteId}/details` | Get quote details |
 | Quotes | PUT | `/api/v1/quotes/{quoteId}/details` | Upsert quote details |
 | Quotes | PATCH | `/api/v1/quotes/{quoteId}/details` | Partially update quote details |
-| Safety Reference | GET | `/api/v1/safety-logos` | List ISO 7010 / GHS safety logos with manifest descriptions |
-| Safety Reference | GET | `/api/v1/hp-statements` | List CLP H/P/EUH statement codes for a locale + GHS pictogram map |
-| Safety Reference | GET | `/api/v1/hp-statements/{code}` | Resolve a single H/P statement (supports combined keys + slot placeholders) |
-| Safety Reference | GET | `/api/v1/safety-notices/signal-words` | List ANSI/ISO signal words for one or all locales |
+| Safety | GET | `/api/v1/hp-statements` | List H/P statements |
+| Safety | GET | `/api/v1/hp-statements/{code}` | Resolve an H/P statement |
+| Safety | GET | `/api/v1/safety-logos` | List safety logos |
+| Safety | GET | `/api/v1/safety-notices/signal-words` | List signal words |
 | Translations | GET | `/api/v1/translations` | List translations |
 | Translations | PUT | `/api/v1/translations` | Upsert translations |
 | Translations | GET | `/api/v1/translations/dictionary` | List dictionary entries |
 | Translations | POST | `/api/v1/translations/dictionary` | Create or update a dictionary entry |
+| Translations | GET | `/api/v1/translations/dictionary/{entry_id}` | Get a dictionary entry |
+| Translations | PUT | `/api/v1/translations/dictionary/{entry_id}` | Replace a dictionary entry |
+| Translations | PATCH | `/api/v1/translations/dictionary/{entry_id}` | Partially update a dictionary entry |
+| Translations | DELETE | `/api/v1/translations/dictionary/{entry_id}` | Delete a dictionary entry |
 | Webhooks | GET | `/api/v1/webhooks` | List webhook subscriptions |
 | Webhooks | POST | `/api/v1/webhooks` | Create a webhook subscription |
 | Webhooks | GET | `/api/v1/webhooks/deliveries/{id}` | Get delivery detail |
@@ -2600,6 +2615,102 @@ _operationId_: `checkConstraint`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `GET /api/v1/constraints/combination-rules` — List combination rules
+_operationId_: `listCombinationRules`
+
+Combination rules express how options and areas relate beyond simple forbidden pairs. `rule_type` is one of `forced`, `prerequisite`, `warning`, `visibility`, `recommendation`, `default`, or `set_quantity`. Each side (`source`/`target`) is an option or an area (`source_type`/`target_type` = `option` | `area`). Option↔option rules must link different groups, or two options of the same multi-select group. Cross-area rules must stay coherent: a `forced`/`recommendation` rule with an area source requires the target option to be available in that area; `prerequisite`/`visibility` rules reject a gated entity that only exists inside the area it is paired with. `set_quantity` rules couple the target option's quantity to the source via `quantity_factor`, `quantity_offset`, `quantity_rounding` and `quantity_editable`. Requires the `combination_rules` plan feature.
+
+**Query parameters:**
+- `product_id` (integer) **required** — Product ID
+- `area_id` (integer) — Filter by area
+- `rule_type` (string) — Filter by rule type
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `403` — Insufficient scopes (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/constraints/combination-rules` — Create a combination rule
+_operationId_: `createCombinationRule`
+
+Combination rules express how options and areas relate beyond simple forbidden pairs. `rule_type` is one of `forced`, `prerequisite`, `warning`, `visibility`, `recommendation`, `default`, or `set_quantity`. Each side (`source`/`target`) is an option or an area (`source_type`/`target_type` = `option` | `area`). Option↔option rules must link different groups, or two options of the same multi-select group. Cross-area rules must stay coherent: a `forced`/`recommendation` rule with an area source requires the target option to be available in that area; `prerequisite`/`visibility` rules reject a gated entity that only exists inside the area it is paired with. `set_quantity` rules couple the target option's quantity to the source via `quantity_factor`, `quantity_offset`, `quantity_rounding` and `quantity_editable`. Requires the `combination_rules` plan feature.
+
+**Request body:**
+- `application/json` **required** — schema: `CombinationRuleCreateRequest`
+  - `area_id` (object)
+  - `condition` (object)
+  - `direction` (string)
+  - `message` (string)
+  - `product_id` (integer) **required**
+  - `quantity_editable` (object)
+  - `quantity_factor` (object)
+  - `quantity_offset` (object)
+  - `quantity_rounding` (object)
+  - `rule_type` (string) **required**
+  - `source_area_id` (object)
+  - `source_option_id` (object)
+  - _...4 more — see `components.schemas` in `openapi.json`_
+
+**Responses:**
+- `201` — Created
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `403` — Insufficient scopes (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/constraints/combination-rules/{id}` — Get a combination rule
+_operationId_: `getCombinationRule`
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/constraints/combination-rules/{id}` — Update a combination rule
+_operationId_: `updateCombinationRule`
+
+Combination rules express how options and areas relate beyond simple forbidden pairs. `rule_type` is one of `forced`, `prerequisite`, `warning`, `visibility`, `recommendation`, `default`, or `set_quantity`. Each side (`source`/`target`) is an option or an area (`source_type`/`target_type` = `option` | `area`). Option↔option rules must link different groups, or two options of the same multi-select group. Cross-area rules must stay coherent: a `forced`/`recommendation` rule with an area source requires the target option to be available in that area; `prerequisite`/`visibility` rules reject a gated entity that only exists inside the area it is paired with. `set_quantity` rules couple the target option's quantity to the source via `quantity_factor`, `quantity_offset`, `quantity_rounding` and `quantity_editable`. Requires the `combination_rules` plan feature.
+
+**Request body:**
+- `application/json` **required** — schema: `CombinationRuleUpdateRequest`
+  - `area_id` (object)
+  - `condition` (object)
+  - `direction` (object)
+  - `message` (object)
+  - `quantity_editable` (object)
+  - `quantity_factor` (object)
+  - `quantity_offset` (object)
+  - `quantity_rounding` (object)
+  - `rule_type` (object)
+  - `source_area_id` (object)
+  - `source_option_id` (object)
+  - `source_type` (object)
+  - _...3 more — see `components.schemas` in `openapi.json`_
+
+**Responses:**
+- `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `403` — Insufficient scopes (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/constraints/combination-rules/{id}` — Delete a combination rule
+_operationId_: `deleteCombinationRule`
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `403` — Insufficient scopes (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `GET /api/v1/constraints/rules` — List constraint rules
 _operationId_: `listConstraintRules`
 
@@ -2614,6 +2725,13 @@ _operationId_: `listConstraintRules`
 
 ### `POST /api/v1/constraints/rules` — Create a constraint rule
 _operationId_: `createConstraintRule`
+
+Advanced rules use one of two `rule_json` shapes, validated and canonicalised identically to the in-app rule editor:
+
+* **Forbidden pair** — `{"invalid": [a, b]}` with exactly two option ids from different groups (or the same multi-select group). Optional `"direction": "one_way"` plus `"source": a` makes resolution directed (selecting the source auto-removes the target); validity stays symmetric. Omit `direction` for a symmetric rule.
+* **N-way mutual exclusion** — `{"type": "at_most_n", "options": [...], "max_selected": N}` with at least two distinct options and `1 <= max_selected < len(options)`.
+
+Both shapes accept an optional `"requires"` list of condition clauses (`anyOf` / `allOf` / `groupSelections`, chained with `"op": "AND"|"OR"`) that gates when the rule is active. All referenced option ids must belong to the product.
 
 **Request body:**
 - `application/json` **required** — schema: `ForbiddenRuleCreateRequest`
@@ -4162,7 +4280,7 @@ Stream all products as NDJSON for bulk export. Use `updated_after` for increment
 
 ## Groups
 
-Option groups are containers for related configuration choices within an area (e.g., 'Color', 'Material'). Groups can be duplicated with all their options. Scope: `products:read`, `products:write`.
+Option groups are containers for related configuration choices within an area (e.g., 'Color', 'Material'). Groups can be duplicated with all their options. Cardinality constraints (`is_required`, `selection_min`, `selection_max`) control how many options must or may be selected. Scope: `products:read`, `products:write`.
 
 ### `GET /api/v1/groups` — List groups
 _operationId_: `listGroups`
@@ -4188,10 +4306,13 @@ _operationId_: `createGroup`
   - `area_id` (object) — Area to assign this group to
   - `description` (string)
   - `is_multi` (boolean)
+  - `is_required` (boolean) — Require at least one selection in this group
   - `key` (string)
   - `language` (string)
   - `name` (string) **required**
   - `order_index` (object) — Position in group list (auto-assigned if omitted)
+  - `selection_max` (object) — Maximum number of selections allowed (multi-select groups)
+  - `selection_min` (object) — Minimum number of selections required (multi-select groups)
 
 **Responses:**
 - `201` — Created
@@ -4215,10 +4336,13 @@ _operationId_: `updateGroup`
 - `application/json` **required** — schema: `GroupUpdateRequest`
   - `description` (object)
   - `is_multi` (object)
+  - `is_required` (object)
   - `key` (object)
   - `language` (object)
   - `name` (object)
   - `order_index` (object)
+  - `selection_max` (object)
+  - `selection_min` (object)
 
 **Responses:**
 - `200` — Success
@@ -4234,10 +4358,13 @@ _operationId_: `patchGroup`
 - `application/json` **required** — schema: `GroupUpdateRequest`
   - `description` (object)
   - `is_multi` (object)
+  - `is_required` (object)
   - `key` (object)
   - `language` (object)
   - `name` (object)
   - `order_index` (object)
+  - `selection_max` (object)
+  - `selection_min` (object)
 
 **Responses:**
 - `200` — Success
@@ -5200,6 +5327,23 @@ _operationId_: `setOptionAreaConfig`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `DELETE /api/v1/options/{optionId}/area-config` — Clear area-specific config for an option
+_operationId_: `deleteOptionAreaConfig`
+
+Clear an option's area-specific override(s). Pass `field` to clear a single override column; omit it to delete the whole override row. Scope: `prices:write`.
+
+**Query parameters:**
+- `area_id` (integer) **required** — Area ID
+- `field` (string) — Single override field to clear (e.g. price, option_key); omit to clear all
+
+**Responses:**
+- `204` — Deleted
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ---
 
 ## Part Documents
@@ -5455,6 +5599,23 @@ _operationId_: `deleteBomItem`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `GET /api/v1/parts/ghosts` — List ghost parts
+_operationId_: `listGhostParts`
+
+List ghost (phantom assembly) parts. Scope: `parts:read`.
+
+**Query parameters:**
+- `cursor` (string) — Opaque cursor for the next page
+- `limit` (integer) — Items per page (server enforces configured maximum)
+- `status` (string) — Filter by lifecycle status
+- `part_type` (string) — Filter by part type
+- `search` (string) — Search by number or name
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `GET /api/v1/parts/groups` — List part groups
 _operationId_: `listPartGroups`
 
@@ -5687,6 +5848,28 @@ _operationId_: `createBomItem`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `POST /api/v1/parts/{id}/bom/explode` — Explode a BOM tree
+_operationId_: `explodeBom`
+
+Explode a part's BOM with ghost resolution, effectivity (`as_of`), alternate handling, and product-option scaling. Scope: `parts:read`.
+
+**Request body:**
+- `application/json` **required**
+  - `alternate_mode` (string)
+  - `area_id` (integer) — Optional area context
+  - `as_of` (string(date)) — Effectivity date (YYYY-MM-DD)
+  - `max_depth` (integer)
+  - `product_id` (integer) **required** — Product context for option scaling
+  - `resolve_ghosts` (boolean)
+
+**Responses:**
+- `200` — BOM explosion
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `GET /api/v1/parts/{id}/bom/flat` — Get flattened BOM
 _operationId_: `getBomFlat`
 
@@ -5723,6 +5906,57 @@ Check for cycles, missing children, duplicates, and self-references.
 
 **Responses:**
 - `200` — Validation result
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/parts/{id}/ghost/materialize` — Materialize a ghost assembly
+_operationId_: `materializeGhostAssembly`
+
+Materialize a ghost (phantom) part's resolved BOM into a concrete assembly, or dissolve it. Returns 201 when a new part is created, 200 when an existing part is reused or the ghost is dissolved. Scope: `parts:write`.
+
+**Request body:**
+- `application/json` **required**
+  - `new_part_name` (string|null)
+  - `new_part_number` (string|null)
+  - `parent_quantity` (number|null)
+  - `resolve_mode` (string|null)
+  - `resolved_child_ids` (array<integer>) **required**
+
+**Responses:**
+- `200` — Materialized (existing part reused, or ghost dissolved)
+- `201` — Created
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/parts/{id}/ghost/resolve` — Resolve a ghost assembly
+_operationId_: `resolveGhostAssembly`
+
+Resolve a ghost (phantom) assembly into its configured 100% BOM. Scope: `parts:read`.
+
+**Request body:**
+- `application/json`
+  - `as_of` (string(date)) — Effectivity date (YYYY-MM-DD)
+  - `condition_option_ids` (array<integer>) — Option IDs whose conditioned children to include
+
+**Responses:**
+- `200` — Resolved ghost BOM
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/parts/{id}/ghost/status` — Get ghost status for a part
+_operationId_: `getGhostStatus`
+
+Check ghost (phantom assembly) status and ghost-toggle eligibility for a part. Scope: `parts:read`.
+
+**Responses:**
+- `200` — Ghost status
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -6866,189 +7100,62 @@ _operationId_: `patchQuoteDetails`
 
 ---
 
-## Safety Reference
+## Safety
 
-Read-only endpoints that expose the static safety reference data the EditorJS `safety_notice` and `hp_statement` block tools use, so AI agents and external integrations can enumerate available logos and resolve the correct H/P statement codes and signal words for a given locale. Scope: `products:read`.
+Read-only safety reference data — GHS/CLP safety logos, H/P (hazard/precautionary) statements, and ANSI Z535 / ISO 3864 signal words used by the `safety_notice` and `hp_statement` document blocks. Scope: `products:read`.
 
-> **Use these instead of guessing.** Before emitting a `safety_notice` block, call `GET /api/v1/safety-logos[?category=...]` to pick the right ISO 7010 / GHS file. Before emitting an `hp_statement` block, call `GET /api/v1/hp-statements[/{code}]` to validate the code and obtain the locale-resolved text. The endpoints are the single source of truth — falling back to a default symbol or a hand-typed CLP text is the audit finding `addressless-pictogram` / `inline-hp-text`.
+### `GET /api/v1/hp-statements` — List H/P statements
+_operationId_: `listHpStatements`
 
-### `GET /api/v1/safety-logos` — List ISO 7010 / GHS safety logos
+Hazard/precautionary statement codes and texts for a locale, with an optional GHS pictogram map. Scope: `products:read`.
+
+**Query parameters:**
+- `locale` (string) — Locale code
+- `include_ghs_map` (string) — Include the H-code → GHS pictogram map (true/false)
+
+**Responses:**
+- `200` — H/P statements
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/hp-statements/{code}` — Resolve an H/P statement
+_operationId_: `getHpStatement`
+
+Resolve a single H/P statement by code, optionally filling slot placeholders. Scope: `products:read`.
+
+**Query parameters:**
+- `locale` (string) — Locale code
+- `slot_1` (string) — Placeholder value for an enhanced variant
+- `slot_2` (string) — Placeholder value for an enhanced variant
+
+**Responses:**
+- `200` — H/P statement
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/safety-logos` — List safety logos
 _operationId_: `listSafetyLogos`
 
-Returns the structured index of every safety logo shipped with the platform, grouped by category (ISO 7010 `warning` / `prohibition` / `mandatory` / `safe_condition` / `fire_protection` plus the `gefahrstoffe` GHS pictogram set, plus legacy German aliases that are present but hidden from the picker). Each file carries best-effort code parsing (`W024`, `P010`, `M002`, `GHS`) plus the manifest-supplied human description in EN and DE.
+GHS/CLP safety logos grouped by category. Scope: `products:read`.
 
 **Query parameters:**
-- `category` (string, optional) — filter to a single category id (`warning`, `prohibition`, `mandatory`, `safe_condition`, `fire_protection`, `gefahrstoffe`). 404 if the category is unknown.
-
-**Response (200):**
-
-```json
-{
-  "data": {
-    "base": "/safety_logos",
-    "generated": 1715240000,
-    "stats": {"total_files": 287, "by_ext": {"svg": 287}},
-    "root": {"count": 0, "files": []},
-    "categories": [
-      {
-        "id": "warning",
-        "label": "Warning (W...)",
-        "count": 49,
-        "files": [
-          {
-            "file": "W024_crushing_of_hands.svg",
-            "ext": "svg",
-            "code": "W024",
-            "label": "W024 crushing of hands",
-            "url": "/safety_logos/warning/W024_crushing_of_hands.svg",
-            "description": "Crushing of hands",
-            "description_de": "Quetschgefahr für die Hände"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Use this to**: pick the `isoSymbol.category` and `isoSymbol.file` for a `safety_notice` block. Match the hazard description to the closest `description` (or `description_de`).
+- `category` (string) — Filter to a single category id
 
 **Responses:**
-- `200` — Index of available safety logos
+- `200` — Safety logos
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Unknown category (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/hp-statements` — List CLP H/P/EUH statements
-_operationId_: `listHPStatements`
-
-Returns every H/P/EUH code text for the requested locale, plus the H-code → GHS pictogram map. Statement text is normative (CLP Regulation EC 1272/2008) and locale-resolved server-side from the official tables. Falls back to English when a locale is missing.
-
-**Query parameters:**
-- `locale` (string, optional, default `en`) — ISO locale code (`de`, `fr`, `pt-br`, …). Falls back through alias → primary subtag → `en`.
-- `include_ghs_map` (boolean, optional, default `true`) — include the H-code → GHS pictogram dictionary in the response.
-
-**Response (200):**
-
-```json
-{
-  "data": {
-    "locale_requested": "de",
-    "count": 281,
-    "statements": {
-      "H300": "Lebensgefahr bei Verschlucken.",
-      "H315": "Verursacht Hautreizungen.",
-      "H300+H310": "Lebensgefahr bei Verschlucken oder Hautkontakt.",
-      "P302+P352": "BEI BERÜHRUNG MIT DER HAUT: Mit viel Wasser/… waschen."
-    },
-    "ghs_pictogram_map": {
-      "H300": "GHS06",
-      "H315": "GHS07"
-    }
-  }
-}
-```
-
-**Use this to**: enumerate available codes when staging an `hp_statement` block, and validate that the H-codes you intend to emit actually exist in the target locale.
-
-**Responses:**
-- `200` — Statements for locale (with optional GHS map)
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/hp-statements/{code}` — Resolve a single H/P statement
-_operationId_: `getHPStatement`
-
-Resolves a single code to its locale-correct text. Supports plain codes (`H300`), combined codes (`H300+H310`), and enhanced statements with placeholder slots (`H340` with `slot_1=`).
-
-**Path parameters:**
-- `code` (string, required) — `H[0-9]{3}`, `P[0-9]{3}`, `EUH[0-9]{3}`, or a combined-key like `H300+H310`.
-
-**Query parameters:**
-- `locale` (string, optional, default `en`) — ISO locale code.
-- `slot_1` (string, optional) — Substitute the `{1}` placeholder in enhanced variants (e.g. for `H340`, route of exposure: "beim Einatmen").
-- `slot_2` (string, optional) — Substitute the `{2}` placeholder.
-
-**Response (200):**
-
-```json
-{
-  "data": {
-    "code": "H315",
-    "locale_requested": "de",
-    "text": "Verursacht Hautreizungen.",
-    "ghs_pictogram": "GHS07"
-  }
-}
-```
-
-For combined codes, `ghs_pictogram` is omitted (combined statements don't carry a single pictogram — emit one `hp_statement` block with both codes and let the renderer aggregate the unique pictograms).
-
-For enhanced codes with slot substitution:
-
-```json
-{
-  "data": {
-    "code": "H340",
-    "locale_requested": "de",
-    "text": "Kann genetische Defekte verursachen beim Einatmen.",
-    "ghs_pictogram": "GHS08",
-    "slots_applied": {"1": "beim Einatmen"}
-  }
-}
-```
-
-**Use this to**: pre-validate every code before writing it into `hp_statement.codes[]`, and (optionally) cache `resolvedText` + `resolvedLocale` on the block.
-
-**Responses:**
-- `200` — Resolved statement
-- `400` — Code parameter is empty (`application/json` → `ProblemDetails`)
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Unknown code (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/safety-notices/signal-words` — List ANSI/ISO signal words
+### `GET /api/v1/safety-notices/signal-words` — List signal words
 _operationId_: `listSignalWords`
 
-Returns the ANSI Z535 / ISO 3864 four-level signal-word catalogue. Without `locale`, returns the full mapping for all 32 supported locales plus a `default` alias.
+ANSI Z535 / ISO 3864 signal words for one locale (pass `locale`) or all locales (omit it). Scope: `products:read`.
 
 **Query parameters:**
-- `locale` (string, optional) — When given, returns only the signal words for that locale (e.g. `de` → `{"danger":"GEFAHR","warning":"WARNUNG","caution":"VORSICHT","notice":"HINWEIS"}`). Falls back through primary-subtag → English.
-
-**Response (200) — single locale:**
-
-```json
-{
-  "data": {
-    "locale_requested": "de",
-    "signal_words": {
-      "danger": "GEFAHR",
-      "warning": "WARNUNG",
-      "caution": "VORSICHT",
-      "notice": "HINWEIS"
-    },
-    "levels": ["danger", "warning", "caution", "notice"]
-  }
-}
-```
-
-**Response (200) — all locales (omit `locale` query param):**
-
-```json
-{
-  "data": {
-    "count": 32,
-    "levels": ["danger", "warning", "caution", "notice"],
-    "by_locale": {
-      "de": {"danger": "GEFAHR", "warning": "WARNUNG", "caution": "VORSICHT", "notice": "HINWEIS"},
-      "en": {"danger": "DANGER", "warning": "WARNING", "caution": "CAUTION", "notice": "NOTICE"},
-      "default": {"danger": "DANGER", "warning": "WARNING", "caution": "CAUTION", "notice": "NOTICE"}
-    }
-  }
-}
-```
-
-**Use this to**: pre-fill `safety_notice.signalWord` when authoring blocks across multiple locales without re-deriving the word from the level.
+- `locale` (string) — Locale code; omit for all locales
 
 **Responses:**
 - `200` — Signal words
@@ -7113,6 +7220,65 @@ _operationId_: `upsertDictionaryEntry`
 - `201` — Created
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/translations/dictionary/{entry_id}` — Get a dictionary entry
+_operationId_: `getDictionaryEntry`
+
+Retrieve a single translation dictionary entry. Scope: `products:read`.
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/translations/dictionary/{entry_id}` — Replace a dictionary entry
+_operationId_: `updateDictionaryEntry`
+
+Update an entry; a supplied `translations` map fully replaces the existing one. Scope: `products:write`.
+
+**Request body:**
+- `application/json` **required**
+  - `base_term` (string)
+  - `translations` (object) — Replaces the entry's full translation map
+
+**Responses:**
+- `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PATCH /api/v1/translations/dictionary/{entry_id}` — Partially update a dictionary entry
+_operationId_: `patchDictionaryEntry`
+
+Same semantics as PUT — a supplied `translations` map replaces (does not merge). Scope: `products:write`.
+
+**Request body:**
+- `application/json` **required**
+  - `base_term` (string)
+  - `translations` (object) — Replaces the entry's full translation map
+
+**Responses:**
+- `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/translations/dictionary/{entry_id}` — Delete a dictionary entry
+_operationId_: `deleteDictionaryEntry`
+
+Idempotent — returns 204 even if the entry does not exist. Scope: `products:write`.
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ---
