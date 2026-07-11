@@ -1,0 +1,27 @@
+name: Refresh API Reference (one-shot)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/api-reference-refresh-2026-07
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download latest OpenAPI spec
+        run: curl -sSfL https://www.rattleapp.de/api/v1/openapi.json -o docs/openapi.json
+      - name: Regenerate API reference
+        run: python3 scripts/build_api_reference.py
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/openapi.json docs/API_REFERENCE.md \
+                  skills/rattle-api/references/openapi.json \
+                  skills/rattle-api/references/api-reference.md
+          git diff --cached --stat
+          git commit -m "chore: refresh API reference — 443→462 ops, 245→257 paths (2026-07)"
+          git push origin chore/api-reference-refresh-2026-07
