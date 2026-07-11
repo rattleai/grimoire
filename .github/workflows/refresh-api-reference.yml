@@ -1,6 +1,10 @@
 name: Refresh API Reference (one-shot)
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - chore/api-reference-refresh-2026-07
+    paths:
+      - .github/workflows/refresh-api-reference.yml
 permissions:
   contents: write
 jobs:
@@ -23,5 +27,6 @@ jobs:
                   skills/rattle-api/references/openapi.json \
                   skills/rattle-api/references/api-reference.md
           git diff --cached --stat
-          git commit -m "chore: refresh API reference — 443→462 ops, 245→257 paths (2026-07)"
+          git commit -m "chore: refresh API reference — 443→462 ops, 245→257 paths (2026-07)" \
+            || echo "Nothing to commit"
           git push origin chore/api-reference-refresh-2026-07
