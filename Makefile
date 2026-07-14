@@ -30,6 +30,9 @@ test-cov: ## Run tests with coverage report
 validate: ## Validate the shipped bundle (manifests, skills, agents, schemas, examples)
 	python3 scripts/validate_bundle.py
 
+skills-zip: ## Package each skill as an upload-ready .zip for Claude.ai web chat
+	python3 scripts/package_skills.py
+
 mcp-smoke: ## Verify the Rattle MCP server speaks the protocol and stays read-only
 	node scripts/mcp_smoke.mjs
 

@@ -33,11 +33,20 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Anthropic's Agent Skills spec truncates the combined description + when_to_use
-# at 1,536 characters in the skill listing. It is a truncation, not a rejection,
-# so an over-long description is a warning: the tail is simply never seen by the
-# model deciding whether to load the skill.
-DESCRIPTION_BUDGET = 1536
+# Two different limits apply, and confusing them ships a broken skill.
+#
+# CLAUDE CODE truncates the combined description + when_to_use at 1,536 chars in
+# the skill listing. A truncation, not a rejection — the tail is simply never
+# seen by the model deciding whether to load the skill. Hence a warning.
+#
+# The AGENT SKILLS SPEC (agentskills.io), which Claude.ai enforces at the upload
+# dialog and Anthropic's own quick_validate.py enforces in code, caps
+# `description` at 1,024 chars and REJECTS anything longer. Three skills sat
+# between the two limits: they worked perfectly in Claude Code and would have
+# been turned away by Claude.ai. Hence an error — the stricter surface wins,
+# because a skill that cannot be uploaded is not portable.
+DESCRIPTION_BUDGET = 1536  # Claude Code: truncates
+DESCRIPTION_SPEC_MAX = 1024  # Agent Skills spec / Claude.ai: rejects
 
 # Fields the Claude Code specs actually recognise. Anything else is silently
 # ignored at load time, which is worse than an error — it looks like it works.
@@ -261,18 +270,31 @@ def check_skills() -> list[str]:
             if len(name) > 64:
                 err(f"{rel}: name is {len(name)} chars (max 64).")
 
-        combined = len(str(fm.get("description", ""))) + len(str(fm.get("when_to_use", "")))
-        if not fm.get("description"):
+        desc = str(fm.get("description", ""))
+        combined = len(desc) + len(str(fm.get("when_to_use", "")))
+        if not desc:
             err(
                 f"{rel}: frontmatter has no `description`"
                 " — the model cannot decide when to load this skill."
             )
-        elif combined > DESCRIPTION_BUDGET:
-            warn(
-                f"{rel}: description + when_to_use is {combined} chars; the skill listing "
-                f"truncates at {DESCRIPTION_BUDGET}, so the last "
-                f"{combined - DESCRIPTION_BUDGET} chars are never seen."
-            )
+        else:
+            # Hard: Claude.ai / the Agent Skills spec reject over 1024. A skill
+            # that cannot be uploaded is not portable, so this fails the build.
+            if len(desc) > DESCRIPTION_SPEC_MAX:
+                err(
+                    f"{rel}: description is {len(desc)} chars. The Agent Skills spec caps it at "
+                    f"{DESCRIPTION_SPEC_MAX} and Claude.ai REJECTS the upload. (Claude Code only "
+                    f"truncates at {DESCRIPTION_BUDGET}, so this passes there and fails there.)"
+                )
+            if "<" in desc or ">" in desc:
+                err(f"{rel}: description contains angle brackets, which the spec rejects.")
+            # Soft: everything past the listing budget is simply never read.
+            if combined > DESCRIPTION_BUDGET:
+                warn(
+                    f"{rel}: description + when_to_use is {combined} chars; the Claude Code skill "
+                    f"listing truncates at {DESCRIPTION_BUDGET}, so the last "
+                    f"{combined - DESCRIPTION_BUDGET} chars are never seen."
+                )
 
         for key in fm:
             if key not in SKILL_FIELDS:

@@ -131,14 +131,15 @@ Nothing here needs to be published. The bundle is Markdown plus a zero-dependenc
 | Client | Skills | Live API | How |
 |---|---|---|---|
 | **Claude Code** | ✅ native | ✅ MCP | `/plugin install grimoire` — [§1](#1-claude-code-richest) |
-| **Codex CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` + `AGENTS.md` for free — [§3](#3-codex-cli-and-gemini-cli) |
-| **Gemini CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` for free — [§3](#3-codex-cli-and-gemini-cli) |
-| **Cursor / Windsurf / Claude Desktop** | ✅ via MCP | ✅ MCP | No Skills mechanism — the MCP server serves both — [§2](#2-mcp--cursor-windsurf-claude-desktop) |
-| **ChatGPT app** (Developer mode) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§5](#5-chatgpt-and-gemini-the-consumer-chat-apps) |
-| **Gemini app** (Spark) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§5](#5-chatgpt-and-gemini-the-consumer-chat-apps) |
-| **Custom GPT Action** | — | ❌ | 462 operations vs a ~30-operation ceiling — [§5](#5-chatgpt-and-gemini-the-consumer-chat-apps) |
+| **Claude.ai web chat** | ✅ upload | ⚠️ remote MCP | `make skills-zip` → upload 14 zips — [§2](#2-claudeai-web-chat) |
+| **Codex CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` + `AGENTS.md` for free — [§4](#4-codex-cli-and-gemini-cli) |
+| **Gemini CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` for free — [§4](#4-codex-cli-and-gemini-cli) |
+| **Cursor / Windsurf / Claude Desktop** | ✅ via MCP | ✅ MCP | No Skills mechanism — the MCP server serves both — [§3](#3-mcp--cursor-windsurf-claude-desktop) |
+| **ChatGPT app** (Developer mode) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
+| **Gemini app** (Spark) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
+| **Custom GPT Action** | — | ❌ | 462 operations vs a ~30-operation ceiling — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
 
-**The 14 skills already conform to the [Agent Skills open standard](https://agentskills.io)** — `name` + `description` frontmatter, progressive disclosure. Codex CLI and Gemini CLI discover them from `.agents/skills/` with **zero porting**.
+**The 14 skills conform to the [Agent Skills open standard](https://agentskills.io)** — `name` + `description` frontmatter, progressive disclosure. Claude.ai takes them as uploads; Codex CLI and Gemini CLI discover them from `.agents/skills/` with **zero porting**.
 
 ## Install
 
@@ -165,7 +166,32 @@ git clone https://github.com/rattleai/grimoire.git
 /plugin install grimoire
 ```
 
-### 2. MCP — Cursor, Windsurf, Claude Desktop
+### 2. Claude.ai web chat
+
+Claude.ai takes Skills as uploads — one `.zip` per skill. Build all 14:
+
+```bash
+make skills-zip          # → dist/skills/*.zip  (302 KB total)
+```
+
+Then in Claude.ai:
+
+1. **Settings → Capabilities** → enable **Code execution and file creation**.
+   Skills don't appear at all without it — even the knowledge-only ones.
+   *(Enterprise: an Owner must first enable Skills in Organization settings.)*
+2. **Customize → Skills → + → Create skill → Upload a skill** → pick a `.zip`.
+
+Start with **`rattle-configurator`** (the #1 rule) and **`rattle-ingest`** (your data → entities). Upload the rest as you need them; they cross-reference each other by name.
+
+The packager validates before it zips and **refuses to build a skill Claude.ai would reject**. That matters more than it sounds:
+
+> Claude.ai enforces the Agent Skills spec — `description` is capped at **1024 characters and rejected** beyond it. Claude Code merely *truncates* at 1536. Three of these skills sat between the two limits: they worked perfectly in Claude Code and would have been turned away at the upload dialog. CI now fails on it.
+
+The bundled `scripts/` run in Claude.ai's sandbox — they're **stdlib-only**, so they work even on Enterprise accounts with network egress disabled.
+
+**Live API access** needs a *remote* MCP connector (Customize → Connectors). Claude.ai connects from Anthropic's cloud, so it cannot reach a local `stdio` server — see [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps), where the same constraint and the same security warning apply.
+
+### 3. MCP — Cursor, Windsurf, Claude Desktop
 
 The MCP server is how clients **without** a native Skills mechanism get the same system. It hands them the skills *and* live API access:
 
@@ -215,7 +241,7 @@ node grimoire/scripts/mcp_smoke.mjs
 
 **It is read-only until you say otherwise.** A live CPQ tenant is not a sandbox, and a generic passthrough in an agent loop could otherwise rewrite a customer's catalogue in one call. Writes belong in `rattle-config-builder`, which pauses for confirmation.
 
-### 3. Codex CLI and Gemini CLI
+### 4. Codex CLI and Gemini CLI
 
 Both read the **[Agent Skills open standard](https://agentskills.io)** from `.agents/skills/`, and this repo ships exactly that. The 14 skills are discovered with **zero porting** — no config, no conversion.
 
@@ -243,7 +269,7 @@ codex mcp add rattle -- node ./my-project/mcp/server.mjs
 }
 ```
 
-### 4. npx installer (Aider, Continue, any AGENTS.md tool)
+### 5. npx installer (Aider, Continue, any AGENTS.md tool)
 
 Copies the skills, subagents, commands, schemas, examples, the MCP server and `AGENTS.md` into your project.
 
@@ -262,7 +288,7 @@ Idempotent — re-running just refreshes the files. `--help` lists every option.
 
 Once published, the same thing becomes `npx @rattleai/grimoire install`.
 
-### 5. ChatGPT and Gemini — the consumer chat apps
+### 6. ChatGPT and Gemini — the consumer chat apps
 
 Short version: **both can work, but neither will talk to a local server, and connecting them has a real security cost.** If you have a ChatGPT or Gemini subscription, the *CLI* (§3) is the path of least resistance and needs no deployment at all.
 
@@ -280,7 +306,7 @@ Short version: **both can work, but neither will talk to a local server, and con
 
 Start with `skills/rattle-configurator/SKILL.md` (the #1 rule), `skills/rattle-ingest/SKILL.md`, and `AGENTS.md`. You lose progressive disclosure and every script, but the rules and anti-patterns still land.
 
-### 6. Python CLI (optional execution layer)
+### 7. Python CLI (optional execution layer)
 
 Only needed for terminal-driven, one-shot commands that call your AI provider directly. **The skills and agents do not require it** — they are model-agnostic text.
 

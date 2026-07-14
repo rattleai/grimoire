@@ -52,6 +52,13 @@ jobs:
       - name: Validate the shipped bundle
         run: python3 scripts/validate_bundle.py
 
+      # Claude.ai enforces the Agent Skills spec at the upload dialog and REJECTS
+      # a description over 1024 chars — while Claude Code merely truncates at
+      # 1536. Three skills once sat between the two and would have been turned
+      # away. Fail here, not in a user's upload dialog.
+      - name: Assert every skill would upload to Claude.ai
+        run: python3 scripts/package_skills.py --check
+
   mcp:
     runs-on: ubuntu-latest
     steps:
