@@ -1,7 +1,8 @@
 {
   "name": "grimoire",
-  "version": "0.6.0",
-  "description": "Grimoire — the AI-native consulting workspace for the Rattle product configurator and technical-documentation system (rattleapp.de). Bundles 13 skills (configurator, api, pricelist-analysis, suggest-config, document-templates, techdoc, safety-notices, ghs-statements, techdoc-language, apply-config, audit, tenant-memory, bom-builder), 6 subagents, 7 slash commands, JSON Schemas for every output contract, and golden I/O examples. Encodes the #1 configurator rule (explicit options for ALL variants), 11 configuration rules, 4 anti-patterns, 6 configurator structural checks, 7 idempotent ensure_* operation types, the variant-BOM definition layer (usage_subclauses DSL with AND/OR clause folding, three option_scalings shapes, numbered-option scaling patterns, alt_group + priority alternates, ghost depth-transparency, BOM explosion semantics), the 15-chapter normative technical-documentation structure (DIN EN ISO 20607, IEC/IEEE 82079-1, MRL 2006/42/EG, MVO (EU) 2023/1230) using doc_type=technical_doc on writes, 14 technical-documentation audit checks, the EditorJS safety_notice + hp_statement block contracts, 32-locale signal-word catalogue, 24-locale CLP H/P/EUH statement catalogue, the 5 ISO 7010 categories + the separate CLP/GHS pictogram set, and the IEC/IEEE 82079-1 Clause 5 quality criteria — so any AI model can produce, audit, and apply correct, CE-compliant Rattle configurations and technical documentations.",
+  "displayName": "Grimoire — Rattle CPQ Configurator",
+  "version": "0.7.0",
+  "description": "Turn a customer's raw pricelist, spreadsheet or ERP export into correct, BOM-aware entities in the Rattle CPQ product configurator (rattleapp.de). Ships 14 skills, 6 subagents, 8 slash commands, 6 JSON Schema output contracts, golden I/O examples, and a zero-dependency Rattle MCP server. Encodes the #1 configurator rule (explicit options for ALL variants), the ingestion contract (raw columns → Rattle entities), 11 configuration rules, 4 anti-patterns, 6 structural checks, 7 idempotent ensure_* operations, the variant-BOM definition layer (usage_subclauses DSL, three option_scalings shapes, numbered options, alt_group alternates, ghost depth-transparency, BOM explosion), and the 15-chapter CE-compliant technical-documentation scaffold (DIN EN ISO 20607, IEC/IEEE 82079-1, MRL 2006/42/EG, MVO (EU) 2023/1230, ISO 7010, CLP/GHS).",
   "author": {
     "name": "rattleai",
     "email": "grimoire@rattleapp.de"
@@ -13,12 +14,17 @@
     "grimoire",
     "rattle",
     "rattleapp",
+    "cpq",
     "configurator",
     "product-configurator",
+    "variant-bom",
+    "bom",
+    "pricelist",
+    "data-ingestion",
     "consulting",
     "skills",
-    "bom",
-    "pricelist-analysis",
+    "agents",
+    "mcp",
     "technical-documentation",
     "betriebsanleitung",
     "iso-20607",
@@ -31,5 +37,45 @@
     "safety-notices",
     "editorjs"
   ],
-  "category": "domain"
+  "userConfig": {
+    "api_key": {
+      "type": "string",
+      "title": "Rattle API key",
+      "description": "Your Rattle API key (rk_live_… / rk_test_…), from Settings → API in rattleapp.de. Stored in your OS keychain, never in settings.json. Needed only for live-tenant reads and writes — every skill and agent works offline without it.",
+      "sensitive": true,
+      "required": false
+    },
+    "base_url": {
+      "type": "string",
+      "title": "Rattle API base URL",
+      "description": "Override only for a self-hosted or staging instance.",
+      "default": "https://www.rattleapp.de/api/v1",
+      "required": false
+    },
+    "tenant": {
+      "type": "string",
+      "title": "Default tenant",
+      "description": "Optional. Resolves per-tenant memory under memory/<tenant>/ and the RATTLE_API_KEY_<TENANT> env var.",
+      "required": false
+    },
+    "allow_writes": {
+      "type": "boolean",
+      "title": "Let the MCP server write to your live tenant",
+      "description": "Off by default. While off, the Rattle MCP server refuses every non-GET request, so no agent can mutate your live catalogue by accident. Turn it on only when you mean to apply a reviewed configuration — writes to a live CPQ tenant are irreversible. Prefer routing them through the rattle-config-builder agent, which pauses for confirmation.",
+      "default": false,
+      "required": false
+    }
+  },
+  "mcpServers": {
+    "rattle": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/server.mjs"],
+      "env": {
+        "RATTLE_API_KEY": "${user_config.api_key}",
+        "RATTLE_BASE_URL": "${user_config.base_url}",
+        "RATTLE_TENANT": "${user_config.tenant}",
+        "RATTLE_MCP_ALLOW_WRITES": "${user_config.allow_writes}"
+      }
+    }
+  }
 }

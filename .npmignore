@@ -1,0 +1,23 @@
+# npm's `files` allowlist in package.json overrides .gitignore for the
+# directories it names, so bytecode compiled inside skills/*/scripts/ during
+# local development WILL be published unless it is excluded here.
+# Verified with `npm pack --dry-run`.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Never publish secrets or per-tenant state.
+.env
+.env.*
+!.env.example
+memory/*
+!memory/README.md
+!memory/.gitkeep
+source/
+
+# Dev-only tooling has no business in the published bundle.
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+htmlcov/
+.coverage*

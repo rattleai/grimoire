@@ -83,30 +83,32 @@ Option setup:
 {
   "option_name": "Run length",
   "is_numbered": true,
-  "number_min": 0.5,
-  "number_max": 30,
-  "number_step": 0.1,
-  "number_unit": "m"
+  "number_min": 50,
+  "number_max": 3000,
+  "number_step": 10,
+  "number_unit": "cm"
 }
 ```
 
 BOM edge:
 
 ```json
-"option_scalings": {"<run-length>": {"opt": 1, "part": 1}}
+"option_scalings": {"<run-length>": {"opt": 100, "part": 1}}
 ```
 
-Selected = 4.5 m → ribbon part quantity = 4.5 m. Match the part's `uom` to the option's `number_unit`.
+Selected = 450 cm → ribbon part quantity = 4.5 m (`part` uom `m`; the `{opt: 100, part: 1}` ratio converts).
+
+> **`number_min` / `number_max` / `number_step` are INTEGERS on the wire** (`OptionCreateRequest`: `number_min`/`number_max` integer 0…1 000 000; `number_step` integer 1…1 000 000). A fractional bound or step is a 422. Model sub-unit granularity by choosing a **finer `number_unit`** (`cm` instead of `m`, `mm` instead of `cm`) and converting in the ratio, as above. Match the part's `uom` to the resulting quantity's unit, not blindly to `number_unit`, and say which is which in the line's `note`.
 
 ### Pattern 5 — Length-with-overlap (1.1× the run for splice waste)
 
 > "Ribbon length = run length × 1.1 to allow for splice overlap."
 
 ```json
-"option_scalings": {"<run-length>": {"opt": 1, "part": 1.1}}
+"option_scalings": {"<run-length>": {"opt": 100, "part": 1.1}}
 ```
 
-Selected = 4.5 m → 4.95 m. Alternatively bake the splice into `scrap_percent: 10` and keep the ratio 1:1 — the latter is cleaner because scrap shows up separately on cost reports.
+Selected = 450 cm → 4.95 m of ribbon (`part` uom `m`). Alternatively bake the splice into `scrap_percent: 10` and keep the ratio at the plain `{opt: 100, part: 1}` conversion — the latter is cleaner because scrap shows up separately on cost reports.
 
 ### Pattern 6 — Stair-stepped count (range descriptor)
 
@@ -130,19 +132,19 @@ Set the line's `quantity` to `1` (the API rejects `0` with 422). Range-mode reso
 
 > "Below 50 m: standard ribbon; 50 m and above: premium ribbon (different part)."
 
-Use **two BOM edges** with mutually exclusive ranges:
+Use **two BOM edges** with mutually exclusive ranges. Range bounds are expressed in the option's `number_unit` (here `cm`, per Pattern 4):
 
 ```json
 [
   {
     "child_part_number": "RIB-STD",
-    "option_scalings": {"<run-length>": {"areas": [{"max": 49.99, "part": 1}]}},
+    "option_scalings": {"<run-length>": {"areas": [{"max": 4999, "part": 1}]}},
     "alt_group": "ribbon",
     "priority": 1
   },
   {
     "child_part_number": "RIB-PRM",
-    "option_scalings": {"<run-length>": {"areas": [{"min": 50, "part": 1}]}},
+    "option_scalings": {"<run-length>": {"areas": [{"min": 5000, "part": 1}]}},
     "alt_group": "ribbon",
     "priority": 2
   }

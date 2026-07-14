@@ -47,7 +47,8 @@ RULE_IDS = {
     "EXPLICIT_OPTIONS": "explicit-options-for-all-variants",
     "REUSE_OVER_DUPLICATE": "reuse-over-duplicate",
     "MINIMAL_KEYS": "minimal-keys",
-    "VALID_USAGE_SUBCLAUSE": "explicit-options-for-all-variants",  # subclauses must reference real options
+    # subclauses must reference real options
+    "VALID_USAGE_SUBCLAUSE": "explicit-options-for-all-variants",
     "VALID_FORBIDDEN_PAIR": "forbidden-combinations",
     "PRICE_ON_OPTION": "price-on-option",
 }
@@ -155,15 +156,17 @@ def validate(recommendation: dict[str, Any], tenant_prefs: dict[str, str]) -> li
                 add(
                     violations,
                     RULE_IDS["EXPLICIT_OPTIONS"],
-                    f"Group '{gname}' has no options. Every configurable feature must have at least "
-                    f"one explicit option (the standard variant).",
+                    f"Group '{gname}' has no options. Every configurable feature must have at "
+                    f"least one explicit option (the standard variant).",
                     gloc,
                 )
                 continue
 
             # Explicit-options-for-all-variants: every single-select group must have
             # exactly one recommended=true option. Multi-select groups may have zero.
-            recommended_count = sum(1 for o in options if isinstance(o, dict) and o.get("recommended"))
+            recommended_count = sum(
+                1 for o in options if isinstance(o, dict) and o.get("recommended")
+            )
             is_multi = bool(group.get("is_multi"))
             if not is_multi and recommended_count != 1:
                 add(
@@ -218,8 +221,8 @@ def validate(recommendation: dict[str, Any], tenant_prefs: dict[str, str]) -> li
                     add(
                         violations,
                         RULE_IDS["MINIMAL_KEYS"],
-                        f"Option '{oname}' has a custom key ('{opt['key']}') but the tenant profile "
-                        f"sets `custom-keys: never`. Strip the key.",
+                        f"Option '{oname}' has a custom key ('{opt['key']}') but the tenant "
+                        f"profile sets `custom-keys: never`. Strip the key.",
                         oloc,
                     )
 
@@ -247,7 +250,9 @@ def validate(recommendation: dict[str, Any], tenant_prefs: dict[str, str]) -> li
         # Accept the canonical `forbidden` field name AND the legacy `forbidden_pairs`
         # alias for backward compatibility with pre-round-3 recommendations.
         forbidden_pairs_list = product.get("forbidden") or product.get("forbidden_pairs") or []
-        forbidden_field_name = "forbidden" if product.get("forbidden") is not None else "forbidden_pairs"
+        forbidden_field_name = (
+            "forbidden" if product.get("forbidden") is not None else "forbidden_pairs"
+        )
         for fi, pair in enumerate(forbidden_pairs_list):
             ploc = f"products[{pi}].{forbidden_field_name}[{fi}]"
             if not isinstance(pair, dict):
@@ -259,7 +264,8 @@ def validate(recommendation: dict[str, Any], tenant_prefs: dict[str, str]) -> li
                     add(
                         violations,
                         RULE_IDS["VALID_FORBIDDEN_PAIR"],
-                        f"forbidden entry .{key} = '{pair.get(key)}' is not a defined option on this product.",
+                        f"forbidden entry .{key} = '{pair.get(key)}' is not a defined option "
+                        f"on this product.",
                         ploc,
                     )
 

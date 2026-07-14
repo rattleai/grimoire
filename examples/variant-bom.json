@@ -1,0 +1,210 @@
+{
+  "tenant": "acme",
+  "product_id": 9001,
+  "parts": [
+    {
+      "part_number": "WP-ROOT",
+      "part_name": "Widget Pro root assembly",
+      "part_cost": 0,
+      "part_type": "assembly",
+      "make_or_buy": "make",
+      "status": "active"
+    },
+    {
+      "part_number": "WHL-17",
+      "part_name": "17-inch wheel assy",
+      "part_cost": 180,
+      "part_type": "purchased",
+      "make_or_buy": "buy",
+      "weight": 12.5,
+      "weight_unit": "kg"
+    },
+    {
+      "part_number": "WHL-19",
+      "part_name": "19-inch wheel assy",
+      "part_cost": 340,
+      "part_type": "purchased",
+      "make_or_buy": "buy",
+      "weight": 14.0,
+      "weight_unit": "kg"
+    },
+    {
+      "part_number": "SPN-ISO30",
+      "part_name": "ISO 30 spindle",
+      "part_cost": 900,
+      "part_type": "purchased",
+      "make_or_buy": "buy"
+    },
+    {
+      "part_number": "SPN-HSK63F",
+      "part_name": "HSK-63F spindle",
+      "part_cost": 2100,
+      "part_type": "purchased",
+      "make_or_buy": "buy"
+    },
+    {
+      "part_number": "PNL-BRK",
+      "part_name": "Panel bracket",
+      "part_cost": 14,
+      "part_type": "purchased",
+      "make_or_buy": "buy"
+    },
+    {
+      "part_number": "FRM-KIT",
+      "part_name": "Panel frame kit (phantom assembly)",
+      "part_cost": 0,
+      "part_type": "assembly",
+      "make_or_buy": "make",
+      "bom_structure": "ghost",
+      "phantom_resolve_mode": "smart_reuse",
+      "part_description": "Ghost part: groups the frame children for editing convenience. Depth-transparent — its children are bubbled up into WP-ROOT's level at explosion time and never appear as a build level on the manufacturing BOM."
+    },
+    {
+      "part_number": "FRM-RAIL",
+      "part_name": "Frame rail",
+      "part_cost": 65,
+      "part_type": "manufactured",
+      "make_or_buy": "make"
+    }
+  ],
+  "placements": [
+    {
+      "part_number": "WP-ROOT",
+      "area_id": 7,
+      "quantity": 1,
+      "uom": "pcs",
+      "usage_subclauses": [],
+      "option_scalings": {},
+      "ghost_part": false,
+      "order_index": 0
+    }
+  ],
+  "bom_items": [
+    {
+      "parent_part_number": "WP-ROOT",
+      "child_part_number": "WHL-17",
+      "quantity": 4,
+      "uom": "pcs",
+      "scrap_percent": 0,
+      "usage_subclauses": [
+        {"operator": "OR", "groupSelections": {"42": [301]}}
+      ],
+      "option_scalings": {},
+      "alt_group": null,
+      "priority": 0,
+      "order_index": 0,
+      "ghost_part": false,
+      "note": "Standard wheels. Active only when option 301 (17 inch) is selected — the explicit standard option, per rule explicit-options-for-all-variants."
+    },
+    {
+      "parent_part_number": "WP-ROOT",
+      "child_part_number": "WHL-19",
+      "quantity": 4,
+      "uom": "pcs",
+      "scrap_percent": 0,
+      "usage_subclauses": [
+        {"operator": "OR", "groupSelections": {"42": [302]}}
+      ],
+      "option_scalings": {},
+      "alt_group": null,
+      "priority": 0,
+      "order_index": 1,
+      "ghost_part": false,
+      "note": "Upgrade wheels. Active only when option 302 (19 inch) is selected."
+    },
+    {
+      "parent_part_number": "WP-ROOT",
+      "child_part_number": "SPN-ISO30",
+      "quantity": 1,
+      "uom": "pcs",
+      "scrap_percent": 0,
+      "usage_subclauses": [
+        {"operator": "OR", "groupSelections": {"55": [410]}}
+      ],
+      "option_scalings": {},
+      "alt_group": "spindle",
+      "priority": 1,
+      "order_index": 2,
+      "ghost_part": false,
+      "note": "Alternate 1 of 2 in alt_group 'spindle'. Lowest priority wins among the alternates whose usage_subclauses evaluate true."
+    },
+    {
+      "parent_part_number": "WP-ROOT",
+      "child_part_number": "SPN-HSK63F",
+      "quantity": 1,
+      "uom": "pcs",
+      "scrap_percent": 2.5,
+      "usage_subclauses": [
+        {"operator": "OR", "groupSelections": {"55": [411, 412]}}
+      ],
+      "option_scalings": {},
+      "alt_group": "spindle",
+      "priority": 2,
+      "order_index": 3,
+      "ghost_part": false,
+      "note": "Alternate 2 of 2 in alt_group 'spindle' — covers both HSK-63F options (411 ohne Encoder, 412 mit Encoder). Unique priority within the alt_group is mandatory."
+    },
+    {
+      "parent_part_number": "WP-ROOT",
+      "child_part_number": "PNL-BRK",
+      "quantity": 1,
+      "uom": "pcs",
+      "scrap_percent": 0,
+      "usage_subclauses": [
+        {"operator": "OR", "groupSelections": {"60": [119]}}
+      ],
+      "option_scalings": {
+        "119": {"opt": 1, "part": 3}
+      },
+      "alt_group": null,
+      "priority": 0,
+      "order_index": 4,
+      "ghost_part": false,
+      "note": "Numbered-option scaling: 3 brackets per panel (option 119 = 'Panel count', is_numbered, number_unit pcs). usage_subclauses decide WHETHER the line is active, option_scalings decide HOW MUCH. quantity=1 is the API minimum (Pydantic gt=0) and is the additive baseline — 24 panels give 1 + 72 brackets."
+    },
+    {
+      "parent_part_number": "WP-ROOT",
+      "child_part_number": "FRM-KIT",
+      "quantity": 1,
+      "uom": "pcs",
+      "scrap_percent": 0,
+      "usage_subclauses": [
+        {"operator": "OR", "groupSelections": {"60": [119]}}
+      ],
+      "option_scalings": {},
+      "alt_group": null,
+      "priority": 0,
+      "order_index": 5,
+      "ghost_part": true,
+      "note": "Ghost edge to the phantom assembly FRM-KIT (bom_structure=ghost, part_cost forced to 0 server-side). Its children are emitted at WP-ROOT's level; the kit itself is never built."
+    },
+    {
+      "parent_part_number": "FRM-KIT",
+      "child_part_number": "FRM-RAIL",
+      "quantity": 1,
+      "uom": "pcs",
+      "scrap_percent": 5,
+      "usage_subclauses": [],
+      "option_scalings": {
+        "119": {
+          "areas": [
+            {"max": 10, "part": 2},
+            {"min": 11, "max": 30, "part": 4},
+            {"min": 31, "part": 6}
+          ]
+        }
+      },
+      "alt_group": null,
+      "priority": 0,
+      "order_index": 0,
+      "ghost_part": false,
+      "note": "Stair-stepped range scaling on the same numbered option 119: ≤10 panels → 2 rails, 11–30 → 4, 31+ → 6. Range mode is ABSOLUTE on the explosion path (the quantity=1 base does not multiply); on the additive snapshot path the bracket value is added to the base. Empty usage_subclauses = always include — the ghost parent already gates it."
+    }
+  ],
+  "validation": {"errors": [], "warnings": []},
+  "notes": [
+    "Option ids are the synthetic acme universe: group 42 Wheels (301 = 17 inch, 302 = 19 inch), group 55 Frässpindel (410 = ISO 30 Standard, 411 = HSK-63F ohne Encoder, 412 = HSK-63F mit Encoder), group 60 Panels (119 = 'Panel count', is_numbered: true, number_min 1, number_max 48, number_step 1, number_unit 'pcs').",
+    "Area 7 is 'Widget Pro — Configuration'. WP-ROOT has an unconditional placement there; every variant decision lives on the bom_items below it.",
+    "PNL-BRK carries a 1-unit baseline because the API rejects quantity=0 (422). If the design needs a zero baseline, split it into two lines."
+  ]
+}

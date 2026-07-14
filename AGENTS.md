@@ -12,6 +12,7 @@ When the user asks anything Rattle-related, **read these files before answering*
 
 | File | Purpose |
 |---|---|
+| `skills/rattle-ingest/SKILL.md` | **The first link.** Raw customer file (Excel / CSV / ERP export) → column roles → `source-mapping.json` → normalized rows. Load this before pricelist-analysis whenever the columns have not been agreed. Includes `scripts/profile_source.py`, `references/column-roles.md` (24 roles), `references/sheet-shapes.md` (5 shapes). |
 | `skills/rattle-configurator/SKILL.md` | The #1 rule + workflow entry point. Always load this first. |
 | `skills/rattle-configurator/references/data-model.md` | Full schema for every entity. |
 | `skills/rattle-configurator/references/configuration-rules.md` | 11 configuration rules with rationales. |
@@ -19,7 +20,7 @@ When the user asks anything Rattle-related, **read these files before answering*
 | `skills/rattle-configurator/references/structural-checks.md` | 6 live-tenant audit checks. |
 | `skills/rattle-configurator/references/system-prompts.md` | Canonical prompt templates for any LLM. |
 | `skills/rattle-api/SKILL.md` | REST API conventions (auth, pagination, errors). |
-| `skills/rattle-api/references/api-reference.md` | Full reference for 443 operations across 245 paths (36 tags). Generated from `openapi.json` by `scripts/build_api_reference.py`. |
+| `skills/rattle-api/references/api-reference.md` | Full reference for 462 operations across 257 paths (37 tags). Generated from `openapi.json` by `scripts/build_api_reference.py`. |
 | `skills/rattle-api/references/openapi.json` | Raw OpenAPI 3.x spec. |
 | `skills/rattle-api/references/client-patterns.md` | List-all, idempotent ensure, multipart upload, optimistic concurrency. |
 | `skills/rattle-pricelist-analysis/SKILL.md` | Workflow: analyse a pricelist for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
@@ -43,11 +44,14 @@ When the user asks anything Rattle-related, **read these files before answering*
 | `skills/rattle-apply-config/SKILL.md` | Workflow: apply a recommendation idempotently via 7 `ensure_*` ops. Includes `scripts/validate_recommendation.py`. |
 | `skills/rattle-audit/SKILL.md` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/SKILL.md` | Per-tenant preferences, decisions, audit history (file-based, explicit-write only). |
+| `schemas/source-mapping.schema.json` | JSON Schema for `rattle-ingest` output (column roles, sheet shape, blockers). |
 | `schemas/recommendation.schema.json` | JSON Schema for `rattle-suggest-config` output. |
 | `schemas/audit-findings.schema.json` | JSON Schema for `rattle-audit` output. |
 | `schemas/offer-template.schema.json` | JSON Schema for `rattle-document-templates` output. |
 | `schemas/apply-operations.schema.json` | JSON Schema for `rattle-apply-config` operations array. |
-| `examples/` | Synthetic golden I/O for every workflow (Widget Pro, acme tenant). |
+| `schemas/variant-bom.schema.json` | JSON Schema for `rattle-bom-architect` output (parts, placements, bom_items). |
+| `examples/` | Synthetic golden I/O for every workflow (Widget Pro, acme tenant). Every file validates against its schema; CI enforces it. |
+| `mcp/server.mjs` | Rattle MCP server. Serves the skills *and* the live API to clients with no native Skills mechanism (Cursor, Windsurf, Claude Desktop, ChatGPT). Zero dependencies, zero per-endpoint code. Read-only unless `RATTLE_MCP_ALLOW_WRITES=1`. |
 
 Tenant-specific style preferences live under `memory/<tenant>/profile.md` (gitignored). Always check this before producing recommendations for a named tenant.
 
@@ -118,26 +122,46 @@ The Python execution layer's prompts already mirror `skills/rattle-configurator/
 - Never commit `memory/<tenant>/*` (gitignored except `README.md` + `.gitkeep`).
 - The repo contains no production tenant data. Examples use synthetic option/group names.
 
+## The workflow chain
+
+Every engagement runs the same chain. Skipping a link is the most common way to get a wrong configuration:
+
+```
+rattle-ingest → rattle-pricelist-analysis → rattle-suggest-config → rattle-apply-config
+```
+
+- **Start at `rattle-ingest`** whenever the user hands over a file whose columns have not been explicitly agreed. Do not skip to pricelist-analysis because the headers "look obvious" — headers lie, abbreviate, and mix languages.
+- **The chain is gated.** While `rattle-ingest` reports a non-empty `blockers[]`, `rattle-suggest-config` MUST NOT run. Answer the blocking question with the customer and re-ingest.
+- **Never fabricate to clear a blocker.** Not a standard option, not a price, not a part number. Emit a placeholder plus the one question a human must answer. A guessed standard variant corrupts the BOM, the pricing, and every offer built on it.
+- **BOM-shaped sheets branch off.** A `one-row-per-bom-line` sheet goes to `rattle-bom-builder`, not `rattle-suggest-config` — a BOM cannot be built before the options exist.
+
 ## Distribution
 
-This workspace is installable three ways:
+Four ways:
 
-1. **Claude Code plugin** (richest):
+1. **Claude Code plugin** (richest — prompts for your API key at install, no `.env` to edit):
    ```
    /plugin marketplace add rattleai/grimoire
    /plugin install grimoire
    ```
 
-2. **NPM** (drops skills + AGENTS.md into any project):
-   ```
-   npx @rattleai/grimoire install
-   ```
+2. **MCP** (Cursor, Windsurf, Claude Desktop, ChatGPT — the clients with no native Skills mechanism). Point them at `mcp/server.mjs`; see the root `.mcp.json`. Node ≥ 18, zero npm dependencies. Read-only until `RATTLE_MCP_ALLOW_WRITES=1`.
 
-3. **PyPI** (Python CLI execution layer):
+3. **npx installer** (drops skills + agents + MCP + AGENTS.md into any project). **Not yet on npm** — run it from a clone:
    ```
-   pip install grimoire[all-ai,all-sources]
+   git clone https://github.com/rattleai/grimoire.git
+   node grimoire/bin/grimoire.mjs install --target ./my-project
+   ```
+   Becomes `npx @rattleai/grimoire install` once published.
+
+4. **Python CLI** (optional execution layer — the skills do not need it). **Do not `pip install grimoire`**: that name belongs to an unrelated package. This project publishes as `rattle-grimoire`. Until released, install from a clone:
+   ```
+   git clone https://github.com/rattleai/grimoire.git && cd grimoire
+   pip install -e ".[all-ai,all-sources]"
    rattle <tenant> ai-analyse-pricelist <file>
    ```
+
+Paths 1 and 2 need **nothing published** — the bundle is text plus a zero-dependency script, so a clone is a complete install.
 
 See `README.md` for full setup.
 

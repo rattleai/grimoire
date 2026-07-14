@@ -136,6 +136,48 @@ Group "Software — Cyclic testing" (is_multi: false)
 
 ---
 
+## 5. `per-unit-priced-row` — Per-Unit Priced Row
+
+**Description.** A feature is priced per metre / per piece / per unit and appears as its own pricelist row. The quantity is a **number the customer chooses**, not a variant from a closed list. The feature must therefore become a **numbered option** (`is_numbered: true`) — not a discrete option, and not a multi-select group. Modelled as a discrete option it is a dead end: `option_scalings` can only scale a BOM line against an option that carries an *amount*, and a boolean option carries none.
+
+**Indicators:**
+
+- `pro Stück`
+- `je Stück`
+- `pro Meter`
+- `je Meter`
+- `Laufmeter`
+- `lfm`
+- `Preis pro`
+- `price per`
+- `per unit`
+- `per piece`
+- `per metre`
+- `per meter`
+- `€/Stk`
+- `€/m`
+
+**Correction.** Model the feature as ONE numbered option: `is_numbered: true` with `number_min` / `number_max` / `number_step` (all **integers** — the wire schema rejects fractional bounds) and `number_unit` matching the `uom` of every part it scales. Put the per-unit rate in `price_scalings` (ratio `{opt, part}`), or a tiered rate in a range descriptor (`{areas: [{min, max, part}]}`); the option's own `price` keeps the fixed component only. Then scale the BOM with `option_scalings` on every affected line.
+
+**Example — wrong**
+
+> Row: "Panel, pro Stück: 120€". Modelled as a discrete option "Panel" (price: 120). Problem: the customer needs 24 of them, and no BOM line can scale brackets with the count because the option carries no amount.
+
+**Example — correct**
+
+```
+Group "Panels" (is_multi: false)
+  Option "Panel count" (is_numbered: true, number_min: 1, number_max: 48,
+                        number_step: 1, number_unit: "pcs", price: 0,
+                        price_scalings: {<panel_count>: {opt: 1, part: 120}})
+BOM:
+  child_part "Panel bracket", option_scalings: {<panel_count>: {opt: 1, part: 3}}
+```
+
+**Related rules**: `explicit-options-for-all-variants`, `price-on-option`. Full mechanics: `rattle-suggest-config/SKILL.md` § "Numbered options (numeric quantities)" (sales side) and `rattle-bom-builder/references/numbered-options.md` (BOM side, 12 scaling patterns).
+
+---
+
 ## How to use this list
 
 1. **Scan first, write second.** Before proposing groups for a new product, run the indicator strings against the input. Surface every match before generating recommendations.

@@ -1,19 +1,26 @@
 {
   "name": "@rattleai/grimoire",
-  "version": "0.4.0",
-  "description": "Grimoire — the AI-native consulting workspace for the Rattle product configurator (rattleapp.de). Installs 8 Anthropic-format Skills (configurator, api, pricelist-analysis, suggest-config, document-templates, apply-config, audit, tenant-memory), 3 Claude Code subagents, 4 slash commands, JSON Schemas for every output contract, golden I/O examples, and a cross-platform AGENTS.md so any AI model (Claude, GPT, Cursor, Codex, Aider, Continue) can produce correct, BOM-aware Rattle configurations.",
+  "version": "0.7.0",
+  "description": "Grimoire — the AI-native Skills + Agents system for the Rattle CPQ product configurator (rattleapp.de). Installs 14 Anthropic-format Skills, 6 subagents, 8 slash commands, 6 JSON Schema output contracts, golden I/O examples, a zero-dependency Rattle MCP server, and a cross-platform AGENTS.md — so any AI client (Claude Code, Cursor, Windsurf, Claude Desktop, Codex, Aider, Continue) can turn a customer's raw pricelist or BOM export into correct, BOM-aware Rattle configurator entities.",
   "type": "module",
   "bin": {
     "grimoire": "./bin/grimoire.mjs",
-    "grimoire-install": "./bin/grimoire.mjs"
+    "grimoire-install": "./bin/grimoire.mjs",
+    "grimoire-mcp": "./mcp/server.mjs"
+  },
+  "exports": {
+    "./mcp": "./mcp/server.mjs",
+    "./package.json": "./package.json"
   },
   "files": [
     "bin/",
+    "mcp/",
     "skills/",
     "agents/",
     "commands/",
     "schemas/",
     "examples/",
+    ".mcp.json",
     "AGENTS.md",
     "CLAUDE.md",
     "LICENSE",
@@ -21,14 +28,20 @@
     ".claude-plugin/"
   ],
   "scripts": {
-    "postinstall": "node bin/grimoire.mjs --postinstall || true"
+    "postinstall": "node bin/grimoire.mjs --postinstall || true",
+    "mcp": "node mcp/server.mjs",
+    "validate": "python3 scripts/validate_bundle.py"
   },
   "keywords": [
     "grimoire",
     "rattle",
     "rattleapp",
+    "cpq",
     "configurator",
     "product-configurator",
+    "variant-bom",
+    "bom",
+    "pricelist",
     "consulting",
     "claude",
     "claude-code",
@@ -37,12 +50,17 @@
     "agent",
     "agents",
     "agents-md",
+    "mcp",
+    "model-context-protocol",
     "cursor",
+    "windsurf",
     "codex",
     "aider",
     "ai",
     "ai-native",
-    "knowledge"
+    "knowledge",
+    "technical-documentation",
+    "ce-compliance"
   ],
   "author": {
     "name": "rattleai",

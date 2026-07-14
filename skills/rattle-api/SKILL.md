@@ -1,6 +1,6 @@
 ---
 name: rattle-api
-description: Use this skill whenever the user calls, debugs, or designs against the Rattle REST API (rattleapp.de — 443 operations across 245 paths in 36 resource groups). Covers authentication, base URL, response envelope, cursor pagination, RFC 9457 errors, image upload (multipart/form-data), and the conventions every endpoint follows. Pair with rattle-configurator for any task that combines API calls with consulting decisions. Refer to references/api-reference.md for the full endpoint catalogue.
+description: Use this skill whenever the user calls, debugs, or designs against the Rattle REST API (rattleapp.de — 462 operations across 257 paths in 37 resource groups). Covers authentication, base URL, response envelope, cursor pagination, RFC 9457 errors, image upload (multipart/form-data), and the conventions every endpoint follows. Pair with rattle-configurator for any task that combines API calls with consulting decisions. Refer to references/api-reference.md for the full endpoint catalogue.
 license: MIT
 ---
 
@@ -120,7 +120,7 @@ See `references/client-patterns.md` § 6 for the full read-modify-write recipe.
 
 ## Reference files
 
-- `references/api-reference.md` — full 443-operation table with method, path, summary, parameters, request body fields, response codes, and schema names. **Read this** when you need to compose any specific call.
+- `references/api-reference.md` — full 462-operation table with method, path, summary, parameters, request body fields, response codes, and schema names. **Read this** when you need to compose any specific call.
 - `references/openapi.json` — raw OpenAPI 3.1 spec. Use it programmatically (codegen, type generation) or when the Markdown reference is ambiguous.
 - `references/client-patterns.md` — common call patterns: list-all, idempotent ensure, multipart upload, optimistic concurrency.
 

@@ -34,35 +34,43 @@ from pathlib import Path
 CANONICAL_CHAPTERS: list[tuple[str, list[str]]] = [
     ("ch-00-cover", ["deckblatt", "cover", "title page"]),
     ("ch-00-toc", ["inhaltsverzeichnis", "table of contents", "contents"]),
-    ("ch-01-about-document",
-     ["zu diesem dokument", "about this document", "über dieses dokument"]),
+    ("ch-01-about-document", ["zu diesem dokument", "about this document", "über dieses dokument"]),
     ("ch-02-safety", ["sicherheit", "safety", "sicherheitshinweise"]),
-    ("ch-03-product-description",
-     ["produktbeschreibung", "produkt- und systembeschreibung",
-      "product description", "system description"]),
-    ("ch-04-transport",
-     ["transport", "anlieferung", "lagerung", "delivery", "storage"]),
-    ("ch-05-assembly",
-     ["montage", "installation", "assembly", "aufstellung"]),
-    ("ch-06-commissioning",
-     ["inbetriebnahme", "commissioning", "einstellungen", "settings"]),
-    ("ch-07-operation",
-     ["bedienung", "betrieb", "operation"]),
-    ("ch-08-troubleshooting",
-     ["störung", "fehlerbehebung", "troubleshooting", "diagnose"]),
-    ("ch-09-maintenance",
-     ["wartung", "reinigung", "maintenance", "cleaning", "inspection",
-      "reparatur", "repair"]),
-    ("ch-10-modifications",
-     ["umbau", "erweiterung", "modernisierung",
-      "modification", "extension", "modernisation"]),
-    ("ch-11-decommissioning",
-     ["außerbetriebnahme", "demontage", "entsorgung",
-      "decommissioning", "disassembly", "disposal"]),
-    ("ch-12-conformity",
-     ["konformität", "conformity", "rechtliche hinweise", "legal", "normen"]),
-    ("ch-13-appendix",
-     ["anhang", "appendix", "anlagen"]),
+    (
+        "ch-03-product-description",
+        [
+            "produktbeschreibung",
+            "produkt- und systembeschreibung",
+            "product description",
+            "system description",
+        ],
+    ),
+    ("ch-04-transport", ["transport", "anlieferung", "lagerung", "delivery", "storage"]),
+    ("ch-05-assembly", ["montage", "installation", "assembly", "aufstellung"]),
+    ("ch-06-commissioning", ["inbetriebnahme", "commissioning", "einstellungen", "settings"]),
+    ("ch-07-operation", ["bedienung", "betrieb", "operation"]),
+    ("ch-08-troubleshooting", ["störung", "fehlerbehebung", "troubleshooting", "diagnose"]),
+    (
+        "ch-09-maintenance",
+        ["wartung", "reinigung", "maintenance", "cleaning", "inspection", "reparatur", "repair"],
+    ),
+    (
+        "ch-10-modifications",
+        ["umbau", "erweiterung", "modernisierung", "modification", "extension", "modernisation"],
+    ),
+    (
+        "ch-11-decommissioning",
+        [
+            "außerbetriebnahme",
+            "demontage",
+            "entsorgung",
+            "decommissioning",
+            "disassembly",
+            "disposal",
+        ],
+    ),
+    ("ch-12-conformity", ["konformität", "conformity", "rechtliche hinweise", "legal", "normen"]),
+    ("ch-13-appendix", ["anhang", "appendix", "anlagen"]),
 ]
 
 HEADING_RE = re.compile(
@@ -159,10 +167,13 @@ def _detect_language(text: str) -> str:
     if not text:
         return ""
     sample = text[:4000].lower()
-    de_score = sum(sample.count(w) for w in [" und ", " der ", " die ", " das ",
-                                              " ist ", " mit ", " für ", " nicht "])
-    en_score = sum(sample.count(w) for w in [" and ", " the ", " is ", " for ",
-                                              " not ", " with ", " of "])
+    de_score = sum(
+        sample.count(w)
+        for w in [" und ", " der ", " die ", " das ", " ist ", " mit ", " für ", " nicht "]
+    )
+    en_score = sum(
+        sample.count(w) for w in [" and ", " the ", " is ", " for ", " not ", " with ", " of "]
+    )
     if de_score > en_score * 1.2:
         return "de"
     if en_score > de_score * 1.2:
@@ -175,26 +186,42 @@ def _detect_language(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 REUSABILITY_PATTERNS = [
-    ("loto-procedure",
-     ["lockout", "tagout", "lockout/tagout", "loto",
-      "gegen wiedereinschalten sichern"]),
-    ("signal-words-legend",
-     ["danger", "warning", "caution", "notice",
-      "gefahr", "warnung", "vorsicht", "hinweis"]),
-    ("target-groups-default",
-     ["zielgruppe", "qualifikation", "target group", "qualification",
-      "operator", "bediener", "elektrofachkraft"]),
-    ("general-safety-rules",
-     ["allgemeine sicherheitshinweise",
-      "general safety", "betriebsanleitung lesen"]),
-    ("ppe-default",
-     ["persönliche schutzausrüstung", "psa",
-      "personal protective equipment", "ppe"]),
-    ("disposal-electronics-weee",
-     ["weee", "elektroaltgeräte", "elektronikentsorgung", "disposal of electronic"]),
-    ("warning-structure-safe",
-     ["safe-prinzip", "signalwort → art der gefahr → folgen",
-      "signal word → hazard"]),
+    (
+        "loto-procedure",
+        ["lockout", "tagout", "lockout/tagout", "loto", "gegen wiedereinschalten sichern"],
+    ),
+    (
+        "signal-words-legend",
+        ["danger", "warning", "caution", "notice", "gefahr", "warnung", "vorsicht", "hinweis"],
+    ),
+    (
+        "target-groups-default",
+        [
+            "zielgruppe",
+            "qualifikation",
+            "target group",
+            "qualification",
+            "operator",
+            "bediener",
+            "elektrofachkraft",
+        ],
+    ),
+    (
+        "general-safety-rules",
+        ["allgemeine sicherheitshinweise", "general safety", "betriebsanleitung lesen"],
+    ),
+    (
+        "ppe-default",
+        ["persönliche schutzausrüstung", "psa", "personal protective equipment", "ppe"],
+    ),
+    (
+        "disposal-electronics-weee",
+        ["weee", "elektroaltgeräte", "elektronikentsorgung", "disposal of electronic"],
+    ),
+    (
+        "warning-structure-safe",
+        ["safe-prinzip", "signalwort → art der gefahr → folgen", "signal word → hazard"],
+    ),
 ]
 
 
@@ -208,12 +235,14 @@ def _find_reusability(files: list[FileInventory], texts: list[str]) -> list[dict
             if any(k in t for k in keywords):
                 hits.append(f.path)
         if len(hits) >= 2:
-            out.append({
-                "key": key,
-                "files_with_match": hits,
-                "match_count": len(hits),
-                "reusability": "high" if len(hits) >= len(files) * 0.6 else "medium",
-            })
+            out.append(
+                {
+                    "key": key,
+                    "files_with_match": hits,
+                    "match_count": len(hits),
+                    "reusability": "high" if len(hits) >= len(files) * 0.6 else "medium",
+                }
+            )
     return out
 
 
@@ -227,8 +256,9 @@ def main() -> int:
     parser.add_argument("input_dir", help="Directory of input manuals.")
     parser.add_argument("--out", default="-", help="Output JSON path (- = stdout).")
     parser.add_argument("--lang", default="", help="Override detected language.")
-    parser.add_argument("--max-files", type=int, default=50,
-                        help="Cap on number of files processed.")
+    parser.add_argument(
+        "--max-files", type=int, default=50, help="Cap on number of files processed."
+    )
     args = parser.parse_args()
 
     input_dir = Path(args.input_dir).resolve()
@@ -244,18 +274,20 @@ def main() -> int:
         text, ext = _extract_text(path)
         lang = args.lang or _detect_language(text)
         chapters, coverage = _detect_chapters(text)
-        file_invs.append(FileInventory(
-            path=str(path.relative_to(input_dir)),
-            bytes_size=path.stat().st_size,
-            extension=ext,
-            detected_language=lang,
-            detected_chapters=chapters,
-            coverage=coverage,
-            text_excerpt=(text[:600] if text else ""),
-        ))
+        file_invs.append(
+            FileInventory(
+                path=str(path.relative_to(input_dir)),
+                bytes_size=path.stat().st_size,
+                extension=ext,
+                detected_language=lang,
+                detected_chapters=chapters,
+                coverage=coverage,
+                text_excerpt=(text[:600] if text else ""),
+            )
+        )
         texts.append(text)
 
-    chapter_freq = Counter()
+    chapter_freq: Counter[str] = Counter()
     for f in file_invs:
         chapter_freq.update(f.detected_chapters)
 

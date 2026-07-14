@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "rattle": {
+      "command": "node",
+      "args": ["./mcp/server.mjs"],
+      "env": {
+        "RATTLE_API_KEY": "${RATTLE_API_KEY}",
+        "RATTLE_BASE_URL": "${RATTLE_BASE_URL:-https://www.rattleapp.de/api/v1}",
+        "RATTLE_MCP_ALLOW_WRITES": "${RATTLE_MCP_ALLOW_WRITES:-0}"
+      }
+    }
+  }
+}

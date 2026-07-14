@@ -12,8 +12,9 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | Path | Purpose |
 |---|---|
 | `.claude-plugin/plugin.json` + `marketplace.json` | Claude Code plugin / marketplace manifest. Installable via `/plugin marketplace add rattleai/grimoire`. |
+| `skills/rattle-ingest/` | **First link in the chain.** Raw customer file (Excel / CSV / ERP export) → 24 column roles → 5 sheet shapes → reviewable `source-mapping.json` + normalized rows. Enforces the #1 rule at the door: a surcharge column with no standard sibling is a **blocker**, never a guess. Includes `scripts/profile_source.py`. |
 | `skills/rattle-configurator/` | Core consulting knowledge. **Always load first.** |
-| `skills/rattle-api/` | REST API surface (auth, pagination, 443 operations across 245 paths, OpenAPI spec). |
+| `skills/rattle-api/` | REST API surface (auth, pagination, 462 operations across 257 paths, OpenAPI spec). |
 | `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
 | `skills/rattle-suggest-config/` | Workflow: produce BOM-aware configuration recommendation JSON. |
 | `skills/rattle-document-templates/` | Workflow: build offer/quote/custom/ccms templates honouring the doc_type contract. (Use `rattle-techdoc` for `doc_type=technical_doc`; `datasheet` is not a registered backend doc_type.) |
@@ -25,7 +26,9 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `skills/rattle-audit/` | Workflow: scan a live tenant against the 6 structural checks. Includes `scripts/audit_runner.py`. |
 | `skills/rattle-tenant-memory/` | Per-tenant preferences and decisions (file-based, explicit-write only). |
 | `skills/rattle-bom-builder/` | Variant-BOM expert: usage_subclauses DSL, option_scalings (legacy / ratio / range), numbered-option scaling patterns, alt_group + priority alternates, ghost depth-transparency, BOM explosion semantics. Includes `scripts/validate_variant_bom.py` and 6 reference docs. |
-| `schemas/` | JSON Schemas for the 4 output contracts (recommendation, audit-findings, offer-template, apply-operations). |
+| `schemas/` | JSON Schemas for the 6 output contracts (source-mapping, recommendation, audit-findings, offer-template, apply-operations, variant-bom). Every golden example in `examples/` validates against its schema — CI enforces it. |
+| `mcp/server.mjs` | Rattle MCP server. Zero dependencies (raw JSON-RPC over stdio, so it works on the plugin path where there is no `npm install`) and zero per-endpoint code (`rattle_request` is a generic passthrough; `rattle_api_search` reads the bundled OpenAPI spec) — so it cannot drift when the API grows. Also serves the skills to clients with no Skills mechanism. **Read-only unless `RATTLE_MCP_ALLOW_WRITES=1`.** |
+| `scripts/validate_bundle.py` | The bundle gate. Fails the build on manifest version drift, a `strict:false` load conflict, bytecode in the npm tarball, unknown frontmatter keys, an agent naming a nonexistent skill, or an example that no longer satisfies its schema. Wired into `make check` + CI. |
 | `examples/` | Synthetic golden I/O for every workflow. |
 | `agents/rattle-consultant.md` | Senior consultant subagent — orchestrates strategic decisions. |
 | `agents/rattle-auditor.md` | Live-tenant structural auditor. Read-only. |
@@ -104,13 +107,30 @@ make format                        # Auto-format with Ruff
 
 ## Rattle REST API Reference
 
-A comprehensive reference of all **443 REST API operations across 245 paths and 36 resource groups** is at `docs/API_REFERENCE.md`. It is **generated** from `docs/openapi.json` by `scripts/build_api_reference.py` — re-run that script whenever the spec is replaced:
+A comprehensive reference of all **462 REST API operations across 257 paths and 37 resource groups** is at `docs/API_REFERENCE.md`. It is **generated** — never hand-edited.
+
+The generator **fetches the live spec by default** from <https://www.rattleapp.de/docs/api/openapi.json> (published alongside the human docs at `/docs/api/reference`). A checked-in copy goes stale silently, and nobody notices until an agent calls an endpoint that moved:
 
 ```bash
-python3 scripts/build_api_reference.py
+python3 scripts/build_api_reference.py            # fetch live, then render  ← do this
+python3 scripts/build_api_reference.py --offline  # render from the local copy (CI, no network)
 ```
 
-The script also mirrors the rendered Markdown and the spec into `skills/rattle-api/references/` so the plugin Skill stays in sync. **Do not hand-edit `docs/API_REFERENCE.md`** — changes are overwritten on the next build.
+Fetching rewrites `docs/openapi.json`, renders `docs/API_REFERENCE.md`, and mirrors both into `skills/rattle-api/references/` — which is the copy the plugin Skill **and the MCP server** actually read, so they stay in lockstep.
+
+**Do not hand-edit `docs/API_REFERENCE.md` or the skill mirror.** Both are generated; edits are destroyed on the next build.
+
+### Adding knowledge the OpenAPI spec does not carry
+
+Some endpoints the skills depend on are **absent from `openapi.json` entirely** — the Safety Reference group (`/safety-logos`, `/hp-statements`, `/safety-notices/signal-words`) is the live source of truth for the `safety_notice` and `hp_statement` EditorJS blocks, and `rattle-safety-notices` / `rattle-ghs-statements` instruct the model to call it *instead of guessing*. It exists nowhere in the spec.
+
+Such content is an **input to the generator, never an edit to its output**:
+
+1. Put the Markdown in `docs/api-supplement/<name>.md`.
+2. Register it in the `SUPPLEMENTS` list in `scripts/build_api_reference.py`, declaring its tag and its operations so the resource-group and quick-reference tables stay accurate.
+3. Re-run the generator. The section is emitted in its alphabetical slot, and regeneration is lossless and idempotent.
+
+This mechanism exists because it was previously violated. The Safety Reference section and the corrected OCC status (`409 Conflict`, not `412 Precondition Failed`) had been hand-written into the *generated* mirror — so the next legitimate regen, which this file tells you to run, would have silently deleted 197 lines of verified knowledge and reverted the 409 back to 412. `scripts/validate_bundle.py` now fails the build if the two rendered copies ever diverge again.
 
 Consult it before making any API calls to understand available endpoints, required parameters,
 request/response shapes, and example JSON. The `RattleClient` in `rattle_api/client.py` is a
@@ -147,7 +167,7 @@ Product
 - **usage_subclauses** on BOM items: `[{"option_id": 301, "factor": 1.0}]` — when option 301 is selected, this BOM line is active with quantity × factor.
 - **Option area-config** (`/options/{id}/area-config`): per-area overrides for option price, description, recommended flag — avoids duplicating groups.
 - **Pair-level constraints** (`POST /constraints`): simple option-option exclusions as `{option_id1, option_id2}` pairs. Atomically replaces all pairs for a product (use `X-Constraints-Version` header).
-- **Constraint rules** (`POST /constraints/rules`): conditional logic with `rule_json: [{"if": {"option_selected": X}, "then": {"forbid_options": [Y, Z]}}]`.
+- **Constraint rules** (`POST /constraints/rules`): conditional logic. `rule_json` is a single **object** — `{"requires": [<clause>, …], "invalid": [<option_id>, …]}` — where clauses are AND-folded and each clause is `anyOf` / `allOf` / `groupSelections` over option ids. The legacy array shape `[{"if": …, "then": {"forbid_options": …}}]` is **silently dropped** by the runtime evaluator (`app/utils/constraint_solver._rule_active`), so a rule written that way looks applied but never fires. The constraint DSL is presence-based only: no clause can read an option's numeric amount, so a quantity threshold ("forbid when panels > 20") is **not expressible** as a constraint.
 
 ### Configuration Rules
 

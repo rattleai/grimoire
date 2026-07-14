@@ -43,6 +43,11 @@ const ARTIFACTS = [
   { src: "commands", required: true },
   { src: "schemas", required: false },
   { src: "examples", required: false },
+  // The MCP server is what gives Cursor / Windsurf / Claude Desktop the skills
+  // and live API access that Claude Code gets natively. Without it, an npx
+  // install leaves those clients with Markdown and no way to reach the tenant.
+  { src: "mcp", required: false },
+  { src: ".mcp.json", required: false },
   { src: ".claude-plugin", required: true },
   { src: "AGENTS.md", required: true },
   { src: "CLAUDE.md", required: false },
@@ -118,6 +123,27 @@ function resolveTargetForArtifact(target, layout, srcName) {
   return path.join(target, srcName);
 }
 
+/**
+ * Also publish the skills at `.agents/skills/` — the Agent Skills open standard
+ * (agentskills.io). Codex CLI and Gemini CLI both discover skills there natively,
+ * and both require exactly the `name` + `description` frontmatter our SKILL.md
+ * files already carry. Without this, an install is only discoverable by Claude
+ * Code, and every other agent sees a directory of Markdown it never reads.
+ *
+ * Copied, not symlinked: a symlink would dangle the moment the user moves or
+ * vendors the directory, and Windows checkouts do not reliably honour links.
+ */
+async function installAgentSkills(target, layout, dryRun) {
+  const base = layout === "user" ? os.homedir() : target;
+  const dst = path.join(base, ".agents", "skills");
+  const src = path.join(PACKAGE_ROOT, "skills");
+  if (!(await pathExists(src))) return null;
+  console.log(`* skills → ${dst}  (Agent Skills standard — Codex, Gemini CLI)`);
+  await copyRecursive(src, dst, dryRun);
+  console.log("");
+  return dst;
+}
+
 async function install(args) {
   const target = path.resolve(args.target);
   if (args.layout !== "flat" && args.layout !== "claude" && args.layout !== "user") {
@@ -125,7 +151,10 @@ async function install(args) {
     process.exit(2);
   }
   if (!(await pathExists(target))) {
+    // Deliberately not auto-created: a typo'd --target would otherwise scatter
+    // a copy of the bundle into a directory the user never meant to exist.
     console.error(`Target directory does not exist: ${target}`);
+    console.error(`Create it first:  mkdir -p "${target}"`);
     process.exit(1);
   }
 
@@ -152,18 +181,40 @@ async function install(args) {
     console.log("");
   }
 
+  await installAgentSkills(target, args.layout, args.dryRun);
+
+  const COMMANDS =
+    "/rattle-ingest, /rattle-analyse, /rattle-suggest-config, /rattle-audit,\n" +
+    "    /rattle-build-bom, /rattle-build-offer, /rattle-build-techdoc, /rattle-audit-techdoc";
+
   console.log("Done.");
   console.log("");
-  if (args.layout === "flat" || args.layout === "claude") {
-    console.log("Next steps:");
+  console.log("Next steps:");
+  if (args.layout === "user") {
+    console.log("  - Restart Claude Code so it picks up the user-level skills.");
+  } else {
     console.log("  - Restart your AI agent (Claude Code, Cursor, Codex, Aider, …)");
     console.log("  - Open AGENTS.md to see the knowledge layout.");
-    console.log("  - In Claude Code, type /rattle-analyse, /rattle-suggest-config, /rattle-audit, or /rattle-build-offer.");
-  } else {
-    console.log("Next steps:");
-    console.log("  - Restart Claude Code so it picks up the user-level skills.");
-    console.log("  - Try /rattle-analyse <pricelist.xlsx> or /rattle-audit <tenant>.");
   }
+  console.log(`  - Slash commands:\n    ${COMMANDS}`);
+  console.log("");
+  console.log("  - Start with your own data:  /rattle-ingest <your-pricelist.xlsx>");
+  console.log("    It maps the columns onto Rattle entities and stops on anything it");
+  console.log("    would otherwise have to guess.");
+  const server = path.join(target, "mcp", "server.mjs");
+  console.log("");
+  console.log("  - Codex CLI — skills are already discoverable at .agents/skills/. Add the API:");
+  console.log(`      codex mcp add rattle -- node "${server}"`);
+  console.log("");
+  console.log("  - Gemini CLI — skills are already discoverable at .agents/skills/. Add the API");
+  console.log("    to .gemini/settings.json:");
+  console.log(`      {"mcpServers":{"rattle":{"command":"node","args":["${server}"]}}}`);
+  console.log("");
+  console.log("  - Cursor / Windsurf / Claude Desktop — no Skills mechanism, so use the MCP");
+  console.log("    server for BOTH the knowledge and the API:");
+  console.log(`      {"command":"node","args":["${server}"]}`);
+  console.log("");
+  console.log("  The MCP server is read-only until you set RATTLE_MCP_ALLOW_WRITES=1.");
 }
 
 function help() {

@@ -43,8 +43,7 @@ def read_pdf(filepath):
         import fitz  # pymupdf
     except ImportError:
         raise ImportError(
-            "pymupdf is required for PDF reading. "
-            "Install it with: pip install 'grimoire[pdf]'"
+            "pymupdf is required for PDF reading. Install it with: pip install 'grimoire[pdf]'"
         )
     doc = fitz.open(filepath)
     pages = []

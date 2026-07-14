@@ -22,20 +22,19 @@ The bundle has **significant gaps** in: numbered options on the sales/UX side, q
 
 ## P0 — Block PR / unblock the value chain
 
-### P0-1. `rattle-numbered-options` skill *(sales-side counterpart to BOM scaling)*
+### ~~P0-1. `rattle-numbered-options` skill~~ — **CLOSED in 0.7.0, and the original diagnosis was wrong**
 
-**Scope.** When and how to model a configurable feature as a numbered option (`is_numbered: true`) vs N discrete options vs a multi-select group. Covers the configurator-stage fields the BOM skill consumes: `number_min`, `number_max`, `number_step`, `number_unit`, `price_scalings`. Decision rules: discrete vs numeric, single vs multi, when `is_numbered + is_multi` makes sense.
-
-**Why a new skill.** The current `rattle-suggest-config` recommendation-output schema has no fields for `is_numbered` / `number_min/max/step/unit` / `price_scalings`, so an AI agent can't even *propose* a numbered option — the user has to author it by hand and then dispatch to `rattle-bom-architect` post-hoc. This is the single largest gap on the sales/configurator side.
-
-**Includes.**
-- Skill body: when to choose numeric vs discrete, validation bounds, UX implications, interaction with constraints (a numbered option cannot be a member of a forbidden-pair).
-- Reference `references/numbered-pricing.md`: `price_scalings` (same descriptor shapes as `option_scalings` — legacy, ratio, range — but for price). Multi-currency considerations.
-- Schema patch for `rattle-suggest-config` recommendation contract to expose the new fields.
-- Pricelist anti-pattern: "per-meter pricing as a separate row" → should become a numbered option. Heuristic for `rattle-pricelist-analysis` to detect this.
-- Examples: panel count, run length, surface area, opening count, custom-cut linear-foot pricing, weight-based shipping cost.
-
-**Priority.** P0 — without it the configurator tier cannot recommend a numbered option, breaking the most common BOM-scaling use case end-to-end.
+> **Correction (2026-07-14).** This item asserted: *"the current `rattle-suggest-config` recommendation-output schema has no fields for `is_numbered` / `number_min/max/step/unit` / `price_scalings`."* **That was false.** All seven fields were already present in `schemas/recommendation.schema.json` `$defs.option`, and in `apply-operations.schema.json`. The contract could always express a numbered option.
+>
+> The **real** defect was one level up: `grep -c is_numbered` over `rattle-suggest-config/SKILL.md` and `rattle-configurator/SKILL.md` returned **0 and 0**. The schema could express a numbered option; the skills that *fill* the schema never mentioned the concept, so no AI following them would ever emit one. Right symptom, wrong cause — and a schema patch, which is what this item prescribed, would have fixed nothing.
+>
+> **Closed by teaching, not by patching:** the discrete / multi-select / numbered decision now lives in `rattle-suggest-config` (§ "Numbered options") and `rattle-configurator`, cross-referencing the 12 scaling patterns already in `rattle-bom-builder/references/numbered-options.md` rather than duplicating them. A new `per-unit-priced-row` anti-pattern detects per-metre / per-piece pricing that should have been a numbered option. A separate skill proved unnecessary.
+>
+> **Two bugs surfaced while closing it:**
+> - `numbered-options.md` Pattern 4 specified `number_min: 0.5, number_step: 0.1`. `OptionCreateRequest.number_min/max/step` are **integers** — the API would have 422'd. Fixed.
+> - The constraint DSL is **presence-based only**. No clause can read an option's numeric amount, so a quantity threshold ("forbid when panels > 20") is **not expressible** as a constraint. Whether the backend actively *rejects* a numbered option inside a forbidden pair is undocumented; treated as a caution to verify against a live tenant, not stated as a rule.
+>
+> **Lesson for the items below: verify the claim against the code before scheduling the fix.** At least one other item in this file may be similarly stale.
 
 ### P0-2. `rattle-document-templates` restructure → split per doc_type
 
