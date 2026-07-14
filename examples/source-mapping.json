@@ -1,0 +1,299 @@
+{
+  "tenant": "acme",
+  "generated_at": "2026-07-14T09:12:00Z",
+  "source": {
+    "path": "source/acme/preisliste-2026.xlsx",
+    "filename": "preisliste-2026.xlsx",
+    "file_type": "xlsx",
+    "read_via": "openpyxl",
+    "sheet_name": "Preisliste",
+    "sheet_names": ["Preisliste", "Notizen"],
+    "header_row": 0,
+    "row_count": 2,
+    "column_count": 9
+  },
+  "sheet_shape": {
+    "id": "wide-variant-matrix",
+    "confidence": 0.7,
+    "evidence": [
+      "3 numeric columns whose headers are variant labels ('19 Zoll', 'HSK-63F mit Encoder', 'Multistep-Modul') alongside 2 identity column(s) → variants live in the header row"
+    ],
+    "candidates": [
+      { "id": "wide-variant-matrix", "confidence": 0.7 },
+      { "id": "mixed", "confidence": 0.15 }
+    ],
+    "normalization": "Pivot each variant column into a (group, option, price) triple — header_to_option_name + cell_to_option_price. One normalized row per non-empty cell. The group is NOT in the source: it is supplied by the reviewer on each column's `derived.group_name`."
+  },
+  "columns": [
+    {
+      "index": 0,
+      "header": "Artikel",
+      "role": "product_name",
+      "confidence": 0.88,
+      "target_entity": "product",
+      "target_field": "name",
+      "transform": "trim",
+      "dtype": "string",
+      "non_null": 2,
+      "cardinality": 2,
+      "samples": ["Widget Pro", "Widget Pro S"],
+      "candidates": [
+        { "role": "product_name", "confidence": 0.88, "signals": ["header~'artikel'", "dtype=string"] }
+      ],
+      "evidence": "Header matches the Artikel/Produkt keyword set; dense string values, unique per row.",
+      "review_required": false
+    },
+    {
+      "index": 1,
+      "header": "Artikelnummer",
+      "role": "product_sku",
+      "confidence": 0.99,
+      "target_entity": "product",
+      "target_field": "integration_metadata.article_number",
+      "transform": "trim",
+      "transform_arg": "article_number",
+      "dtype": "string",
+      "non_null": 2,
+      "cardinality": 2,
+      "samples": ["WP-1000", "WP-1100"],
+      "candidates": [
+        { "role": "product_sku", "confidence": 0.99, "signals": ["header~'artikelnummer'", "near-unique", "digit-bearing"] },
+        { "role": "product_name", "confidence": 0.68, "signals": ["header~'artikel'", "dtype=string"] }
+      ],
+      "evidence": "Exact keyword hit; distinct_ratio 1.0; digit-bearing.",
+      "review_required": false,
+      "note": "Rattle has NO Product.sku field — ProductCreateRequest exposes only name/description/base_price/currency/is_active/language/catalog_meta/integration_metadata (extra='forbid'). The customer article number is carried in integration_metadata."
+    },
+    {
+      "index": 2,
+      "header": "Beschreibung",
+      "role": "description",
+      "confidence": 0.94,
+      "target_entity": "product",
+      "target_field": "description",
+      "transform": "trim",
+      "dtype": "string",
+      "non_null": 2,
+      "cardinality": 2,
+      "samples": [
+        "Konfigurierbarer Industrie-Widget für Serienfertigung mit modularem Aufbau.",
+        "Kompaktversion des Widget Pro für kleinere Losgrößen und Werkstattbetrieb."
+      ],
+      "candidates": [
+        { "role": "description", "confidence": 0.94, "signals": ["header~'beschreibung'", "long-text"] }
+      ],
+      "evidence": "Exact keyword hit; mean sample length > 40 chars.",
+      "review_required": false
+    },
+    {
+      "index": 3,
+      "header": "Grundpreis",
+      "role": "base_price",
+      "confidence": 0.98,
+      "target_entity": "product",
+      "target_field": "base_price",
+      "transform": "decimal_de",
+      "dtype": "number",
+      "non_null": 2,
+      "cardinality": 2,
+      "samples": ["12.000,00", "9.800,00"],
+      "candidates": [
+        { "role": "base_price", "confidence": 0.98, "signals": ["header~'grundpreis'", "dtype=number", "dense"] }
+      ],
+      "evidence": "Exact keyword hit; numeric, dense, no zero values — a base price, not a surcharge.",
+      "review_required": false
+    },
+    {
+      "index": 4,
+      "header": "Währung",
+      "role": "currency",
+      "confidence": 0.99,
+      "target_entity": "none",
+      "target_field": "",
+      "transform": "none",
+      "dtype": "string",
+      "non_null": 2,
+      "cardinality": 1,
+      "samples": ["EUR"],
+      "candidates": [
+        { "role": "currency", "confidence": 0.99, "signals": ["header~'währung'", "iso-currency-values"] }
+      ],
+      "evidence": "Exact keyword hit; all values in the ISO currency set.",
+      "review_required": false,
+      "note": "NOT WRITABLE. ProductCreateRequest.currency is 'Accepted but ignored — currency is derived from the company's base price list.' Used here only to select the decimal_de parser."
+    },
+    {
+      "index": 5,
+      "header": "19 Zoll",
+      "role": "option_price",
+      "confidence": 0.58,
+      "target_entity": "option",
+      "target_field": "price",
+      "transform": "cell_to_option_price",
+      "derived": {
+        "group_name": "Räder",
+        "option_name": "19 Zoll",
+        "is_multi": false
+      },
+      "dtype": "number",
+      "non_null": 2,
+      "cardinality": 1,
+      "samples": ["500,00"],
+      "candidates": [
+        { "role": "option_price", "confidence": 0.58, "signals": ["variant-label-header", "dtype=number"] }
+      ],
+      "evidence": "The header is a VALUE, not a field name ('19 Zoll'), and the cells are numeric → wide-variant-matrix surcharge column. The option name is the header; the GROUP appears nowhere in the sheet.",
+      "review_required": true,
+      "note": "derived.group_name 'Räder' and is_multi=false were supplied by the reviewer, NOT read from the source. Confirm both."
+    },
+    {
+      "index": 6,
+      "header": "HSK-63F mit Encoder",
+      "role": "option_price",
+      "confidence": 0.58,
+      "target_entity": "option",
+      "target_field": "price",
+      "transform": "cell_to_option_price",
+      "derived": {
+        "group_name": "Frässpindel",
+        "option_name": "HSK-63F mit Encoder",
+        "is_multi": false
+      },
+      "dtype": "number",
+      "non_null": 2,
+      "cardinality": 1,
+      "samples": ["2.500,00"],
+      "candidates": [
+        { "role": "option_price", "confidence": 0.58, "signals": ["variant-label-header", "dtype=number"] }
+      ],
+      "evidence": "Variant-label header ('… mit Encoder') over numeric cells → surcharge column in a wide matrix.",
+      "review_required": true,
+      "note": "derived.group_name 'Frässpindel' supplied by the reviewer. Confirm."
+    },
+    {
+      "index": 7,
+      "header": "Multistep-Modul",
+      "role": "option_price",
+      "confidence": 0.63,
+      "target_entity": "option",
+      "target_field": "price",
+      "transform": "cell_to_option_price",
+      "derived": {
+        "group_name": "Software — Cyclic testing",
+        "option_name": "Multistep cyclic testing module",
+        "is_multi": false
+      },
+      "dtype": "number",
+      "non_null": 2,
+      "cardinality": 2,
+      "samples": ["500,00", "0,00"],
+      "candidates": [
+        { "role": "option_price", "confidence": 0.63, "signals": ["variant-label-header", "dtype=number", "has-zero-priced-rows"] }
+      ],
+      "evidence": "Variant-label header over numeric cells, and one row is priced 0,00 → the module is included for Widget Pro S. A zero in a surcharge column means 'no surcharge', i.e. the option ships as standard for that product.",
+      "review_required": true,
+      "note": "Software capability. The zero-priced row is a genuine standard signal for Widget Pro S, but the baseline (no-module) state for Widget Pro still has no option — see blocker addon-only-software-modules."
+    },
+    {
+      "index": 8,
+      "header": "Bemerkung intern",
+      "role": "ignore",
+      "confidence": 0.5,
+      "target_entity": "none",
+      "target_field": "",
+      "transform": "none",
+      "dtype": "string",
+      "non_null": 2,
+      "cardinality": 2,
+      "samples": ["Marge 32%", "Auslauf 2027"],
+      "candidates": [
+        { "role": "description", "confidence": 0.5, "signals": ["header~'bemerkung'"] }
+      ],
+      "evidence": "Best candidate 'description' scored 0.50, below the 0.60 review floor. Reviewer classified the column as internal margin/lifecycle notes — not customer-facing.",
+      "review_required": true,
+      "note": "Explicitly ignored after review, not dropped silently."
+    }
+  ],
+  "unmapped_columns": [],
+  "blockers": [
+    {
+      "blocker_id": "missing-standard-variant",
+      "pattern_id": "implicit-base-config",
+      "message": "Column '19 Zoll' is a surcharge column with no standard sibling. The wheel variant that ships as standard is not represented anywhere in the source — no column, no zero-priced cell, no row. Without an explicit standard option, no BOM item can carry a usage_subclause for the standard wheel, and the configurator cannot remove the implicit baseline.",
+      "location": "columns[5]",
+      "evidence": "header '19 Zoll'; every cell > 0; no zero-priced wheel column exists in the sheet",
+      "placeholder": "PLACEHOLDER-STANDARD-OPTION: Räder / <standard variant unconfirmed>",
+      "question": "Which wheel size ships as standard on Widget Pro and Widget Pro S, at what option price (expected 0), and which part does it pull into the BOM?",
+      "related_rules": ["explicit-options-for-all-variants"]
+    },
+    {
+      "blocker_id": "missing-standard-variant",
+      "pattern_id": "addon-only-options",
+      "message": "Column 'HSK-63F mit Encoder' is listed only as a surcharge. The default spindle it upgrades from is never named. Create a Frässpindel group with the default AND the upgrade as explicit options — but the default's name is not in this file.",
+      "location": "columns[6]",
+      "evidence": "header 'HSK-63F mit Encoder'; every cell > 0; no zero-priced spindle column exists",
+      "placeholder": "PLACEHOLDER-STANDARD-OPTION: Frässpindel / <default spindle unconfirmed>",
+      "question": "What is the default spindle on Widget Pro (e.g. ISO 30), and is 'HSK-63F ohne Encoder' also orderable? The 2026 pricelist lists only the encoder variant.",
+      "related_rules": ["explicit-options-for-all-variants"]
+    },
+    {
+      "blocker_id": "missing-standard-variant",
+      "pattern_id": "addon-only-software-modules",
+      "message": "Column 'Multistep-Modul' prices a software module as a surcharge for Widget Pro (500,00) and as included for Widget Pro S (0,00). The baseline state for Widget Pro — the configuration WITHOUT the module — has no option representing it.",
+      "location": "columns[7]",
+      "evidence": "header 'Multistep-Modul'; cells 500,00 (Widget Pro) and 0,00 (Widget Pro S)",
+      "placeholder": "PLACEHOLDER-STANDARD-OPTION: Software — Cyclic testing / <baseline capability unconfirmed>",
+      "question": "What does Widget Pro do for cyclic testing WITHOUT the Multistep module — is there a manual/included baseline capability that should be its own price-0 option?",
+      "related_rules": ["explicit-options-for-all-variants"]
+    }
+  ],
+  "warnings": [
+    {
+      "code": "low-confidence-mapping",
+      "message": "Column '19 Zoll' mapped to option_price at 0.58, below the 0.60 review floor. The role is credible (variant-label header over numeric cells) but the group is invented by the reviewer, not read from the source.",
+      "location": "columns[5]",
+      "column_index": 5
+    },
+    {
+      "code": "low-confidence-mapping",
+      "message": "Column 'HSK-63F mit Encoder' mapped to option_price at 0.58, below the 0.60 review floor. Group supplied by the reviewer.",
+      "location": "columns[6]",
+      "column_index": 6
+    },
+    {
+      "code": "low-confidence-mapping",
+      "message": "Column 'Bemerkung intern' best candidate 'description' scored 0.50. Classified as ignore after review — confirm with the tenant that no customer-facing text is being discarded.",
+      "location": "columns[8]",
+      "column_index": 8
+    },
+    {
+      "code": "currency-not-writable",
+      "message": "Column 'Währung' (EUR) is not writable: ProductCreateRequest.currency is accepted but ignored — currency is derived from the company's base price list. Used only to select the decimal_de parser.",
+      "location": "columns[4]",
+      "column_index": 4
+    },
+    {
+      "code": "decimal-separator-assumed",
+      "message": "German decimal convention assumed (comma decimal, dot thousands) from the EUR currency column and the '12.000,00' value shape. All price columns parsed with decimal_de.",
+      "location": "source"
+    },
+    {
+      "code": "multiple-sheets-present",
+      "message": "2 worksheets present (Preisliste, Notizen); profiled 'Preisliste'. Ingest one sheet per source-mapping — 'Notizen' has not been examined.",
+      "location": "source.sheet_names"
+    },
+    {
+      "code": "placeholder-emitted",
+      "message": "3 PLACEHOLDER-STANDARD-OPTION rows emitted into normalized-rows.json with option_price=null. They are holes with labels, not values. rattle-suggest-config MUST NOT run until the 3 blockers are answered.",
+      "location": "blockers"
+    }
+  ],
+  "normalized_rows_path": "source/acme/normalized-rows.json",
+  "normalized_row_count": 11,
+  "notes": [
+    "Sheet is a wide-variant matrix: the variants have been hoisted into the header row and the cells hold their surcharges. This shape generates implicit-base-config by construction — every variant column is a surcharge relative to a standard that appears nowhere in the file.",
+    "group_name and is_multi on columns[5..7].derived were supplied by the reviewer. Nothing in the source states that '19 Zoll' belongs to a feature called Räder, nor whether the variants are mutually exclusive.",
+    "No BOM data in this source. The parts behind each option (17-inch wheel assy, ISO 30 spindle, …) must come from a separate Stückliste — see skills/rattle-bom-builder.",
+    "Gate: blockers[] is non-empty. Answer the 3 questions with the customer, then re-ingest before running rattle-suggest-config."
+  ]
+}

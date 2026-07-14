@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-14
+
+The theme of this release is **making the bundle installable and usable by someone who is not us** — closing the gap between "a repo full of good knowledge" and "a system a stranger can install and point at their own data."
+
+### Added — `rattle-ingest`: the missing first link
+
+Until now nothing in the bundle mapped a customer's *raw* data onto Rattle entities. `rattle_api/source.py` only *read* files (Excel → rows, PDF → text); `rattle-pricelist-analysis` emitted *findings*, not a mapping. So the chain began one step too late — it assumed the data was already understood.
+
+- **`skills/rattle-ingest/`** — the new first link. Raw spreadsheet / CSV / ERP export → a reviewable `source-mapping.json` → normalized rows the rest of the chain already consumes. The full chain is now:
+  `rattle-ingest` → `rattle-pricelist-analysis` → `rattle-suggest-config` → `rattle-apply-config`.
+  - `references/column-roles.md` — the column-role taxonomy (DE + EN header keywords, value-shape signals, target entity/field, confidence rules).
+  - `references/sheet-shapes.md` — the five real-world sheet shapes and the normalization strategy for each, including the wide variant matrix (variants as columns, prices in cells).
+  - `scripts/profile_source.py` — deterministic column profiler. Never guesses a column's meaning from its header alone; ranks candidate roles from cardinality, dtype and value samples.
+- **`schemas/source-mapping.schema.json`** + `examples/source-mapping.json` — the reviewable contract. A human confirms the mapping *before* anything is built.
+- **`commands/rattle-ingest.md`** — `/rattle-ingest`.
+
+Ingestion is where the #1 rule is enforced **at the door**: a column of surcharges with no "standard" row is an `implicit-base-config` blocker. The skill surfaces the missing standard variant — it never invents one.
+
+### Added — the Rattle MCP server (`mcp/server.mjs`)
+
+Claude Code has a native Skills mechanism. Cursor, Windsurf, Claude Desktop and ChatGPT do not. The MCP server is how one bundle serves all of them.
+
+- **Zero drift by construction.** The Rattle API has 443 operations across 245 paths. A server hand-declaring one tool per endpoint would rot the day rattleapp ships a new one. This server declares **no per-endpoint code at all**: `rattle_request` is a generic authenticated passthrough and `rattle_api_search` searches the bundled OpenAPI spec. A new endpoint works the day it ships.
+- **Zero dependencies.** Claude Code loads a plugin by cloning it — there is no `npm install` step. The server speaks MCP's stdio transport (newline-delimited JSON-RPC 2.0) directly against Node's stdlib. Node ≥ 18 is the only requirement.
+- **`rattle_knowledge_list` / `rattle_knowledge_get`** + an MCP resource surface hand the skills, references and schemas to clients that have no Skills mechanism of their own.
+- **Read-only by default.** Every non-GET request is refused unless `allow_writes` is explicitly enabled. A live CPQ tenant is not a sandbox.
+- `.mcp.json` at the repo root wires the same server into Cursor / Windsurf / Claude Desktop without the plugin.
+
+### Added — `scripts/validate_bundle.py` + CI gates
+
+Every check below exists because the corresponding defect actually shipped:
+
+- Version drift across the four manifests (`package.json` said 0.4.0 and "8 skills, 3 subagents, 4 commands" while 13/6/7 were on disk and `plugin.json` said 0.6.0).
+- `strict: false` in `marketplace.json`, which is a **hard load failure** the moment `plugin.json` declares any component.
+- Compiled bytecode published to npm — `npm pack --dry-run` confirmed three `.pyc` files were shipping, because the `files` allowlist overrides `.gitignore`.
+- A golden example silently drifting from the schema it claims to satisfy.
+- An agent's `skills:` list naming a skill that does not exist (a silent no-op at load time, indistinguishable from "the agent just didn't use it").
+
+Wired into `make check` and CI, alongside `scripts/mcp_smoke.mjs`, which drives the MCP server over its real stdio transport and asserts the read-only guarantee holds.
+
+### Fixed
+
+- **`rattle-suggest-config` contradicted itself.** The body stated the canonical `rule_json` shape is `{requires, invalid}` and that the legacy `[{if, then}]` array is wrong — then its own output-contract example used exactly that legacy shape. The legacy shape is **silently dropped** by the runtime evaluator, so a rule authored that way looks applied but never fires. Purged from `rattle-suggest-config`, `rattle-configurator`, `system-prompts.md`, `examples/apply-operations.json`, `CLAUDE.md`, and 5 sites in `rattle_api/knowledge.py`.
+- **`examples/apply-operations.json` did not validate against its own schema** — it carried the legacy array shape. It now does, and CI enforces it.
+- **Numbered options were unreachable.** `recommendation.schema.json` has supported `is_numbered` / `number_min` / `number_max` / `number_step` / `number_unit` / `price_scalings` all along, but the word `is_numbered` appeared **zero times** in `rattle-suggest-config` and `rattle-configurator` — so no AI following those skills could ever propose one, breaking the most common BOM-scaling case end to end. Both skills now teach the discrete / multi-select / numbered decision.
+- **`numbered-options.md` Pattern 4 was unwireable.** It specified `number_min: 0.5, number_step: 0.1`, but `OptionCreateRequest.number_min/max/step` are **integers** — the API would 422. Corrected to integer bounds with a unit-conversion workaround, and carried through Patterns 5 and 7 for coherence.
+- **The "read-only" auditors could write.** `rattle-auditor` and `rattle-techdoc-auditor` declared themselves read-only in prose while holding tools that permit writing. Now enforced by the `tools` allowlist + `disallowedTools`. Honest scope: `Bash` remains (they need it for the live-tenant CLI and the inventory script), so the *API* boundary is still prose — see each agent's `## Boundaries`.
+- **Advisory agents promised delegation they could not perform.** `rattle-bom-architect` and `rattle-techdoc-author` said "spawn `rattle-techdoc-auditor`" / "hand off to `rattle-config-builder`" without the `Agent` tool. Kept toolless by design — an advisory agent that could spawn the only writer would defeat its own boundary — and the wording now says what actually happens.
+- Removed `"category"` from `plugin.json` (not a recognized key — silently ignored).
+
+### Changed
+
+- All 6 subagents gained real frontmatter: `skills:` (preloading, replacing the prose "Loads X on activation" — a hope, not a mechanism), `model:`, and `disallowedTools:`. Bare skill names verified to resolve both as an installed plugin and when copied into `.claude/agents/`.
+- `plugin.json` gained `userConfig` — the plugin now prompts for the API key, base URL, tenant and write-permission at install time and pipes them into the MCP server. No hand-edited `.env`.
+- Versions unified at 0.7.0 across `package.json`, `pyproject.toml`, `plugin.json` and `marketplace.json`, with CI failing the build if they ever diverge again.
+
+### Changed — the API spec is now fetched live, not trusted from disk
+
+`scripts/build_api_reference.py` now **fetches the published spec by default** from <https://www.rattleapp.de/docs/api/openapi.json>; `--offline` renders from the checked-in copy for CI. A local spec goes stale invisibly — nobody finds out until an agent calls an endpoint that moved.
+
+Refreshing against live immediately proved the point. The checked-in spec was **19 operations behind**:
+
+| | was | now |
+|---|---|---|
+| operations | 443 | **462** |
+| paths | 245 | **257** |
+| resource groups | 36 | **37** |
+
+Twelve paths were missing entirely, including several the skills already describe: `/parts/{id}/bom/explode`, `/parts/{id}/ghost/{materialize,resolve,status}`, `/parts/ghosts`, `/constraints/combination-rules`, and `/translations/dictionary/{entry_id}`. Counts updated across the README, AGENTS.md, CLAUDE.md, the API skill and the MCP server's tool descriptions.
+
+### Fixed — the generator would have destroyed 197 lines of verified knowledge
+
+`docs/API_REFERENCE.md` and its skill mirror are generated. Someone had hand-edited the **generated mirror** to correct the OCC status (`409 Conflict`, not `412 Precondition Failed`) and to add the entire Safety Reference section — which the `rattle-safety-notices` and `rattle-ghs-statements` skills tell the model to call *instead of guessing*. But CLAUDE.md instructs contributors to re-run the generator whenever the spec changes, and that run would have silently reverted the 409 and deleted the section outright.
+
+Content the spec cannot express is now an **input** to the generator (`docs/api-supplement/`), never an edit to its output. `scripts/validate_bundle.py` fails the build if the two rendered copies ever diverge again.
+
+The live refresh also resolved this cleanly: the four safety endpoints **now exist in the upstream spec** under a `Safety` tag, so the supplement was reduced to the consulting guidance the spec genuinely cannot carry (when a model must call these, and that a fallback symbol or hand-typed CLP text is a legal defect in a CE-marked document — not a cosmetic one).
+
+### Resolved upstream
+
+The previously-flagged legacy `{if, then}` / `forbid_options` example for `ForbiddenRuleCreateRequest` is **gone from the live spec**. The upstream fix has landed; nothing further is needed here.
+
 ## [0.6.0] - 2026-05-09
 
 ### Added — variant-BOM expert layer

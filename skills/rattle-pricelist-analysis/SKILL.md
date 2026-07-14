@@ -1,6 +1,6 @@
 ---
 name: rattle-pricelist-analysis
-description: Use this skill when the user wants to analyse a pricelist, technical document, product spec, or feature catalogue for Rattle configurator anti-patterns BEFORE building or restructuring a configuration. Detects implicit-base-config, addon-only-options, narrative-area smell, and addon-only-software-modules. Combines deterministic keyword detection with LLM-driven structural analysis. Pair with rattle-configurator (loads automatically when this is active) and rattle-suggest-config (the next step after analysis).
+description: Use this skill when the user wants to analyse a pricelist, technical document, product spec, or feature catalogue for Rattle configurator anti-patterns BEFORE building or restructuring a configuration. Detects implicit-base-config, addon-only-options, narrative-area smell, addon-only-software-modules, and per-unit-priced-row (per-metre / per-piece pricing that must become a NUMBERED option). Combines deterministic keyword detection with LLM-driven structural analysis. Pair with rattle-configurator (loads automatically when this is active) and rattle-suggest-config (the next step after analysis).
 license: MIT
 ---
 
@@ -28,7 +28,10 @@ If the input is structured tenant data (already in Rattle) rather than a priceli
    - `implicit-base-config` (highest — always blocks correct configuration)
    - `addon-only-options`
    - `addon-only-software-modules`
+   - `per-unit-priced-row` (the feature is a quantity, not a variant — it must become a numbered option)
    - `description-area-smell` (signals narrative-vs-configuration confusion)
+
+   **The per-unit heuristic.** Per-metre / per-piece / per-unit pricing appearing as **its own pricelist row** ("Panel, pro Stück: 120€"; "Kabel, €/m: 8,50") is the signal that the feature is a **numbered option** (`is_numbered: true`), not a discrete option. Test it by asking: *would modelling this as discrete options force me to enumerate "1 ×, 2 ×, 3 × …"?* If yes, it is `per-unit-priced-row`. The keyword scan catches the obvious rows; the LLM pass must also catch the ones that state a unit price without a unit keyword (a row whose quantity column is open-ended, or a spec line reading "brackets: 3 per panel"). Report the required `number_min` / `number_max` / `number_step` / `number_unit` as the blocking question — the pricelist almost never states the bounds.
 
 5. **Report with action items.** For each finding, output:
    - Pattern id and name (`implicit-base-config`)

@@ -21,7 +21,7 @@ findings to stdout. Each finding is shaped:
         "correction": "Create an explicit group with explicit options ..."
     }
 
-Anti-pattern definitions match the four catalogued in
+Anti-pattern definitions match the five catalogued in
 ``skills/rattle-configurator/references/anti-patterns.md``.
 
 Runs without network or AI keys. Excel reading requires ``openpyxl``;
@@ -111,6 +111,34 @@ ANTI_PATTERNS: list[dict[str, Any]] = [
             "Create a group for the software capability with both the "
             "baseline option (price 0, recommended) and the upgrade "
             "module option."
+        ),
+    },
+    {
+        "id": "per-unit-priced-row",
+        "name": "Per-Unit Priced Row",
+        "indicators": [
+            "pro Stück",
+            "je Stück",
+            "pro Meter",
+            "je Meter",
+            "Laufmeter",
+            "lfm",
+            "Preis pro",
+            "price per",
+            "per unit",
+            "per piece",
+            "per metre",
+            "per meter",
+            "€/Stk",
+            "€/m",
+        ],
+        "correction": (
+            "Model the feature as ONE numbered option (is_numbered=true) "
+            "with integer number_min / number_max / number_step and a "
+            "number_unit matching the part's uom. Put the per-unit rate "
+            "in price_scalings (ratio {opt, part}); scale the BOM with "
+            "option_scalings. Never enumerate the quantity as discrete "
+            "options."
         ),
     },
 ]

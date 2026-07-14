@@ -42,12 +42,15 @@ def _validate_clause(clause: dict, idx: int, prefix: str) -> list[tuple[str, str
     op = clause.get("operator")
     if op not in (None, "AND", "OR") and idx > 0:
         out.append((ERR, f"{prefix} clause[{idx}] operator must be 'AND' or 'OR'"))
-    has_payload = any(
-        clause.get(k)
-        for k in ("groupSelections", "areaStatuses", "areaSubclauses")
-    )
+    has_payload = any(clause.get(k) for k in ("groupSelections", "areaStatuses", "areaSubclauses"))
     if not has_payload:
-        out.append((WARN, f"{prefix} clause[{idx}] has no groupSelections/areaStatuses/areaSubclauses — will be dropped on save"))
+        out.append(
+            (
+                WARN,
+                f"{prefix} clause[{idx}] has no groupSelections/areaStatuses/areaSubclauses"
+                " — will be dropped on save",
+            )
+        )
 
     gs = clause.get("groupSelections")
     if gs is not None:
@@ -56,9 +59,21 @@ def _validate_clause(clause: dict, idx: int, prefix: str) -> list[tuple[str, str
         else:
             for gk, opts in gs.items():
                 if not isinstance(gk, str):
-                    out.append((ERR, f"{prefix} clause[{idx}].groupSelections keys must be strings (got {gk!r})"))
+                    out.append(
+                        (
+                            ERR,
+                            f"{prefix} clause[{idx}].groupSelections keys must be strings"
+                            f" (got {gk!r})",
+                        )
+                    )
                 if not isinstance(opts, list) or not all(isinstance(o, int) for o in opts):
-                    out.append((ERR, f"{prefix} clause[{idx}].groupSelections[{gk}] must be a list of int option ids"))
+                    out.append(
+                        (
+                            ERR,
+                            f"{prefix} clause[{idx}].groupSelections[{gk}]"
+                            " must be a list of int option ids",
+                        )
+                    )
 
     ast = clause.get("areaStatuses")
     if ast is not None:
@@ -67,9 +82,20 @@ def _validate_clause(clause: dict, idx: int, prefix: str) -> list[tuple[str, str
         else:
             for ak, st in ast.items():
                 if not isinstance(ak, str):
-                    out.append((ERR, f"{prefix} clause[{idx}].areaStatuses keys must be strings (got {ak!r})"))
+                    out.append(
+                        (
+                            ERR,
+                            f"{prefix} clause[{idx}].areaStatuses keys must be strings"
+                            f" (got {ak!r})",
+                        )
+                    )
                 if not isinstance(st, bool):
-                    out.append((ERR, f"{prefix} clause[{idx}].areaStatuses[{ak}] must be bool (got {st!r})"))
+                    out.append(
+                        (
+                            ERR,
+                            f"{prefix} clause[{idx}].areaStatuses[{ak}] must be bool (got {st!r})",
+                        )
+                    )
     return out
 
 
@@ -94,12 +120,26 @@ def _validate_scalings(scalings, prefix: str) -> list[tuple[str, str]]:
         return out
     for opt_key, descriptor in scalings.items():
         if not isinstance(opt_key, str):
-            out.append((ERR, f"{prefix}.option_scalings key {opt_key!r} must be a string option id"))
+            out.append(
+                (ERR, f"{prefix}.option_scalings key {opt_key!r} must be a string option id")
+            )
         if isinstance(descriptor, (int, float)):
-            out.append((WARN, f"{prefix}.option_scalings[{opt_key}] uses legacy numeric form {descriptor} — prefer {{opt, part}} or {{areas: [...]}}"))
+            out.append(
+                (
+                    WARN,
+                    f"{prefix}.option_scalings[{opt_key}] uses legacy numeric form {descriptor}"
+                    " — prefer {opt, part} or {areas: [...]}",
+                )
+            )
             continue
         if not isinstance(descriptor, dict):
-            out.append((ERR, f"{prefix}.option_scalings[{opt_key}] must be number, ratio dict, or range dict"))
+            out.append(
+                (
+                    ERR,
+                    f"{prefix}.option_scalings[{opt_key}]"
+                    " must be number, ratio dict, or range dict",
+                )
+            )
             continue
         if "areas" in descriptor:
             ranges = descriptor["areas"]
@@ -109,17 +149,37 @@ def _validate_scalings(scalings, prefix: str) -> list[tuple[str, str]]:
             last_max = float("-inf")
             for j, rng in enumerate(ranges):
                 if not isinstance(rng, dict):
-                    out.append((ERR, f"{prefix}.option_scalings[{opt_key}].areas[{j}] is not a dict"))
+                    out.append(
+                        (ERR, f"{prefix}.option_scalings[{opt_key}].areas[{j}] is not a dict")
+                    )
                     continue
                 rmin = rng.get("min", float("-inf"))
                 rmax = rng.get("max", float("inf"))
                 rpart = rng.get("part")
                 if rpart is None:
-                    out.append((ERR, f"{prefix}.option_scalings[{opt_key}].areas[{j}] missing 'part'"))
-                if isinstance(rmin, (int, float)) and isinstance(rmax, (int, float)) and rmin > rmax:
-                    out.append((ERR, f"{prefix}.option_scalings[{opt_key}].areas[{j}] min({rmin}) > max({rmax})"))
+                    out.append(
+                        (ERR, f"{prefix}.option_scalings[{opt_key}].areas[{j}] missing 'part'")
+                    )
+                if (
+                    isinstance(rmin, (int, float))
+                    and isinstance(rmax, (int, float))
+                    and rmin > rmax
+                ):
+                    out.append(
+                        (
+                            ERR,
+                            f"{prefix}.option_scalings[{opt_key}].areas[{j}]"
+                            f" min({rmin}) > max({rmax})",
+                        )
+                    )
                 if isinstance(rmin, (int, float)) and rmin < last_max:
-                    out.append((WARN, f"{prefix}.option_scalings[{opt_key}].areas[{j}] overlaps prior range (last_max={last_max}, this_min={rmin})"))
+                    out.append(
+                        (
+                            WARN,
+                            f"{prefix}.option_scalings[{opt_key}].areas[{j}] overlaps prior range"
+                            f" (last_max={last_max}, this_min={rmin})",
+                        )
+                    )
                 if isinstance(rmax, (int, float)):
                     last_max = rmax
         elif "opt" in descriptor or "part" in descriptor:
@@ -127,7 +187,12 @@ def _validate_scalings(scalings, prefix: str) -> list[tuple[str, str]]:
             part_v = descriptor.get("part", 1)
             try:
                 if float(opt_v) <= 0:
-                    out.append((ERR, f"{prefix}.option_scalings[{opt_key}].opt must be > 0 (got {opt_v})"))
+                    out.append(
+                        (
+                            ERR,
+                            f"{prefix}.option_scalings[{opt_key}].opt must be > 0 (got {opt_v})",
+                        )
+                    )
             except (TypeError, ValueError):
                 out.append((ERR, f"{prefix}.option_scalings[{opt_key}].opt must be numeric"))
             try:
@@ -135,7 +200,13 @@ def _validate_scalings(scalings, prefix: str) -> list[tuple[str, str]]:
             except (TypeError, ValueError):
                 out.append((ERR, f"{prefix}.option_scalings[{opt_key}].part must be numeric"))
         else:
-            out.append((ERR, f"{prefix}.option_scalings[{opt_key}] descriptor must contain 'opt'+'part' or 'areas'"))
+            out.append(
+                (
+                    ERR,
+                    f"{prefix}.option_scalings[{opt_key}] descriptor"
+                    " must contain 'opt'+'part' or 'areas'",
+                )
+            )
     return out
 
 
@@ -157,7 +228,14 @@ def validate(payload: dict) -> list[tuple[str, str]]:
         try:
             qf = float(q)
             if qf <= 0:
-                issues.append((ERR, f"{prefix} quantity={qf} ≤ 0 — API enforces gt=0 (Pydantic) and will return 422; use quantity=1 even when option_scalings will override at explosion time"))
+                issues.append(
+                    (
+                        ERR,
+                        f"{prefix} quantity={qf} ≤ 0 — API enforces gt=0 (Pydantic) and will"
+                        " return 422; use quantity=1 even when option_scalings will override"
+                        " at explosion time",
+                    )
+                )
         except (TypeError, ValueError):
             issues.append((ERR, f"{prefix} quantity not numeric"))
         issues.extend(_validate_subclauses(p.get("usage_subclauses"), prefix))
@@ -166,7 +244,10 @@ def validate(payload: dict) -> list[tuple[str, str]]:
     alt_group_priorities: dict[tuple[str, str], list[int]] = defaultdict(list)
 
     for i, b in enumerate(bom_items):
-        prefix = f"bom_items[{i}] (parent={b.get('parent_part_number')!r}, child={b.get('child_part_number')!r})"
+        prefix = (
+            f"bom_items[{i}] (parent={b.get('parent_part_number')!r},"
+            f" child={b.get('child_part_number')!r})"
+        )
         if not b.get("parent_part_number"):
             issues.append((ERR, f"{prefix} missing parent_part_number"))
         if not b.get("child_part_number"):
@@ -177,7 +258,14 @@ def validate(payload: dict) -> list[tuple[str, str]]:
         try:
             qf = float(q)
             if qf <= 0:
-                issues.append((ERR, f"{prefix} quantity={qf} ≤ 0 — API enforces gt=0 (Pydantic) and will return 422; use quantity=1 even when option_scalings will override at explosion time"))
+                issues.append(
+                    (
+                        ERR,
+                        f"{prefix} quantity={qf} ≤ 0 — API enforces gt=0 (Pydantic) and will"
+                        " return 422; use quantity=1 even when option_scalings will override"
+                        " at explosion time",
+                    )
+                )
         except (TypeError, ValueError):
             issues.append((ERR, f"{prefix} quantity not numeric"))
         sp = b.get("scrap_percent", 0)
@@ -200,7 +288,14 @@ def validate(payload: dict) -> list[tuple[str, str]]:
 
     for (parent, ag), priorities in alt_group_priorities.items():
         if len(priorities) != len(set(priorities)):
-            issues.append((ERR, f"alt_group ({parent}, {ag!r}) has duplicate priorities {priorities} — alt_group selection requires unique priority per member (per the cardinal rule in SKILL.md); fix before applying"))
+            issues.append(
+                (
+                    ERR,
+                    f"alt_group ({parent}, {ag!r}) has duplicate priorities {priorities}"
+                    " — alt_group selection requires unique priority per member"
+                    " (per the cardinal rule in SKILL.md); fix before applying",
+                )
+            )
 
     return issues
 

@@ -15,10 +15,13 @@ All data here is **fully synthetic** (Widget Pro, acme tenant, 17/19-inch wheels
 | `pricelist-input.json` | input to `rattle-pricelist-analysis` | — |
 | `pricelist-anti-patterns.json` | output of `scripts/detect_anti_patterns.py pricelist-input.json` | — |
 | `recommendation.json` | output of `rattle-suggest-config` | `schemas/recommendation.schema.json` |
+| `variant-bom.json` | output of `rattle-bom-architect` / `rattle-bom-builder` | `schemas/variant-bom.schema.json` |
 | `audit-findings.json` | output of `rattle-audit/scripts/audit_runner.py` | `schemas/audit-findings.schema.json` |
 | `offer-template.json` | output of `rattle-document-templates` | `schemas/offer-template.schema.json` |
 | `apply-operations.json` | output of `system_prompt_apply_config` | `schemas/apply-operations.schema.json` |
 | `tenant-profile.md` | example `memory/<tenant>/profile.md` | — |
+
+`variant-bom.json` exercises the full BOM surface: a `usage_subclause` (`groupSelections`), a numbered-option `option_scalings` ratio, a range descriptor, an `alt_group` with unique `priority`, and a ghost part (`bom_structure: "ghost"` + `ghost_part: true` on the edge).
 
 ## End-to-end walk-through
 
@@ -42,6 +45,14 @@ python -c "import json,sys,jsonschema; \
   schema=json.load(open('schemas/apply-operations.schema.json')); \
   doc=json.load(open('examples/apply-operations.json')); \
   jsonschema.validate(doc, schema); print('valid')"
+
+# 5. Validate the variant BOM — schema first, then the normative pre-flight validator:
+python -c "import json,sys,jsonschema; \
+  schema=json.load(open('schemas/variant-bom.schema.json')); \
+  doc=json.load(open('examples/variant-bom.json')); \
+  jsonschema.validate(doc, schema); print('valid')"
+python skills/rattle-bom-builder/scripts/validate_variant_bom.py examples/variant-bom.json
+# expect: 0 error(s), 0 warning(s)
 ```
 
 ## How to use these in prompts

@@ -101,7 +101,7 @@ The user-facing message holding the pricelist contents is appended after the sys
       "constraint_rules": [
         {
           "description": "...",
-          "rule_json": [{"if": {"option_selected": "name"}, "then": {"forbid_options": ["name"]}}]
+          "rule_json": {"requires": [{"anyOf": ["name"]}], "invalid": ["name"]}
         }
       ]
     }

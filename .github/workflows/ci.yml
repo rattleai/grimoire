@@ -36,3 +36,38 @@ jobs:
           cache: 'pip'
       - run: pip install -e ".[dev,all-ai]"
       - run: pytest --cov --cov-fail-under=90
+
+  # The bundle is the product. These two jobs guard the things that broke before:
+  # manifest version drift, a marketplace strict:false load conflict, bytecode
+  # leaking into the npm tarball, and golden examples drifting from their schema.
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+      - run: pip install jsonschema
+      - name: Validate the shipped bundle
+        run: python3 scripts/validate_bundle.py
+
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Smoke-test the Rattle MCP server
+        run: node scripts/mcp_smoke.mjs
+
+      # npm's `files` allowlist overrides .gitignore, so bytecode compiled during
+      # a local dev run really does get published. Fail rather than ship it.
+      - name: Assert no bytecode in the npm tarball
+        run: |
+          npm pack --dry-run --json \
+            | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8"));
+                       const bad=d[0].files.map(f=>f.path).filter(p=>/__pycache__|\.pyc$/.test(p));
+                       if (bad.length) { console.error("Bytecode would be published:\n" + bad.join("\n")); process.exit(1); }
+                       console.log(`OK — ${d[0].files.length} files, no bytecode.`);'

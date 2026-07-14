@@ -27,10 +27,10 @@
     {"type": "ensure_constraint_rule",
      "product": "Widget Pro",
      "description": "Multistep cyclic testing requires HSK-63F spindle with encoder.",
-     "rule_json": [
-       {"if": {"option_selected": "Multistep cyclic testing module"},
-        "then": {"forbid_options": ["ISO 30 Standard", "HSK-63F ohne Encoder"]}}
-     ]}
+     "rule_json": {
+       "requires": [{"anyOf": ["Multistep cyclic testing module"]}],
+       "invalid": ["ISO 30 Standard", "HSK-63F ohne Encoder"]
+     }}
   ],
   "notes": [
     "Tenant memory `custom-keys: never` is honoured — no `key` field on any group or option.",

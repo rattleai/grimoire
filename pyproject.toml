@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grimoire"
-version = "0.4.0"
+version = "0.7.0"
 description = "Grimoire — AI-native consulting workspace for the Rattle product configurator. Bundles skills, agents, slash commands, JSON Schemas, and a Python CLI execution layer."
 readme = "README.md"
 license = "MIT"
@@ -64,6 +64,9 @@ dev = [
     "Pillow>=10.0",
     "pymupdf>=1.24",
     "python-docx>=1.1",
+    # Used by scripts/validate_bundle.py to check every golden example in
+    # examples/ still satisfies the schema in schemas/ that it advertises.
+    "jsonschema>=4.0",
 ]
 
 [project.scripts]

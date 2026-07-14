@@ -66,6 +66,22 @@ Product
 
 For the full model with every field and endpoint, read `references/data-model.md`.
 
+### Options come in three shapes — pick one deliberately
+
+An option is not always a checkbox. Before you write a group, decide which of the three shapes the feature is:
+
+| Shape | Use when | Contract |
+|---|---|---|
+| **Discrete options**, `is_multi: false` | The variant space is a **closed enumeration** and the variants differ in *kind* — different part, different name, non-proportional price (17 inch vs 19 inch). | N options, exactly one `recommended: true` at `price: 0`. |
+| **Multi-select group**, `is_multi: true` | The choices are **independent booleans that stack** — each is present or absent, no quantity. | N options, presence only. |
+| **Numbered option**, `is_numbered: true` | The customer answers with a **number** — count, length, area, weight — and the price and/or the BOM quantity move with that number. | ONE option carrying `number_min` / `number_max` / `number_step` / `number_unit` + `price_scalings`. |
+
+**The decision rule:** if you would otherwise have to enumerate "1 ×, 2 ×, 3 × …" as separate options, or the price is `unit_price × n`, it is a **numbered option** — not N discrete options. Per-metre / per-piece / per-unit pricing in a pricelist is the tell (anti-pattern `per-unit-priced-row`).
+
+A numbered option is still bound by the #1 rule: it is an **explicit** option inside an explicit group. Presence and amount are independent — `usage_subclauses` decide *whether* a BOM line is active, `option_scalings` decide *how much*. Never model "feature absent" as amount 0; give absence its own option so a subclause can switch the line off.
+
+Depth lives elsewhere: `rattle-suggest-config/SKILL.md` § "Numbered options (numeric quantities)" for the sales-side design decision, `rattle-bom-builder/references/numbered-options.md` for the 12 BOM scaling patterns, `rattle-bom-builder/references/option-scalings.md` for the three descriptor shapes.
+
 ## How to use this skill
 
 When asked to do anything Rattle-related, work in this order:
@@ -118,7 +134,7 @@ When you produce a configuration recommendation, structure it as JSON with these
         {"option_name_1": "string", "option_name_2": "string", "reason": "string"}
       ],
       "constraint_rules": [
-        {"description": "string", "rule_json": [{"if": {"option_selected": "name"}, "then": {"forbid_options": ["name"]}}]}
+        {"description": "string", "rule_json": {"requires": [{"anyOf": ["option name"]}], "invalid": ["option name"]}}
       ]
     }
   ]
@@ -134,7 +150,7 @@ Some tenants override defaults (e.g. "never set custom keys", "always set German
 
 ## Related skills
 
-- `rattle-api` — REST API surface (auth, pagination, 443 operations across 245 paths)
+- `rattle-api` — REST API surface (auth, pagination, 462 operations across 257 paths)
 - `rattle-pricelist-analysis` — workflow for analysing pricelists
 - `rattle-suggest-config` — workflow for generating BOM-aware recommendations
 - `rattle-document-templates` — workflow for building offer templates

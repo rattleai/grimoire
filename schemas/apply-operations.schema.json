@@ -189,8 +189,8 @@
             },
             "invalid": {
               "type": "array",
-              "items": { "type": "integer" },
-              "description": "Set of option ids that become forbidden when 'requires' is satisfied."
+              "items": { "type": ["integer", "string"] },
+              "description": "Set of option ids that become forbidden when 'requires' is satisfied. Operations may carry option NAMES — the builder resolves them to ids before POSTing (see operations-contract.md § 7)."
             }
           }
         }
@@ -199,17 +199,17 @@
     },
     "rule_clause": {
       "type": "object",
-      "description": "Rule clause as evaluated by app/utils/constraint_solver._clause_true. Use exactly one of anyOf / allOf / groupSelections per clause; default operator is OR.",
+      "description": "Rule clause as evaluated by app/utils/constraint_solver._clause_true. Use exactly one of anyOf / allOf / groupSelections per clause; default operator is OR. Option / group references may be ids (post-resolution) or names (the builder resolves names → ids before POSTing).",
       "properties": {
         "operator": { "enum": ["AND", "OR"] },
         "anyOf": {
           "type": "array",
-          "items": { "type": "integer" },
+          "items": { "type": ["integer", "string"] },
           "description": "Clause is satisfied when ANY of these option ids is selected."
         },
         "allOf": {
           "type": "array",
-          "items": { "type": "integer" },
+          "items": { "type": ["integer", "string"] },
           "description": "Clause is satisfied when ALL of these option ids are selected."
         },
         "groupSelections": {
@@ -217,7 +217,7 @@
           "description": "Map of stringified group_id → list of allowed option ids; clause is satisfied when at least one option per listed group is selected.",
           "additionalProperties": {
             "type": "array",
-            "items": { "type": "integer" }
+            "items": { "type": ["integer", "string"] }
           }
         }
       },

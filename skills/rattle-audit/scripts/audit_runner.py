@@ -34,9 +34,10 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Iterable, Iterator
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 DEFAULT_BASE_URL = "https://www.rattleapp.de/api/v1"
 DEFAULT_MEMORY_ROOT = Path("memory")
@@ -82,9 +83,10 @@ def _http_get(url: str, token: str) -> dict[str, Any]:
     except urllib.error.URLError as exc:
         raise RattleHttpError(f"network error on {url}: {exc}") from exc
     try:
-        return json.loads(body)
+        payload: dict[str, Any] = json.loads(body)
     except json.JSONDecodeError as exc:
         raise RattleHttpError(f"non-JSON response from {url}: {body[:200]}") from exc
+    return payload
 
 
 def list_all(
@@ -227,9 +229,10 @@ def check_duplicate_group_names(base_url: str, token: str) -> list[dict[str, Any
                     g.get("name", "?"),
                     f"Group name '{g.get('name')}' duplicates group id={dupes[0].get('id')}.",
                     ["reuse-over-duplicate", "shared-groups-across-products"],
-                    f"Pick one canonical group (id={dupes[0].get('id')}), link it to all areas the "
-                    f"duplicates were assigned to (POST /groups/{{id}}/areas), use option-area-config "
-                    f"for any per-area pricing differences, then delete the duplicates.",
+                    f"Pick one canonical group (id={dupes[0].get('id')}), link it to all areas "
+                    f"the duplicates were assigned to (POST /groups/{{id}}/areas), use "
+                    f"option-area-config for any per-area pricing differences, then delete the "
+                    f"duplicates.",
                 )
             )
     return findings
@@ -253,7 +256,10 @@ def check_offer_template_missing_configuration(base_url: str, token: str) -> lis
                 if isinstance(att, dict):
                     cb_key = (att.get("content_block_key") or "").strip()
                     dyn_key = (att.get("dynamic_key") or "").strip()
-                    if cb_key == "dynamic:document_configuration" or dyn_key == "dynamic:document_configuration":
+                    if (
+                        cb_key == "dynamic:document_configuration"
+                        or dyn_key == "dynamic:document_configuration"
+                    ):
                         has_dynamic_cfg = True
                         break
             if has_dynamic_cfg:
@@ -275,7 +281,8 @@ def check_offer_template_missing_configuration(base_url: str, token: str) -> lis
                     "Add a structure block (node_type=section) and attach the system content block "
                     "whose key='dynamic:document_configuration'. Look up its id by paginating "
                     "GET /documents/content-blocks?search=dynamic:document_configuration and "
-                    "matching the response's is_dynamic=true && key='dynamic:document_configuration' entry "
+                    "matching the response's is_dynamic=true && "
+                    "key='dynamic:document_configuration' entry "
                     "(the route does not honour ?is_dynamic= as a filter). Set is_required=true.",
                 )
             )
@@ -309,9 +316,9 @@ def check_duplicate_dynamic_wrappers(base_url: str, token: str) -> list[dict[str
                         cb.get("title") or cb.get("key", "?"),
                         f"Non-dynamic content block wraps system dynamic key '{tn}'",
                         ["use-system-dynamic-blocks"],
-                        f"Find every attachment that points at this wrapper; rewrite the attachment "
-                        f"to point at the system block id (where is_dynamic=true and key='{tn}'); "
-                        f"delete this wrapper.",
+                        f"Find every attachment that points at this wrapper; rewrite the "
+                        f"attachment to point at the system block id (where is_dynamic=true and "
+                        f"key='{tn}'); delete this wrapper.",
                     )
                 )
                 break
@@ -339,7 +346,9 @@ def check_options_with_custom_keys(base_url: str, token: str) -> list[dict[str, 
     return findings
 
 
-def check_options_with_conflicting_area_overrides(base_url: str, token: str) -> list[dict[str, Any]]:
+def check_options_with_conflicting_area_overrides(
+    base_url: str, token: str
+) -> list[dict[str, Any]]:
     """Walk every option, then every area its group is linked to, then GET the
     area-config row (one per option×area pair). Flag overrides that drop the
     price to 0 / empty when the base price is non-zero.
@@ -357,7 +366,7 @@ def check_options_with_conflicting_area_overrides(base_url: str, token: str) -> 
         oid = opt.get("id")
         gid = opt.get("group_id")
         base_price = opt.get("price")
-        if oid is None or gid is None or base_price in (None, 0):
+        if oid is None or gid is None or base_price is None or base_price == 0:
             continue
         try:
             base_price_num = float(base_price)
@@ -390,7 +399,8 @@ def check_options_with_conflicting_area_overrides(base_url: str, token: str) -> 
                         oid,
                         opt.get("name", "?"),
                         f"Option base price={base_price_num} but area_id={aid} "
-                        f"override price is {cfg_price!r} — option silently drops to free in that area.",
+                        f"override price is {cfg_price!r} — option silently drops to free in "
+                        f"that area.",
                         ["price-on-option", "area-config-for-scaled-prices"],
                         f"Verify whether the zero price was intentional. If unintentional, "
                         f"PUT /options/{oid}/area-config?area_id={aid} with the correct price.",

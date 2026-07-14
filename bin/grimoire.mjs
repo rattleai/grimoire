@@ -43,6 +43,11 @@ const ARTIFACTS = [
   { src: "commands", required: true },
   { src: "schemas", required: false },
   { src: "examples", required: false },
+  // The MCP server is what gives Cursor / Windsurf / Claude Desktop the skills
+  // and live API access that Claude Code gets natively. Without it, an npx
+  // install leaves those clients with Markdown and no way to reach the tenant.
+  { src: "mcp", required: false },
+  { src: ".mcp.json", required: false },
   { src: ".claude-plugin", required: true },
   { src: "AGENTS.md", required: true },
   { src: "CLAUDE.md", required: false },

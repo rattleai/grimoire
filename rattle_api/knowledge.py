@@ -107,7 +107,12 @@ RATTLE_DATA_MODEL: dict = {
             '{"product_id", "option_id1", "option_id2"}.\n'
             "2) Rule-level: conditional rules via /constraints/rules. "
             "Each rule has rule_json: "
-            '[{"if": {"option_selected": X}, "then": {"forbid_options": [Y, Z]}}]. '
+            '{"requires": [{"anyOf": [X]}], "invalid": [Y, Z]} — a single '
+            "object, NOT an array, and NOT the legacy "
+            '{"if", "then"} shape (which saves but never fires: the solver '
+            "in app/utils/constraint_solver._rule_active only reads "
+            "requires/invalid). Clauses in `requires` use anyOf / allOf / "
+            "groupSelections and are AND-folded. "
             "Scoped to product_id and optionally area_id."
         ),
         "key_fields": ["id", "product_id", "area_id", "description", "rule_json"],
@@ -572,6 +577,60 @@ ANTI_PATTERNS: list[dict] = [
             "price: 0), Option 'Multistep cyclic testing module' (price: 500)."
         ),
     },
+    {
+        "id": "per-unit-priced-row",
+        "name": "Per-Unit Priced Row",
+        "description": (
+            "A feature is priced per metre / per piece / per unit and "
+            "appears as its own pricelist row. The quantity is a number "
+            "the customer chooses, not a variant from a closed list — so "
+            "the feature must become a NUMBERED option "
+            "(is_numbered=true), not a discrete option and not a "
+            "multi-select group. Modelled as a discrete option, the BOM "
+            "cannot scale: option_scalings can only scale against an "
+            "option that carries an amount."
+        ),
+        "indicators": [
+            "pro Stück",
+            "je Stück",
+            "pro Meter",
+            "je Meter",
+            "Laufmeter",
+            "lfm",
+            "Preis pro",
+            "price per",
+            "per unit",
+            "per piece",
+            "per metre",
+            "per meter",
+            "€/Stk",
+            "€/m",
+        ],
+        "correction": (
+            "Model the feature as ONE numbered option: is_numbered=true "
+            "with number_min / number_max / number_step (all integers) "
+            "and number_unit matching the part's uom. Put the per-unit "
+            "rate in price_scalings (ratio {opt, part}) or, for tiered "
+            "pricing, in a range descriptor {areas: [{min, max, part}]}; "
+            "keep the option's own price for the fixed component only. "
+            "Scale the BOM with option_scalings on every affected line."
+        ),
+        "example_wrong": (
+            "Row: 'Panel, pro Stück: 120€'. Modelled as a discrete "
+            "option 'Panel' (price: 120). Problem: the customer needs 24 "
+            "of them; no BOM line can scale brackets with the count "
+            "because the option carries no amount."
+        ),
+        "example_correct": (
+            "Group 'Panels' (is_multi: false): Option 'Panel count' "
+            "(is_numbered: true, number_min: 1, number_max: 48, "
+            "number_step: 1, number_unit: 'pcs', price: 0, "
+            "price_scalings: {<panel_count>: {opt: 1, part: 120}}). "
+            "BOM: child_part 'Panel bracket' with "
+            "option_scalings: {<panel_count>: {opt: 1, part: 3}} "
+            "— 3 brackets per panel."
+        ),
+    },
 ]
 
 
@@ -732,7 +791,9 @@ def system_prompt_base(*, tenant_profile: str | None = None) -> str:
         "Atomically replaces all pairs for a product.\n"
         "- Constraint rules (POST /constraints/rules): conditional logic "
         "with rule_json: "
-        '[{"if": {"option_selected": X}, "then": {"forbid_options": [Y, Z]}}].\n'
+        '{"requires": [{"anyOf": [X]}], "invalid": [Y, Z]} — a single object, '
+        "NOT an array, and NOT the legacy {if, then} shape (it saves but the "
+        "solver never fires it).\n"
         "- Documents system (offer templates): GET /documents/doc-types "
         "gives each doc_type's default_layout + requires_configuration "
         "flag. The 'offer' doc_type REQUIRES a structure block attachment "
@@ -834,8 +895,10 @@ def system_prompt_suggest_configuration(
         "[{option_name_1, option_name_2, reason}] — these map directly to "
         "POST /constraints with {option_id1, option_id2} pairs.\n"
         "4. **constraint_rules**: conditional rules as "
-        '[{"description", "rule_json": [{"if": {"option_selected": name}, '
-        '"then": {"forbid_options": [names]}}]}].\n\n'
+        '[{"description", "rule_json": {"requires": [{"anyOf": [name]}], '
+        '"invalid": [names]}}] — rule_json is a single object with '
+        "requires/invalid; the legacy {if, then} array shape is never "
+        "evaluated by the constraint solver.\n\n"
         "Return JSON with key 'products' (array of objects with keys: "
         "name, groups, bom_rules, forbidden_pairs, constraint_rules)."
     )
@@ -1138,8 +1201,9 @@ def as_markdown() -> str:
     )
     lines.append(
         "- **Constraints**: pair-level forbidden combinations + conditional "
-        'rules with `rule_json: [{"if": {"option_selected": X}, '
-        '"then": {"forbid_options": [Y, Z]}}]`.'
+        'rules with `rule_json: {"requires": [{"anyOf": [X]}], '
+        '"invalid": [Y, Z]}` — a single object, not the legacy '
+        "`{if, then}` array."
     )
     lines.append("")
 

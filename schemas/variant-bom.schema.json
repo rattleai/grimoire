@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rattleapp.de/schemas/variant-bom.schema.json",
+  "title": "Rattle Variant BOM",
+  "description": "Output of the rattle-bom-architect agent / rattle-bom-builder skill. Describes a configurable variant BOM — parts, part placements (Part↔Area edges) and bom_items (Parent↔Child edges) with the full usage_subclauses DSL and option_scalings descriptors — ready to be applied via rattle-config-builder (ensure_part / ensure_part_placement / ensure_bom_item). Field names and types match the backend create-side Pydantic schemas (PartCreateRequest, PartPlacementCreateRequest, BomItemCreateRequest — all extra=\"forbid\"), except that edges reference parts by part_number instead of part_id; the builder resolves numbers to ids. The normative pre-flight validator is skills/rattle-bom-builder/scripts/validate_variant_bom.py — where this schema and that script disagree on STRUCTURE, the script wins. Two of its rules are NOT expressible in JSON Schema and are enforced there only: (1) parent_part_number != child_part_number on every bom_item; (2) every member of an (parent, alt_group) pair carries a unique priority. This schema is deliberately stricter than the script in exactly two places, both to catch a payload the runtime would reject or silently ignore: (a) scrap_percent is bounded 0..100 (the script only warns, but BomItemCreateRequest enforces ge=0/le=100 and the API returns 422); (b) groupSelections / areaStatuses / option_scalings keys must match ^[0-9]+$ (the script's isinstance-str check can never fire on JSON, but a name-keyed entry silently never matches at runtime).",
+  "type": "object",
+  "required": ["parts"],
+  "properties": {
+    "tenant": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tenant slug the BOM belongs to (matches the RATTLE_API_KEY_<TENANT> convention)."
+    },
+    "product_id": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "Live product id the BOM is authored against. Placements must sit on areas assigned to this product."
+    },
+    "parts": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Part master records. Natural key is part_number (unique within the company).",
+      "items": { "$ref": "#/$defs/part" }
+    },
+    "placements": {
+      "type": "array",
+      "description": "PartPlacement rows — the Part↔Area edge. A part is invisible to the product until it has a placement on an area assigned to that product.",
+      "items": { "$ref": "#/$defs/placement" }
+    },
+    "bom_items": {
+      "type": "array",
+      "description": "BomItem rows — the Parent-Part↔Child-Part edge. Multi-level BOMs are pure traversals of these; the same fields apply at every depth. There is no `level` field: level is computed by the explosion engine at runtime, never authored.",
+      "items": { "$ref": "#/$defs/bom_item" }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Result of scripts/validate_variant_bom.py, carried alongside the payload so a reviewer sees what the author already checked.",
+      "properties": {
+        "errors": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Soft warnings the author wants to bubble up (placeholder part numbers, absolute-vs-additive scaling intent, assumed units)."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id_key": {
+      "type": "object",
+      "description": "Object keyed by a STRINGIFIED entity id (\"42\", never 42). JSON object keys are always strings, so this pattern is what actually catches a name-keyed authoring mistake — usage-subclauses.md § Common pitfalls.",
+      "propertyNames": { "pattern": "^[0-9]+$" }
+    },
+
+    "part": {
+      "type": "object",
+      "required": ["part_number", "part_name"],
+      "description": "Maps to PartCreateRequest (extra=\"forbid\"). part_img is NOT accepted here — upload it via the dedicated image route. A part carries no usage_subclauses; only its edges do.",
+      "properties": {
+        "part_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "description": "Canonical identifier, unique within the company. Every placement and bom_item references parts by this value."
+        },
+        "part_name": { "type": "string", "minLength": 1, "maxLength": 255, "description": "Display name." },
+        "part_cost": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "INTEGER currency unit per company config — not a decimal and not a decimal string (Field(ge=0)). Ghost parts are forced to 0 server-side; their cost rolls up from children at explosion time."
+        },
+        "part_type": {
+          "enum": ["raw", "purchased", "manufactured", "assembly", "consumable"],
+          "description": "Validator-enforced enum on the backend."
+        },
+        "part_description": { "type": "string", "maxLength": 5000, "description": "Free-text description." },
+        "make_or_buy": { "enum": ["make", "buy"], "description": "Validator-enforced enum on the backend." },
+        "commodity_code": { "type": "string", "maxLength": 64, "description": "HS / ECCN code." },
+        "weight": { "type": "number", "minimum": 0, "maximum": 1000000000, "description": "Weight in weight_unit." },
+        "weight_unit": { "type": "string", "maxLength": 8, "default": "kg", "description": "Unit for `weight`." },
+        "status": {
+          "enum": ["active", "inactive", "deprecated"],
+          "default": "active",
+          "description": "Lifecycle status."
+        },
+        "bom_structure": {
+          "enum": ["normal", "ghost"],
+          "default": "normal",
+          "description": "\"ghost\" = phantom assembly: depth-transparent at explosion time, its children bubble up into the parent's level. Keep ghost nesting ≤ 3 levels — the engine warns beyond that."
+        },
+        "phantom_resolve_mode": {
+          "enum": ["smart_reuse", "always_new", "dissolve"],
+          "default": "smart_reuse",
+          "description": "Only honoured when bom_structure = \"ghost\"."
+        },
+        "custom_fields": {
+          "type": "object",
+          "description": "Tenant-defined extensions. ≤ 16 KB serialised, ≤ 100 keys, key pattern [a-zA-Z0-9][a-zA-Z0-9_]{0,49}.",
+          "propertyNames": { "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_]{0,49}$" },
+          "maxProperties": 100
+        },
+        "integration_metadata": {
+          "type": ["object", "null"],
+          "description": "ERP / connector pass-through."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "placement": {
+      "type": "object",
+      "required": ["part_number", "area_id"],
+      "description": "Maps to PartPlacementCreateRequest (extra=\"forbid\"). Natural key is (part_id, area_id). Says: \"in THIS area, this part is included at quantity Q, subject to usage_subclauses and option_scalings.\"",
+      "properties": {
+        "part_number": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The placed part. The builder resolves it to part_id."
+        },
+        "area_id": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "The area the part is placed on. Must be an area assigned to the product — a placement on an unassigned area is invisible."
+        },
+        "quantity": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000,
+          "default": 1,
+          "description": "Base quantity. MUST be > 0: Pydantic enforces gt=0 and the API returns 422 on 0 — use 1 even when a range-mode option_scaling will override it at explosion time."
+        },
+        "uom": { "type": "string", "maxLength": 16, "default": "pcs", "description": "Quantity unit. Match it to the number_unit of any numbered option that scales this line." },
+        "usage_subclauses": { "$ref": "#/$defs/usage_subclauses" },
+        "option_scalings": { "$ref": "#/$defs/option_scalings" },
+        "ghost_part": { "type": "boolean", "default": false, "description": "Phantom-assembly flag on the edge." },
+        "order_index": { "type": "integer", "minimum": 0, "default": 0, "description": "Display order within the area." }
+      },
+      "additionalProperties": false
+    },
+
+    "bom_item": {
+      "type": "object",
+      "required": ["parent_part_number", "child_part_number"],
+      "description": "Maps to BomItemCreateRequest (extra=\"forbid\"). Natural key is (parent_part_id, child_part_id, alt_group, effective_from, effective_to). Says: \"the parent part is built from N × child part, subject to subclauses, scaling, scrap, alternates, and a date window.\" part_group_id is read-only on the wire — do NOT include it (422). NOTE: parent_part_number != child_part_number is enforced by validate_variant_bom.py, not by this schema.",
+      "properties": {
+        "parent_part_number": { "type": "string", "minLength": 1, "description": "The parent assembly. Resolved to parent_part_id." },
+        "child_part_number": { "type": "string", "minLength": 1, "description": "The child component. Resolved to child_part_id. Must differ from parent_part_number (no self-reference)." },
+        "quantity": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000000000,
+          "default": 1,
+          "description": "Base quantity per parent. MUST be > 0 (Pydantic gt=0 → 422 on 0). For a range-mode line whose base should not contribute, still author 1 and state the absolute-vs-additive intent in `note`."
+        },
+        "uom": { "type": "string", "maxLength": 16, "default": "pcs", "description": "Quantity unit." },
+        "scrap_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0,
+          "description": "Scrap / waste allowance. Applied after option scaling: amount × (1 + scrap/100). Negative is clamped server-side; > 100 logs a warning. Prefer scrap_percent over baking waste into a scaling ratio — scrap shows up separately on cost reports."
+        },
+        "alt_group": {
+          "type": ["string", "null"],
+          "maxLength": 50,
+          "description": "Alternates key. Rows under the same parent sharing an alt_group are filtered by usage_subclauses, sorted by priority (lowest first) then order_index, and only the FIRST survivor is emitted. Free-form but stable (e.g. \"spindle\")."
+        },
+        "priority": {
+          "type": "integer",
+          "default": 0,
+          "description": "Selection order within alt_group — lowest wins. Every member of an (parent, alt_group) pair MUST have a unique priority; duplicates make the choice order-dependent and validate_variant_bom.py errors on them."
+        },
+        "effective_from": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Start of the date validity window. Must be ≤ effective_to."
+        },
+        "effective_to": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "End of the date validity window."
+        },
+        "order_index": { "type": "integer", "minimum": 0, "default": 0, "description": "Display order under the parent; the tie-break after priority inside an alt_group." },
+        "ghost_part": {
+          "type": "boolean",
+          "default": false,
+          "description": "Phantom-assembly flag on the edge. The child's own children bubble up into this level instead of incrementing depth."
+        },
+        "note": {
+          "type": ["string", "null"],
+          "maxLength": 1000,
+          "description": "Free-form note. Use it to record the absolute-vs-additive intent of a range descriptor and any unit conversion baked into a ratio."
+        },
+        "usage_subclauses": { "$ref": "#/$defs/usage_subclauses" },
+        "option_scalings": { "$ref": "#/$defs/option_scalings" }
+      },
+      "additionalProperties": false
+    },
+
+    "usage_subclauses": {
+      "type": "array",
+      "default": [],
+      "description": "Conditional-inclusion DSL, evaluated by app/utils/conditions.evaluate_subclauses. EMPTY LIST = always include (the standard / unconditional line) — the legacy isStandard flag is dropped on save. A non-empty list is folded LEFT-TO-RIGHT with each clause's own operator, with no implicit grouping; the first clause's operator is overridden to the default (OR) on save and cannot change the truth value. Full grammar + 9 worked examples: skills/rattle-bom-builder/references/usage-subclauses.md.",
+      "items": { "$ref": "#/$defs/clause" }
+    },
+
+    "clause": {
+      "type": "object",
+      "description": "One clause. Satisfied iff its area part AND its groupSelections part both pass. A clause carrying none of groupSelections / areaStatuses / areaSubclauses is meaningless: it is DROPPED during normalisation. This schema still accepts it — validate_variant_bom.py classifies it as a WARNING, not an error, and the server takes it without complaint — but never author one.",
+      "properties": {
+        "operator": {
+          "enum": ["AND", "OR"],
+          "default": "OR",
+          "description": "How this clause folds with the running result of all prior clauses. Informational on the first clause (silently overridden to OR); load-bearing from the second clause onward."
+        },
+        "groupSelections": {
+          "allOf": [{ "$ref": "#/$defs/id_key" }],
+          "description": "Map of stringified group_id → list of INTEGER option ids. Satisfied when, for EVERY group listed, at least one of its listed options is selected (any-of within a group, AND across groups).",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "integer" }
+          }
+        },
+        "areaStatuses": {
+          "allOf": [{ "$ref": "#/$defs/id_key" }],
+          "description": "Map of stringified area_id → required enabled state. Satisfied when EVERY listed area matches (true = must be enabled, false = must be disabled). Keys AND-combine; use areaSubclauses to OR them.",
+          "additionalProperties": { "type": "boolean" }
+        },
+        "areaSubclauses": {
+          "type": "array",
+          "description": "Nested area-only clauses with their own AND/OR operators. The ONLY way to OR area conditions inside a single clause.",
+          "items": { "$ref": "#/$defs/area_clause" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "area_clause": {
+      "type": "object",
+      "required": ["areaStatuses"],
+      "description": "An area-only clause nested under areaSubclauses.",
+      "properties": {
+        "operator": { "enum": ["AND", "OR"], "default": "OR", "description": "Folds against the running result of the prior area clauses." },
+        "areaStatuses": {
+          "allOf": [{ "$ref": "#/$defs/id_key" }],
+          "description": "Map of stringified area_id → required enabled state.",
+          "additionalProperties": { "type": "boolean" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "option_scalings": {
+      "allOf": [{ "$ref": "#/$defs/id_key" }],
+      "default": {},
+      "description": "Quantity scaling, keyed by the STRINGIFIED id of a NUMBERED option (is_numbered: true). A scaling against a boolean option is a silent no-op — it carries no amount. Independent of usage_subclauses: the subclauses decide WHETHER the line is active, the scalings decide HOW MUCH. Multiple entries resolve independently and their contributions sum. Area-scoped amounts are looked up as \"<opt_id>:<area_id>\" first, then \"<opt_id>\". Full reference + 12 worked examples: skills/rattle-bom-builder/references/option-scalings.md.",
+      "additionalProperties": { "$ref": "#/$defs/scaling_descriptor" }
+    },
+
+    "scaling_descriptor": {
+      "description": "One of the three descriptor shapes the engine recognises.",
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "LEGACY bare numeric. Ambiguous across code paths (multiplier on the explosion path, per-unit add on the additive snapshot path) — validate_variant_bom.py warns on it. Do not author new ones; use ratio or range."
+        },
+        {
+          "type": "object",
+          "description": "RATIO — \"every `opt` selected → emit `part`\". Contribution = selected_qty × part / opt. Both resolution modes give the same number. opt ≤ 0 is a no-op; part = 0 contributes nothing; a missing field defaults to 1.",
+          "anyOf": [{ "required": ["opt"] }, { "required": ["part"] }],
+          "properties": {
+            "opt": { "type": "number", "exclusiveMinimum": 0, "default": 1, "description": "Selected units per emitted part. MUST be > 0 — 0 divides by zero and is treated as a no-op." },
+            "part": { "type": "number", "default": 1, "description": "Parts emitted per `opt` selected units. Also carries any unit conversion (e.g. opt 100 / part 1 turns a cm input into m of part)." }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["areas"],
+          "description": "RANGE — bracketed lookup. The FIRST bracket whose min ≤ selected ≤ max wins and its `part` is ABSOLUTE (not multiplied by the line's quantity) on the explosion path; on the additive snapshot path it is added to the base. Record which you mean in the line's `note`. No matching bracket → 0 parts.",
+          "properties": {
+            "areas": {
+              "type": "array",
+              "minItems": 1,
+              "description": "Brackets, ascending and non-overlapping — the first match wins, so order matters. validate_variant_bom.py warns on overlap or descending order.",
+              "items": { "$ref": "#/$defs/range_bracket" }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "range_bracket": {
+      "type": "object",
+      "required": ["part"],
+      "description": "One bracket of a range descriptor. Bounds are expressed in the numbered option's number_unit and are INCLUSIVE.",
+      "properties": {
+        "min": { "type": "number", "description": "Lower bound, inclusive. Omitted / null = -∞." },
+        "max": { "type": "number", "description": "Upper bound, inclusive. Omitted / null = +∞. Must be ≥ min." },
+        "part": { "type": "number", "description": "The ABSOLUTE part quantity for this bracket. Negative is allowed but the line total is clamped to 0." }
+      },
+      "additionalProperties": false
+    }
+  }
+}

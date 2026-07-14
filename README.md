@@ -12,16 +12,35 @@
 </p>
 
 <p align="center">
-  <strong>13 skills · 6 subagents · 7 slash commands</strong><br>
-  that teach <strong>any AI model</strong> how to produce correct, BOM-aware product configurations<br>
-  <em>and</em> CE-compliant technical documentations on the Rattle SaaS platform (rattleapp.de).
+  <strong>14 skills · 6 subagents · 8 slash commands · 1 MCP server</strong><br>
+  Point <strong>any AI model</strong> at your pricelist, spreadsheet or ERP export —<br>
+  get correct, BOM-aware entities in the Rattle CPQ configurator (rattleapp.de).
 </p>
 
 ---
 
+## The one-paragraph version
+
+You have a pricelist. It is a spreadsheet of surcharges, written by a salesperson, in German, with a column nobody can explain. Rattle needs explicit groups, explicit options for **every** variant, parts wired to options through `usage_subclauses`, and constraints for the combinations that can't be built. Getting from one to the other is the whole job — and it is the job Grimoire teaches an AI to do.
+
+```
+  your spreadsheet          rattle-ingest          rattle-pricelist-analysis
+  ─────────────────   ──▶   ─────────────    ──▶   ────────────────────────
+  columns nobody            column roles,          anti-patterns, blockers
+  agrees on                 sheet shape,           ("no standard variant
+                            source-mapping.json     is stated anywhere")
+                                                              │
+      live Rattle tenant       rattle-apply-config      rattle-suggest-config
+      ──────────────────  ◀──  ───────────────────  ◀──  ────────────────────
+      groups · options ·       idempotent ensure_*        groups, options, BOM
+      parts · constraints      (re-run = no-op)           rules, constraints
+```
+
+Every arrow is a skill. Every artifact between them is a JSON Schema you can validate. Nothing is a black box, and nothing is invented — where your data is silent, the chain **stops and asks** rather than guessing.
+
 ## What is Grimoire?
 
-A **portable consulting brain** that covers two domains on the Rattle SaaS platform:
+A **portable consulting brain** covering two domains on the Rattle CPQ platform:
 
 ```
         ┌────────────────────┐    ┌────────────────────────────┐
@@ -33,10 +52,11 @@ A **portable consulting brain** that covers two domains on the Rattle SaaS platf
                   └────── shared API + tenant-memory ──────┘
 ```
 
-Two layers:
+Three layers:
 
-1. **AI knowledge layer** — Anthropic-format Skills, Claude Code subagents, slash commands, JSON Schemas, golden I/O examples, the `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT-4/5, Llama, Mistral, …) can read these and follow the same workflow.
-2. **Python execution layer** — `rattle_api/` package + `rattle` CLI, a reference implementation that wires the same prompts up to OpenAI / Anthropic / Ollama / custom-HTTP providers.
+1. **AI knowledge layer** — Anthropic-format Skills, subagents, slash commands, JSON Schemas, golden I/O examples, the `.claude-plugin/` manifest, and a cross-platform `AGENTS.md`. Any AI model (Claude, GPT, Llama, Mistral, …) can read these and follow the same workflow.
+2. **MCP server** — `mcp/server.mjs`. Zero dependencies, zero drift. Gives Cursor, Windsurf, Claude Desktop and ChatGPT the same knowledge *and* live API access that Claude Code gets natively.
+3. **Python execution layer** — `rattle_api/` + the `rattle` CLI, a reference implementation wiring the same prompts to OpenAI / Anthropic / Ollama / custom-HTTP providers.
 
 Goal: every AI model gets the same consulting expertise — the #1 configurator rule, the data model, the **11 configuration rules**, anti-patterns, **6 configurator structural checks**, the 15-chapter normative technical-documentation structure (DIN EN ISO 20607, IEC/IEEE 82079-1 **Clause 5**, MRL/MVO) emitted as `doc_type=technical_doc` on writes, **14 technical-documentation audit checks**, the EditorJS `safety_notice` + `hp_statement` block contracts, the **5 ISO 7010 categories** plus the separate CLP/GHS pictogram set, the **32-locale signal-word catalogue**, the **24-locale CLP H/P/EUH catalogue**, and the REST API conventions (OCC `409 Conflict`, the **15 idempotent `ensure_*` operations** across configurator / BOM / documents tiers) — without retraining.
 
@@ -45,52 +65,55 @@ Goal: every AI model gets the same consulting expertise — the #1 configurator 
 ## What's inside
 
 ```
-rattle_api/                    Python execution layer (CLI, RattleClient, providers, prompts)
-skills/                        13 Anthropic-format Skills (model-agnostic)
-  ├─ Configurator domain (9) ─
+skills/                        14 Anthropic-format Skills (model-agnostic)
+  ├─ Configurator domain (10) ─
+  rattle-ingest/               ★ Raw file → column roles → source-mapping.json. The FIRST link.
   rattle-configurator/         Core consulting knowledge (the #1 rule, rules, anti-patterns)
-  rattle-api/                  REST API surface (443+ ops, OpenAPI spec, Safety Reference)
+  rattle-api/                  REST API surface (462 ops, OpenAPI spec)
   rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
-  rattle-document-templates/   Workflow: build offer/quote/ccms/custom templates
   rattle-bom-builder/          Variant-BOM expert: usage_subclauses + option_scalings + numbered options
   rattle-apply-config/         Workflow: apply a recommendation idempotently
   rattle-audit/                Workflow: scan a live tenant against 6 structural checks
+  rattle-document-templates/   Workflow: build offer/quote/ccms/custom templates
   rattle-tenant-memory/        Per-tenant preferences (file-based, explicit-write only)
   ├─ Technical-documentation domain (4) ─
   rattle-techdoc/              Host skill: 15-chapter structure (DIN EN ISO 20607, IEC 82079-1)
   rattle-safety-notices/       ISO 7010 + ISO 3864-2 + ANSI Z535.6, EditorJS safety_notice block
   rattle-ghs-statements/       CLP H/P/EUH codes + 9 GHS pictograms, EditorJS hp_statement block
-  rattle-techdoc-language/     IEC/IEEE 82079-1 §7 quality criteria, mood, tone, terminology
-agents/                        6 Claude Code subagents
-  rattle-consultant            Senior configurator consultant (strategic decisions)
-  rattle-auditor               Live-tenant configurator auditor (read-only)
-  rattle-config-builder        Idempotent builder — only agent allowed to write to the API
+  rattle-techdoc-language/     IEC/IEEE 82079-1 Clause 5 quality criteria, mood, tone, terminology
+agents/                        6 subagents (each preloads its skills via `skills:` frontmatter)
+  rattle-consultant            Senior configurator consultant (orchestrates; the usual entry point)
+  rattle-auditor               Live-tenant configurator auditor — read-only, enforced by allowlist
+  rattle-config-builder        Idempotent builder — the ONLY agent allowed to write to the API
   rattle-bom-architect         Senior variant-BOM architect (parts → placements → bom_items)
   rattle-techdoc-author        Senior tech writer (inventory → audit → plan → build → translate)
-  rattle-techdoc-auditor       Tech-doc auditor (~30 checks, read-only)
-commands/                      7 Claude Code slash commands
+  rattle-techdoc-auditor       Tech-doc auditor (14 checks) — read-only, enforced by allowlist
+commands/                      8 slash commands
+  /rattle-ingest               ★ Map a raw spreadsheet / ERP export onto Rattle entities
   /rattle-analyse              Pricelist anti-pattern analysis
   /rattle-suggest-config       Produce a BOM-aware configuration JSON
   /rattle-audit                Audit a live tenant catalogue
+  /rattle-build-bom            Design / fix / validate a variant BOM
   /rattle-build-offer          Build / fix an offer / quote / ccms / custom template
-  /rattle-build-bom            Design / fix / validate a variant BOM (usage_subclauses + option_scalings)
   /rattle-build-techdoc        Build a technical documentation from N input manuals
-  /rattle-audit-techdoc        Audit a tech-doc template against ISO 20607 / IEC 82079-1 / MRL/MVO
-schemas/                       JSON Schemas for every output contract
-examples/                      Synthetic golden I/O for every workflow
+  /rattle-audit-techdoc        Audit a tech-doc against ISO 20607 / IEC 82079-1 / MRL/MVO
+mcp/server.mjs                 ★ Rattle MCP server — zero deps, zero drift, read-only by default
+schemas/                       6 JSON Schemas — one per output contract, all CI-enforced
+examples/                      Golden I/O for every workflow; every file validates against its schema
+scripts/validate_bundle.py     Bundle gate: manifests, frontmatter, schemas, examples, bytecode
+rattle_api/                    Python execution layer (CLI, RattleClient, providers, prompts)
 .claude-plugin/                Plugin + marketplace manifest (Claude Code distribution)
+.mcp.json                      MCP wiring for Cursor / Windsurf / Claude Desktop
 AGENTS.md                      Cross-platform agent rules (Cursor, Codex, Aider, Continue)
-CLAUDE.md                      Claude-Code-specific project instructions
-package.json + bin/grimoire.mjs npm installer (npx @rattleai/grimoire install)
-pyproject.toml                 PyPI distribution (pip install grimoire)
-docs/API_REFERENCE.md          Full Rattle REST reference (also bundled into the API skill)
+docs/API_REFERENCE.md          Full Rattle REST reference (462 operations)
 memory/                        Per-tenant style preferences (gitignored)
 tests/                         262 tests, ~97% coverage
 ```
 
 ## What you can do with it
 
+0. **Drop in a raw spreadsheet / CSV / ERP export nobody has mapped yet** → get a reviewable column→entity mapping, the detected sheet shape, and a blocker for every hole in the data. This is the step that used to be missing, and it is where most configurator projects actually fail.
 1. **Drop in 1…N existing pricelists** → get an analysis of every implicit-baseline / addon-only-options anti-pattern, with the questions that block configuration design.
 2. **Get a configuration recommendation** → BOM-aware groups + options + parts + constraints, ready to apply via the idempotent `ensure_*` operations.
 3. **Audit a live Rattle tenant** → 6 structural checks across products / areas / groups / options / BOM / templates.
@@ -103,20 +126,51 @@ tests/                         262 tests, ~97% coverage
 
 ## Install
 
-Three install paths. **Pick the one that matches your tooling — they're not mutually exclusive.**
+Four paths. **Pick the one that matches your tooling — they're not mutually exclusive.**
 
 ### 1. Claude Code (richest)
-
-Inside Claude Code:
 
 ```text
 /plugin marketplace add rattleai/grimoire
 /plugin install grimoire
 ```
 
-Restart Claude Code. The slash-command palette gains `/rattle-analyse`, `/rattle-suggest-config`, `/rattle-audit`, `/rattle-build-offer`, `/rattle-build-bom`, `/rattle-build-techdoc`, `/rattle-audit-techdoc`. The 13 skills auto-load when you mention Rattle, technical documentation, safety notices, GHS statements, or variant BOMs (usage_subclauses, option_scalings, numbered options). The 6 subagents (`rattle-consultant`, `rattle-auditor`, `rattle-config-builder`, `rattle-bom-architect`, `rattle-techdoc-author`, `rattle-techdoc-auditor`) become invocable.
+The plugin **prompts you for your Rattle API key at install** and stores it in your OS keychain — there is no `.env` to hand-edit. It also asks for your base URL, default tenant, and whether the MCP server may write to your live tenant (**off** by default).
 
-### 2. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
+Restart Claude Code and you get: 8 slash commands, 14 auto-loading skills, 6 invocable subagents, and the `rattle` MCP server wired up with your key.
+
+### 2. MCP — Cursor, Windsurf, Claude Desktop, ChatGPT
+
+The MCP server is how clients **without** a native Skills mechanism get the same system. It hands them the skills *and* live API access:
+
+| Tool | What it does |
+|---|---|
+| `rattle_knowledge_list` / `rattle_knowledge_get` | Serves every skill, reference and schema — Skills for clients that don't have Skills |
+| `rattle_api_search` | Finds the right endpoint among 462 operations without loading a 7,000-line reference into context |
+| `rattle_request` | Calls any Rattle endpoint. Read-only unless you explicitly enable writes |
+
+```jsonc
+// Claude Desktop: claude_desktop_config.json
+// Cursor:         .cursor/mcp.json      Windsurf: ~/.codeium/windsurf/mcp_config.json
+{
+  "mcpServers": {
+    "rattle": {
+      "command": "node",
+      "args": ["/absolute/path/to/grimoire/mcp/server.mjs"],
+      "env": {
+        "RATTLE_API_KEY": "rk_live_…",
+        "RATTLE_MCP_ALLOW_WRITES": "0"   // "1" to permit writes. Think first.
+      }
+    }
+  }
+}
+```
+
+**Why it won't rot.** The Rattle API has 462 operations across 257 paths. A server hand-declaring one tool per endpoint would break every time rattleapp ships a new one. This one declares **no per-endpoint code at all** — `rattle_request` is a generic passthrough, `rattle_api_search` reads the bundled OpenAPI spec. A new endpoint works the day it ships. Node ≥ 18, zero npm dependencies.
+
+**It is read-only until you say otherwise.** A live CPQ tenant is not a sandbox, and a generic passthrough in an agent loop could otherwise rewrite a customer's catalogue in one call. Writes belong in `rattle-config-builder`, which pauses for confirmation.
+
+### 3. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
 
 The `npx` installer copies the same skills + subagents + commands + schemas + examples + AGENTS.md into your project, ready for any agent that reads `AGENTS.md` (the cross-platform standard).
 
@@ -142,7 +196,7 @@ Idempotent — re-running just refreshes files. Run with `--help` for all option
 > node grimoire/bin/grimoire.mjs install --target ./my-project
 > ```
 
-### 3. PyPI (Python CLI execution layer)
+### 4. PyPI (Python CLI execution layer)
 
 For terminal-driven workflows that call your AI provider directly:
 
@@ -158,22 +212,38 @@ rattle <tenant> ai-suggest-config <file>
 
 Note: the CLI is still called `rattle` (it's the Rattle API CLI). `grimoire` is the **distribution name** on PyPI; `pip install grimoire` installs the `rattle` console script along with the workspace.
 
+## Walkthrough — your spreadsheet to a live configurator
+
+This is the whole product. Say you have `Preisliste_2026.xlsx`: a German pricelist, variants in the header row, prices in the cells.
+
+**1. Ingest.** `/rattle-ingest source/acme/Preisliste_2026.xlsx`
+
+The agent runs `profile_source.py` — it never guesses a column's meaning from the header alone, because headers lie, abbreviate, and mix languages. It scores each column on header keywords *and* value shape (dtype, cardinality, samples), classifies all 24 column roles, and detects the sheet shape. Yours comes back `wide-variant-matrix` — the nastiest and most common: the variants *are* the column headers.
+
+Out comes a **`source-mapping.json` you review before anything is built**, and one blocker:
+
+> `missing-standard-variant` — Column `19 Zoll` is a surcharge with no standard sibling. The variant that ships as standard is not represented anywhere in the source.
+> **Which wheel size ships as standard, at what price (expected 0), and which part does it pull into the BOM?**
+
+This is the #1 rule enforced at the door. The chain **will not proceed** while a blocker is open, and it will **not** invent a 17-inch standard wheel to make the error go away. A guessed standard variant corrupts the BOM, the pricing, and every offer built on top of it. So it stops and asks.
+
+**2. Answer, re-ingest, analyse.** `/rattle-analyse`
+Deterministic keyword detection plus LLM structural analysis, over the *normalized* rows. Findings index against the same anti-pattern catalogue the blockers do, so they merge cleanly.
+
+**3. Recommend.** `/rattle-suggest-config`
+Explicit groups. Explicit options for **every** variant including the standard. BOM rules wiring parts to options through `usage_subclauses`. Numbered options where the sheet priced per-metre. Forbidden pairs. Output validates against `schemas/recommendation.schema.json`.
+
+**4. Apply.** The `rattle-config-builder` agent — the only one allowed to write — turns it into idempotent `ensure_*` operations. It runs `validate_recommendation.py` first and refuses to write if validation fails. **Re-running is a safe no-op**, so a half-finished apply can simply be run again.
+
+**5. Audit.** `/rattle-audit` — 6 structural checks against the now-live tenant.
+
+Every step emits a schema-validated artifact you can inspect, diff, and hand to a colleague. The Python CLI runs steps 2–3 as one-shot terminal commands if you'd rather not drive an agent loop.
+
 ## How any AI model uses this
 
-Every Skill is a self-contained Markdown bundle with a `SKILL.md` (frontmatter `name` + `description`) and optional `references/` and `scripts/`. Models load them by reading the frontmatter, deciding the skill is relevant, then reading the body and references on demand.
+Every Skill is a self-contained Markdown bundle: a `SKILL.md` (frontmatter `name` + `description`) plus optional `references/` and `scripts/`. A model reads the frontmatter, decides the skill is relevant, then loads the body and references on demand — so you pay context only for what the task needs.
 
-A typical engagement:
-
-1. User: *"Analyse this pricelist for our `acme` tenant."*
-2. Agent loads `skills/rattle-pricelist-analysis/SKILL.md` (+ `rattle-configurator` automatically).
-3. Agent runs `scripts/detect_anti_patterns.py pricelist.xlsx` for deterministic keyword detection.
-4. Agent calls its LLM with the prompt template documented in `system-prompts.md`.
-5. Agent merges findings, prioritises `implicit-base-config` first, presents to the user.
-6. User: *"OK, generate a configuration."*
-7. Agent loads `skills/rattle-suggest-config/SKILL.md`, fetches existing groups, produces the canonical recommendation JSON.
-8. User: *"Apply it."* Agent delegates to `rattle-config-builder` which calls `ensure_*` operations idempotently against the live API. `validate_recommendation.py` runs first; the agent never writes if validation fails.
-
-The Python CLI implements steps 3–7 directly when you want a one-shot terminal command instead of an agent loop.
+Clients **with** a Skills mechanism (Claude Code) load them natively. Clients **without** one (Cursor, Windsurf, Claude Desktop, ChatGPT) get the identical content through the MCP server's `rattle_knowledge_*` tools. Same knowledge, same workflow, same output contracts.
 
 ## The #1 rule
 
@@ -260,12 +330,16 @@ The `TenantMemory` class auto-injects this into every system prompt. Writes are 
 ## Development
 
 ```bash
-make check         # lint + type-check + 262 tests
+make check         # lint + type-check + 262 tests + bundle + mcp
 make lint          # ruff
 make type-check    # mypy
 make test          # pytest
+make validate      # bundle gate — manifests, frontmatter, schemas, examples, bytecode
+make mcp-smoke     # drives the MCP server over real stdio; asserts read-only holds
 make format        # ruff format
 ```
+
+`make validate` exists because every one of its checks corresponds to a defect that actually shipped: manifest versions drifting apart, a `strict: false` marketplace entry that becomes a hard load failure, `.pyc` files published to npm because `files:` overrides `.gitignore`, a golden example silently drifting from its schema, and an agent's `skills:` list naming a skill that doesn't exist. CI runs it on every push.
 
 Pre-commit:
 
@@ -288,7 +362,7 @@ Full conventions: `AGENTS.md` (cross-platform) and `CLAUDE.md` (Claude-Code-spec
 - [`CLAUDE.md`](CLAUDE.md) — Claude Code project instructions.
 - [`ROADMAP.md`](ROADMAP.md) — prioritised backlog (P0/P1/P2) of skills, agents, and slash commands needed to close the value-chain gaps the PR #14 audits identified.
 - [`PUBLISHING.md`](PUBLISHING.md) — how to release to npm, PyPI, and the Claude Code marketplace.
-- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (443 operations).
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (462 operations).
 - [`SETUP.md`](SETUP.md) — beginner-friendly setup guide.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guidelines.
 - [`SECURITY.md`](SECURITY.md) — security policy.

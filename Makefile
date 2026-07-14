@@ -1,4 +1,4 @@
-.PHONY: help install dev lint format type-check test test-cov check clean clean-publish
+.PHONY: help install dev lint format type-check test test-cov validate mcp-smoke check clean clean-publish
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -27,7 +27,13 @@ test: ## Run tests with pytest
 test-cov: ## Run tests with coverage report
 	pytest --cov --cov-report=term-missing
 
-check: lint type-check test ## Run all checks (lint + type-check + test)
+validate: ## Validate the shipped bundle (manifests, skills, agents, schemas, examples)
+	python3 scripts/validate_bundle.py
+
+mcp-smoke: ## Verify the Rattle MCP server speaks the protocol and stays read-only
+	node scripts/mcp_smoke.mjs
+
+check: lint type-check test validate mcp-smoke ## Run all checks (lint + type-check + test + bundle + mcp)
 
 clean: ## Remove build artefacts and caches
 	rm -rf build/ dist/ *.egg-info/
