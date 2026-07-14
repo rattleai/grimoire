@@ -2,7 +2,7 @@
 
 **For:** the Rattle backend team
 **Spec audited:** `https://www.rattleapp.de/docs/api/openapi.json`, fetched **2026-07-14** — OpenAPI 3.1, **463 operations · 258 paths · 37 tags · 210 schemas · 1,369 schema fields**
-**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 15 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
+**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 16 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
 
 ---
 
@@ -413,9 +413,79 @@ Things a customer genuinely cannot do.
 
 **Consequence.** Every customer arrives with a pricelist keyed by article number — the most universal column in the domain, the join key to their ERP. There is nowhere canonical to put it. We were forced to invent a convention (`integration_metadata.<key>`), which is **unindexed** (no lookup by article number), **unvalidated** (no uniqueness), and **ours** — so two integrators pick two different keys and neither can read the other's data. Every ERP sync degrades to fetching the whole catalogue and matching client-side.
 
-Contrast: `Part` has `part_number`. `Option`/`Group` have `key`. `Quote` has `quote_number`. **Product, Customer and Area have nothing.**
+Contrast, and this is what makes the omission so odd: **`Part` has `part_number`. `Option`/`Group` have `key`. `Quote` has `quote_number`. `Customer` has `customer_id`** — a free-text external identifier, and the configurator can even be told to search on it (`customer_search_fields: ["organization", "customer_id"]`). **Every first-class entity has an external-identifier field except `Product` and `Area`.** The pattern exists; Product was simply left out of it.
 
-**Fix.** Add `sku: string | null` to `Product{Create,Update}Request` + `ProductResponse`; unique index per tenant; `?sku=` exact-match filter; support it as a batch `match` key; wire it to `QuoteLineItemResponse.product_sku`. Same for `Customer.external_id`.
+> **Correction (2026-07-14).** An earlier revision of this report claimed "Product, Customer and Area have nothing." **That was wrong about `Customer`** — `CustomerCreateRequest.customer_id` exists (`string`, max 255) and is reachable via `?search=` and `/customers/search?q=`. We found this while mapping the CRM surface and are correcting it here rather than quietly editing it out. The finding stands for `Product` and `Area`.
+
+**Fix.** Add `sku: string | null` to `Product{Create,Update}Request` + `ProductResponse` — **mirroring `Customer.customer_id`, which already proves the pattern.** Unique index per tenant, a `?sku=` exact-match filter, support as a batch `match` key, and wire it to `QuoteLineItemResponse.product_sku`.
+
+## P2-1b. The entire sales lifecycle is a free string — the state machine is undiscoverable
+
+The quote/opportunity lifecycle is the commercial core of a CPQ system. Not one of its states is declared:
+
+```jsonc
+QuoteStatusUpdateRequest.status  { "type": "string", "maxLength": 50 }   // PUT /quotes/{id}/status
+QuoteResponse.status             { "type": "string", "default": "draft" }
+OpportunityCreateRequest.stage   { "type": "string", "default": "qualification", "maxLength": 50 }
+OpportunityResponse.stage        { "type": "string" }
+```
+
+**No enum. Anywhere.** And `GET /quotes?status=` accepts a filter whose **legal values are documented nowhere**.
+
+**Consequence.** A client cannot:
+- **enumerate the states** — so it cannot render a pipeline, a funnel, or a status dropdown without hard-coding a guess;
+- **know the legal transitions** — is `draft → approved` allowed directly? Must it pass through `sent`? The API will tell you only by rejecting, or by silently accepting;
+- **branch exhaustively** — every `switch` on quote status has an unreachable-in-theory `default` that is, in practice, where the bugs live.
+
+`PUT /quotes/{id}/status` accepts **any string up to 50 characters.** `status: "aproved"` (typo) is a valid request as far as the schema is concerned.
+
+**We could not establish the vocabulary.** Read-only observation of a live tenant surfaced only `draft`/`approved` (quotes) and `qualification` (opportunities) — and observed values are not the enum. Determining the rest would require *writing* to a live tenant, which we will not do. **So we are asking rather than guessing: what are the full status and stage vocabularies, and what transitions are legal?**
+
+**Fix.** Declare `QuoteStatus` and `OpportunityStage` as enums, reference them from every request, response and query parameter, and document the legal transitions (even as prose). This is the single change that would make the CPQ half of the API programmable.
+
+## P2-1c. There is no `POST /configurations` — the API cannot create the thing it quotes
+
+Every write path in the configuration surface is missing. These are all ten operations:
+
+```
+GET  /configurations                       GET  /configurations/{id}
+GET  /configurations/states/{hash}         GET  /configurations/states/by-code/{code}
+GET  /configurations/states/by-code/{code}/parts
+GET  /configurations/states/by-code/{code}/selections
+GET  /customers/{customerId}/configurations
+GET  /products/{productId}/configurations
+POST /configurations/calculate             ← stateless pricing; returns a state, not an id
+POST /configurations/{id}/finalize         ← locks one that already exists
+```
+
+**There is no endpoint that creates a saved configuration.** `POST /calculate` is stateless — it returns a `ConfigurationStateResponse` (a `config_code` / `config_hash`), not a persisted, finalizable `Configuration` with an `id`. `POST /{id}/finalize` can only lock a configuration that already exists.
+
+**Consequence.** A saved configuration can apparently only originate **in the configurator UI**. So an integration that wants to go **quote-to-cash entirely through the API cannot**: it can price a configuration (`/calculate`), it can find one a human already made, and it can lock one — but it cannot *create* one. And a quote line item's `configuration_code` needs a configuration that exists.
+
+For a CPQ platform, this is the load-bearing gap: **the API can quote a configuration, but it cannot produce one.** Every headless/automated quoting flow — an ERP raising a quote, a partner portal, an AI agent — stops here.
+
+**Fix.** Add `POST /configurations` (persist a selection set against a product, returning an `id` and `config_code`). It is the missing half of an otherwise complete surface.
+
+> If a create path *does* exist and we simply cannot see it, that is itself the finding — it is in neither the spec nor the reference. **Please tell us, and we will correct this section.**
+
+## P2-1d. `POST /quotes` silently auto-creates an opportunity
+
+Verbatim from the endpoint's own description:
+
+> "Create a quote for an opportunity. **If no `opportunity_id` is given but a `customer_id` is provided, an opportunity is auto-created.**"
+
+And the schemas disagree about whether it exists:
+
+```jsonc
+QuoteCreateRequest.opportunity_id  { "anyOf": [{"type":"integer"}, {"type":"null"}], "default": null }  // optional, nullable
+QuoteResponse.opportunity_id       { "type": "integer" }                                                // REQUIRED, non-nullable
+```
+
+**Consequence.** Omitting `opportunity_id` does not mean "no opportunity." It means **an opportunity you did not name, did not stage, and do not know about** now exists in the customer's pipeline. Since `GET /customers/{id}/quotes` is documented as traversing *via opportunities*, these ghost opportunities are load-bearing — they are how quotes are found. A sales pipeline quietly fills with auto-generated records.
+
+This is defensible behaviour, but it is a **side effect on a `POST`**, and it is discoverable only by reading one sentence of prose. The request/response asymmetry also breaks any generated client that round-trips the object.
+
+**Fix.** Keep the behaviour if it is intended — but make the response asymmetry honest (`opportunity_id` is always present, so say so), and surface the auto-creation more loudly than a subordinate clause. Better: return the created opportunity in the response envelope so the caller can name it.
 
 ## P2-2. Constraints can *write* a quantity but cannot *read* one
 
