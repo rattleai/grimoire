@@ -85,6 +85,20 @@ Content the spec cannot express is now an **input** to the generator (`docs/api-
 
 The live refresh also resolved this cleanly: the four safety endpoints **now exist in the upstream spec** under a `Safety` tag, so the supplement was reduced to the consulting guidance the spec genuinely cannot carry (when a model must call these, and that a fallback symbol or hand-typed CLP text is a legal defect in a CE-marked document — not a cosmetic one).
 
+### Fixed — `pip install grimoire` installed the wrong package
+
+The PyPI name `grimoire` belongs to an unrelated bioinformatics library (KorfLab). `pyproject.toml` declared `name = "grimoire"`, so this project **could never be published** under it — and the README told users to run `pip install grimoire[all-ai,all-sources]`, which fetches a stranger's code.
+
+Renamed to **`rattle-grimoire`**. The console script is still `rattle`; only the distribution name changed.
+
+Install docs now state plainly what is and is not published:
+
+- **Claude Code plugin** and **MCP server** work today with **nothing published** — the bundle is text plus a zero-dependency script, so a clone is a complete install.
+- **npm** (`@rattleai/grimoire`) is unpublished; the installer runs from a clone in the meantime.
+- **PyPI** is unpublished; `pip install -e .` from a clone in the meantime.
+
+The `npx` installer's "Next steps" also listed only 4 of the 8 slash commands and never mentioned the MCP server. Both fixed.
+
 ### Resolved upstream
 
 The previously-flagged legacy `{if, then}` / `forbid_options` example for `ForbiddenRuleCreateRequest` is **gone from the live spec**. The upstream fix has landed; nothing further is needed here.
@@ -213,6 +227,7 @@ The author and auditor agents now call these endpoints before emitting any safet
 - **GitHub repo** moved to `rattleai/grimoire` (was `mngapps/rattle_api`). Old URL still redirects, but new clones should use the canonical location.
 - **npm package** renamed to `@rattleai/grimoire` (was `@rattle/ai-workspace`). Install: `npx @rattleai/grimoire install`.
 - **PyPI distribution** renamed to `grimoire` (was `rattle-ai-workspace`). Install: `pip install grimoire`. The `rattle` console script keeps its name — it is the CLI for the Rattle API.
+  > **Superseded in 0.7.0 — do not follow this.** The name `grimoire` was already taken on PyPI by an unrelated bioinformatics package, so this distribution was never publishable and `pip install grimoire` installs a stranger's code. Renamed to **`rattle-grimoire`**.
 - **Claude Code plugin** renamed to `grimoire`. Install: `/plugin marketplace add rattleai/grimoire` then `/plugin install grimoire`.
 - **Installer script** renamed `bin/rattle-skills-install.mjs` → `bin/grimoire.mjs`. The two `bin` entries are now `grimoire` and `grimoire-install`.
 - All cross-references updated in `AGENTS.md`, `CLAUDE.md`, `SETUP.md`, `CONTRIBUTING.md`, `README.md`, and the runtime error messages in `rattle_api/source.py`.

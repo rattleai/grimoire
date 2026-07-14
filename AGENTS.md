@@ -147,16 +147,21 @@ Four ways:
 
 2. **MCP** (Cursor, Windsurf, Claude Desktop, ChatGPT — the clients with no native Skills mechanism). Point them at `mcp/server.mjs`; see the root `.mcp.json`. Node ≥ 18, zero npm dependencies. Read-only until `RATTLE_MCP_ALLOW_WRITES=1`.
 
-3. **NPM** (drops skills + AGENTS.md into any project):
+3. **npx installer** (drops skills + agents + MCP + AGENTS.md into any project). **Not yet on npm** — run it from a clone:
    ```
-   npx @rattleai/grimoire install
+   git clone https://github.com/rattleai/grimoire.git
+   node grimoire/bin/grimoire.mjs install --target ./my-project
    ```
+   Becomes `npx @rattleai/grimoire install` once published.
 
-4. **PyPI** (Python CLI execution layer):
+4. **Python CLI** (optional execution layer — the skills do not need it). **Do not `pip install grimoire`**: that name belongs to an unrelated package. This project publishes as `rattle-grimoire`. Until released, install from a clone:
    ```
-   pip install grimoire[all-ai,all-sources]
+   git clone https://github.com/rattleai/grimoire.git && cd grimoire
+   pip install -e ".[all-ai,all-sources]"
    rattle <tenant> ai-analyse-pricelist <file>
    ```
+
+Paths 1 and 2 need **nothing published** — the bundle is text plus a zero-dependency script, so a clone is a complete install.
 
 See `README.md` for full setup.
 

@@ -126,7 +126,16 @@ tests/                         262 tests, ~97% coverage
 
 ## Install
 
-Four paths. **Pick the one that matches your tooling — they're not mutually exclusive.**
+Pick the path that matches your tooling — they're not mutually exclusive.
+
+| Path | Best for | Needs publishing? |
+|---|---|---|
+| **1. Claude Code plugin** | Claude Code users | **No** — installs straight from GitHub |
+| **2. MCP server** | Cursor, Windsurf, Claude Desktop, ChatGPT | **No** — clone and point at it |
+| **3. npx installer** | Any AGENTS.md tool (Codex, Aider, Continue) | Yes — or clone and run the script directly |
+| **4. Python CLI** | Terminal-driven, one-shot commands | Yes — or `pip install -e .` from a clone |
+
+Paths **1 and 2 work today with nothing published**. That is deliberate: the bundle is text and a zero-dependency script, so a git clone is a complete install.
 
 ### 1. Claude Code (richest)
 
@@ -139,6 +148,18 @@ The plugin **prompts you for your Rattle API key at install** and stores it in y
 
 Restart Claude Code and you get: 8 slash commands, 14 auto-loading skills, 6 invocable subagents, and the `rattle` MCP server wired up with your key.
 
+Nothing needs to be published for this to work — Claude Code reads `.claude-plugin/marketplace.json` directly from the repo's default branch. Push to `main` and every user's next `/plugin update grimoire` picks it up.
+
+To try a branch before merging it, or to hack on the bundle locally:
+
+```bash
+git clone https://github.com/rattleai/grimoire.git
+```
+```text
+/plugin marketplace add ./grimoire
+/plugin install grimoire
+```
+
 ### 2. MCP — Cursor, Windsurf, Claude Desktop, ChatGPT
 
 The MCP server is how clients **without** a native Skills mechanism get the same system. It hands them the skills *and* live API access:
@@ -148,6 +169,14 @@ The MCP server is how clients **without** a native Skills mechanism get the same
 | `rattle_knowledge_list` / `rattle_knowledge_get` | Serves every skill, reference and schema — Skills for clients that don't have Skills |
 | `rattle_api_search` | Finds the right endpoint among 462 operations without loading a 7,000-line reference into context |
 | `rattle_request` | Calls any Rattle endpoint. Read-only unless you explicitly enable writes |
+
+Clone once — there is nothing to install, and no npm dependencies to resolve:
+
+```bash
+git clone https://github.com/rattleai/grimoire.git
+```
+
+Then add the server to your client's MCP config:
 
 ```jsonc
 // Claude Desktop: claude_desktop_config.json
@@ -166,51 +195,58 @@ The MCP server is how clients **without** a native Skills mechanism get the same
 }
 ```
 
+Verify it before wiring it up — this needs no key and touches no network:
+
+```bash
+node grimoire/scripts/mcp_smoke.mjs
+# OK — 462 API operations reachable, read-only enforced.
+```
+
+**Tell your agent where to start.** These clients have no Skills mechanism, so nothing auto-loads. Put this in your Cursor rules / project instructions / system prompt:
+
+> For any Rattle task, first call `rattle_knowledge_get("skills/rattle-configurator/SKILL.md")` — it carries the #1 rule. Use `rattle_knowledge_list` to find the right skill for the task.
+
 **Why it won't rot.** The Rattle API has 462 operations across 257 paths. A server hand-declaring one tool per endpoint would break every time rattleapp ships a new one. This one declares **no per-endpoint code at all** — `rattle_request` is a generic passthrough, `rattle_api_search` reads the bundled OpenAPI spec. A new endpoint works the day it ships. Node ≥ 18, zero npm dependencies.
 
 **It is read-only until you say otherwise.** A live CPQ tenant is not a sandbox, and a generic passthrough in an agent loop could otherwise rewrite a customer's catalogue in one call. Writes belong in `rattle-config-builder`, which pauses for confirmation.
 
-### 3. NPM (Cursor, Codex, Aider, Continue, plain Claude.ai, any AGENTS.md tool)
+### 3. npx installer (Codex, Aider, Continue, any AGENTS.md tool)
 
-The `npx` installer copies the same skills + subagents + commands + schemas + examples + AGENTS.md into your project, ready for any agent that reads `AGENTS.md` (the cross-platform standard).
+Copies the skills, subagents, commands, schemas, examples, the MCP server and `AGENTS.md` into your project, ready for any agent that reads `AGENTS.md` (the cross-platform standard).
+
+> **Not yet on npm.** `@rattleai/grimoire` is unpublished, so `npx @rattleai/grimoire` will 404. Run the installer from a clone — it is the same script the npm package would ship:
 
 ```bash
-# Drop everything into the current project root:
-npx @rattleai/grimoire install
+git clone https://github.com/rattleai/grimoire.git
 
-# Or only under .claude/ (project-local Claude Code layout):
-npx @rattleai/grimoire install --layout claude
-
-# Or machine-wide for every Claude Code session:
-npx @rattleai/grimoire install --layout user
-
-# Preview without copying:
-npx @rattleai/grimoire install --dry-run
+node grimoire/bin/grimoire.mjs install --target ./my-project             # root-level layout
+node grimoire/bin/grimoire.mjs install --target ./my-project --layout claude  # under .claude/
+node grimoire/bin/grimoire.mjs install --layout user                     # machine-wide
+node grimoire/bin/grimoire.mjs install --dry-run                         # preview
 ```
 
-Idempotent — re-running just refreshes files. Run with `--help` for all options.
+Idempotent — re-running just refreshes the files. `--help` lists every option.
 
-> Until the package is published to npm, install directly from the repo:
-> ```bash
-> git clone https://github.com/rattleai/grimoire.git
-> node grimoire/bin/grimoire.mjs install --target ./my-project
-> ```
+Once published, the same thing becomes `npx @rattleai/grimoire install`.
 
-### 4. PyPI (Python CLI execution layer)
+### 4. Python CLI (optional execution layer)
 
-For terminal-driven workflows that call your AI provider directly:
+Only needed for terminal-driven, one-shot commands that call your AI provider directly. **The skills and agents do not require it** — they are model-agnostic text.
+
+> **Not on PyPI, and do not `pip install grimoire`.** That name belongs to an unrelated bioinformatics package. This project publishes as **`rattle-grimoire`**; until it is released, install from a clone:
 
 ```bash
-pip install grimoire[all-ai,all-sources]
+git clone https://github.com/rattleai/grimoire.git && cd grimoire
+pip install -e ".[all-ai,all-sources]"
+
 cp .env.example .env
 # Edit .env — RATTLE_API_KEY_<TENANT>, AI_PROVIDER, OPENAI_API_KEY / ANTHROPIC_API_KEY, …
 
 rattle <tenant> test-connection
 rattle <tenant> ai-analyse-pricelist <file>
-rattle <tenant> ai-suggest-config <file>
 ```
 
-Note: the CLI is still called `rattle` (it's the Rattle API CLI). `grimoire` is the **distribution name** on PyPI; `pip install grimoire` installs the `rattle` console script along with the workspace.
+The console script is `rattle` either way — only the distribution name is `rattle-grimoire`.
 
 ## Walkthrough — your spreadsheet to a live configurator
 

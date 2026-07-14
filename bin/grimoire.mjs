@@ -130,7 +130,10 @@ async function install(args) {
     process.exit(2);
   }
   if (!(await pathExists(target))) {
+    // Deliberately not auto-created: a typo'd --target would otherwise scatter
+    // a copy of the bundle into a directory the user never meant to exist.
     console.error(`Target directory does not exist: ${target}`);
+    console.error(`Create it first:  mkdir -p "${target}"`);
     process.exit(1);
   }
 
@@ -157,18 +160,29 @@ async function install(args) {
     console.log("");
   }
 
+  const COMMANDS =
+    "/rattle-ingest, /rattle-analyse, /rattle-suggest-config, /rattle-audit,\n" +
+    "    /rattle-build-bom, /rattle-build-offer, /rattle-build-techdoc, /rattle-audit-techdoc";
+
   console.log("Done.");
   console.log("");
-  if (args.layout === "flat" || args.layout === "claude") {
-    console.log("Next steps:");
+  console.log("Next steps:");
+  if (args.layout === "user") {
+    console.log("  - Restart Claude Code so it picks up the user-level skills.");
+  } else {
     console.log("  - Restart your AI agent (Claude Code, Cursor, Codex, Aider, …)");
     console.log("  - Open AGENTS.md to see the knowledge layout.");
-    console.log("  - In Claude Code, type /rattle-analyse, /rattle-suggest-config, /rattle-audit, or /rattle-build-offer.");
-  } else {
-    console.log("Next steps:");
-    console.log("  - Restart Claude Code so it picks up the user-level skills.");
-    console.log("  - Try /rattle-analyse <pricelist.xlsx> or /rattle-audit <tenant>.");
   }
+  console.log(`  - Slash commands:\n    ${COMMANDS}`);
+  console.log("");
+  console.log("  - Start with your own data:  /rattle-ingest <your-pricelist.xlsx>");
+  console.log("    It maps the columns onto Rattle entities and stops on anything it");
+  console.log("    would otherwise have to guess.");
+  console.log("");
+  console.log("  - Using Cursor / Windsurf / Claude Desktop (no native Skills)? Wire up the");
+  console.log("    MCP server so the agent can reach the skills and the API:");
+  console.log(`      "command": "node", "args": ["${path.join(target, "mcp", "server.mjs")}"]`);
+  console.log("    It is read-only until you set RATTLE_MCP_ALLOW_WRITES=1.");
 }
 
 function help() {

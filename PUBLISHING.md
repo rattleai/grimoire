@@ -115,8 +115,12 @@ After all three channels are live:
 npx --yes @rattleai/grimoire install --target /tmp/smoke-npm --dry-run
 
 # PyPI path (in a fresh venv)
+# NOTE: the distribution is `rattle-grimoire`, NOT `grimoire` — that name is
+# taken on PyPI by an unrelated bioinformatics package (KorfLab/grimoire).
+# `pip install grimoire` installs a stranger's code. The console script is
+# still `rattle`.
 python -m venv /tmp/smoke-pypi && source /tmp/smoke-pypi/bin/activate
-pip install grimoire
+pip install rattle-grimoire
 rattle --help
 deactivate
 

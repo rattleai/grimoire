@@ -3,7 +3,11 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "grimoire"
+# NOT "grimoire" — that name is already taken on PyPI by an unrelated
+# bioinformatics package (KorfLab/grimoire). Publishing under it is impossible,
+# and `pip install grimoire` installs a stranger's code. The console script is
+# still `rattle`; only the distribution name differs.
+name = "rattle-grimoire"
 version = "0.7.0"
 description = "Grimoire — AI-native consulting workspace for the Rattle product configurator. Bundles skills, agents, slash commands, JSON Schemas, and a Python CLI execution layer."
 readme = "README.md"
