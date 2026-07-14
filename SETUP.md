@@ -1,6 +1,19 @@
-# Fast Setup Guide
+# Setting up the Python CLI on your computer
 
-A step-by-step guide to get Rattle AI Workspace running on your computer.
+> ### ⚠️ Looking for how to set up a **Rattle tenant**? This is not that page.
+>
+> This guide installs the **optional Python CLI** on your laptop. It is about Python, not about Rattle.
+>
+> | If you want to… | Go here |
+> |---|---|
+> | **Set up a new Rattle tenant** — empty tenant → working configurator | **[`skills/rattle-onboarding/`](skills/rattle-onboarding/SKILL.md)**, or run `/rattle-onboard <tenant>` |
+> | **Get your data into Rattle** — pricelist, ERP export, BOM | [`skills/rattle-ingest/`](skills/rattle-ingest/SKILL.md), or `/rattle-ingest <file>` |
+> | **Use Grimoire in Claude Code / Cursor / ChatGPT** | [`README.md` § Install](README.md#install) |
+> | **Install the Python CLI** (you are here) | keep reading ↓ |
+>
+> **You do not need Python** to use the skills, the agents, or the MCP server. The Python CLI is one optional execution path, not the product.
+
+A step-by-step guide to get the Rattle Python CLI running on your computer.
 No programming experience required.
 
 ---

@@ -12,7 +12,8 @@ When the user asks anything Rattle-related, **read these files before answering*
 
 | File | Purpose |
 |---|---|
-| `skills/rattle-ingest/SKILL.md` | **The first link.** Raw customer file (Excel / CSV / ERP export) → column roles → `source-mapping.json` → normalized rows. Load this before pricelist-analysis whenever the columns have not been agreed. Includes `scripts/profile_source.py`, `references/column-roles.md` (24 roles), `references/sheet-shapes.md` (5 shapes). |
+| `skills/rattle-onboarding/SKILL.md` | **Day 0 — load this when the tenant is new or empty.** Every other skill assumes a tenant that already has products. Walks company → languages → **base price list (before any product)** → conventions → areas → configurator settings → first product → baseline audit → tenant profile. |
+| `skills/rattle-ingest/SKILL.md` | **The first link of the data chain.** Raw customer file (Excel / CSV / ERP export) → column roles → `source-mapping.json` → normalized rows. Load this before pricelist-analysis whenever the columns have not been agreed. Includes `scripts/profile_source.py`, `references/column-roles.md` (24 roles), `references/sheet-shapes.md` (5 shapes). |
 | `skills/rattle-configurator/SKILL.md` | The #1 rule + workflow entry point. Always load this first. |
 | `skills/rattle-configurator/references/data-model.md` | Full schema for every entity. |
 | `skills/rattle-configurator/references/configuration-rules.md` | 11 configuration rules with rationales. |
@@ -127,9 +128,11 @@ The Python execution layer's prompts already mirror `skills/rattle-configurator/
 Every engagement runs the same chain. Skipping a link is the most common way to get a wrong configuration:
 
 ```
-rattle-ingest → rattle-pricelist-analysis → rattle-suggest-config → rattle-apply-config
+rattle-onboarding → rattle-ingest → rattle-pricelist-analysis → rattle-suggest-config → rattle-apply-config
+   (day 0, once)      (per data drop) ─────────────────────────────────────────────────────────────────▶
 ```
 
+- **Start at `rattle-onboarding`** if the tenant is new or empty. Every skill downstream assumes a tenant that already has a company profile, a **base price list** (currency lives there — a product's `currency` is silently ignored), languages, and areas. Get the order wrong and prices land in the wrong currency with no error.
 - **Start at `rattle-ingest`** whenever the user hands over a file whose columns have not been explicitly agreed. Do not skip to pricelist-analysis because the headers "look obvious" — headers lie, abbreviate, and mix languages.
 - **The chain is gated.** While `rattle-ingest` reports a non-empty `blockers[]`, `rattle-suggest-config` MUST NOT run. Answer the blocking question with the customer and re-ingest.
 - **Never fabricate to clear a blocker.** Not a standard option, not a price, not a part number. Emit a placeholder plus the one question a human must answer. A guessed standard variant corrupts the BOM, the pricing, and every offer built on it.
