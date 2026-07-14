@@ -12,7 +12,8 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | Path | Purpose |
 |---|---|
 | `.claude-plugin/plugin.json` + `marketplace.json` | Claude Code plugin / marketplace manifest. Installable via `/plugin marketplace add rattleai/grimoire`. |
-| `skills/rattle-ingest/` | **First link in the chain.** Raw customer file (Excel / CSV / ERP export) → 24 column roles → 5 sheet shapes → reviewable `source-mapping.json` + normalized rows. Enforces the #1 rule at the door: a surcharge column with no standard sibling is a **blocker**, never a guess. Includes `scripts/profile_source.py`. |
+| `skills/rattle-onboarding/` | **Day 0.** Empty tenant → working configurator. Every other skill assumes this already happened. Walks company → languages → **base price list (before any product — `Product.currency` is silently ignored and the currency comes from the base list)** → conventions → areas → the 19 configurator-settings flags → first product → baseline audit → tenant profile. Refuses a tenant that already has products (that is a migration, not an onboarding). |
+| `skills/rattle-ingest/` | **First link of the data chain.** Raw customer file (Excel / CSV / ERP export) → 24 column roles → 5 sheet shapes → reviewable `source-mapping.json` + normalized rows. Enforces the #1 rule at the door: a surcharge column with no standard sibling is a **blocker**, never a guess. Includes `scripts/profile_source.py`. |
 | `skills/rattle-configurator/` | Core consulting knowledge. **Always load first.** |
 | `skills/rattle-api/` | REST API surface (auth, pagination, 462 operations across 257 paths, OpenAPI spec). |
 | `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |

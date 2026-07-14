@@ -2,7 +2,7 @@
 
 **For:** the Rattle backend team
 **Spec audited:** `https://www.rattleapp.de/docs/api/openapi.json`, fetched **2026-07-14** — OpenAPI 3.1, **463 operations · 258 paths · 37 tags · 210 schemas · 1,369 schema fields**
-**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 14 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
+**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 15 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
 
 ---
 
@@ -169,7 +169,47 @@ Three distinct defects:
 
 **Fix.** Either `servers: [{"url": "https://www.rattleapp.de/api/v1"}]` and drop the prefix from path keys, **or** keep the paths and set the server to `https://www.rattleapp.de`. Both are correct; the current combination isn't. **One line.**
 
-## P0-7. Eight request schemas silently swallow unknown fields
+## P0-7. `ConfiguratorSettingsResponse` describes a schema that does not exist — zero overlap with reality
+
+This one is in a class of its own. We found it while writing a day-0 onboarding guide, and had to verify it twice because it looked like a bug in our tooling.
+
+```python
+# What the spec says GET /company/configurator-settings returns:
+>>> sorted(spec["components"]["schemas"]["ConfiguratorSettingsResponse"]["properties"])
+['custom_css', 'default_currency', 'require_login', 'show_prices', 'show_stock']     # 5 fields
+
+# What the live API actually returns:
+['allow_create_new_customer', 'allow_select_existing_customer', 'company_id',
+ 'customer_search_fields', 'require_company_contact_person', 'require_customer_address',
+ 'require_customer_contact_person', 'require_customer_email', 'require_customer_id',
+ 'require_customer_info', 'require_customer_organization', 'require_customer_phone',
+ 'show_company_contact_person', 'show_customer_address', 'show_customer_contact_person',
+ 'show_customer_email', 'show_customer_id', 'show_customer_organization',
+ 'show_customer_phone', 'start_search_digits']                                       # 20 fields
+
+# Overlap: NONE. Not one field in common.
+```
+
+And the write side accepts anything at all:
+
+```json
+PATCH /company/configurator-settings  requestBody:
+{ "type": "object", "additionalProperties": true }
+```
+
+**Consequence.** These 20 flags govern the **entire customer-capture UX of the configurator** — whether a customer must supply an organisation, which fields are searched, how many digits trigger search. They are the settings a new tenant *must* get right on day one.
+
+An agent reading the spec will:
+1. Try to set `show_prices` — which **does not exist**. `PATCH` returns `200`. Nothing happens.
+2. **Never discover** `require_customer_organization`, `customer_search_fields`, or any of the 18 other flags that actually control the product.
+
+So the spec is not merely incomplete here; **it is actively wrong**, and the endpoint silently accepts the wrong thing. There is no error anywhere in this loop.
+
+**Fix.** Regenerate `ConfiguratorSettingsResponse` from the real model, give the `PATCH` body a real schema (`additionalProperties: false`), and `422` unknown flags. Until then, the 20 real flags are documented in `skills/rattle-onboarding/references/configurator-settings.md`, live-verified — **which is not where they belong.**
+
+> We also found a `ConfiguratorSettingsResponse`-adjacent unknown: `require_customer_info` has no `show_customer_info` sibling, unlike the other seven `require_*`/`show_*` pairs. We could not determine whether it is a master switch, an independent requirement, or legacy. **Please clarify** — we left it alone rather than guess.
+
+## P0-8. Eight request schemas silently swallow unknown fields
 
 `additionalProperties` is `false` on **116 of 124** request schemas — which is *good*, and means a typo'd field gets a loud `422`.
 
@@ -317,7 +357,7 @@ So: **the spec documents 2 of 6 expansions, and mentions neither the dot-notatio
 
 **We were wrong too, and we've fixed it.** Our own skill told agents to call `expand=areas.groups.options`. **It has never worked** — it is a `400`. That bug is now corrected in `skills/rattle-suggest-config/SKILL.md`, and this is a good illustration of the report's thesis: **an undocumented feature and a hallucinated feature are indistinguishable from the outside.** We guessed, the spec didn't contradict us, and the guess shipped.
 
-**The real cost.** `options` is **not expandable at any depth** — the deepest a single call reaches is groups. So assembling a product's configuration graph is **irreducibly N+1**. On a real tenant, one product with 2 areas / 8 groups / 19 options costs **9 HTTP requests.** A 200-product catalogue is thousands.
+**The real cost.** `options` is **not expandable at any depth** — the deepest a single call reaches is groups. So assembling a product's configuration graph is **irreducibly N+1**: one call for the tree, then **one call per group** to get its options. A modest product costs ~10 requests; a full catalogue costs thousands. There is no way to avoid it from the client side.
 
 Worse still: **`GET /options/{optionId}/area-config` has `area_id` as a _required_ query parameter** and returns a single row. There is no list-all. Our audit tooling documents the consequence:
 
@@ -513,6 +553,7 @@ All 463 operations declare `429`. **None** declares `Retry-After`, `X-RateLimit-
 |---|---|---|---|
 | 1 | **P0-1** Declare the 4 headers + `409` | Silent lost update on an atomic replace-all. Nothing else here destroys data with a `200 OK`. | **Spec only** |
 | 2 | **P0-2** `readOnly: true` on the 200 response-only fields | Makes read-modify-write work for every client and agent, automatically. | **Spec only** |
+| 2b | **P0-7** Regenerate `ConfiguratorSettingsResponse` | The spec describes **5 fields that don't exist** and omits the **20 that do** — and they govern the customer-capture UX. Zero overlap. | **Spec only** |
 | 3 | **P0-6** Fix `servers` / `/api/v1` | One line. Every generated client hits it. | **One line** |
 | 4 | **P0-4** Schema `rule_json`; `422` the legacy shape | Constraints that save and never fire. Ships broken machines. | Small |
 | 5 | **P0-3** Disambiguate PUT vs PATCH | Silent field-nulling on a standard REST idiom. | Small |
