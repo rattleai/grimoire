@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>15 skills · 7 subagents · 9 slash commands · 1 MCP server</strong><br>
+  <strong>16 skills · 8 subagents · 10 slash commands · 1 MCP server</strong><br>
   Point <strong>any AI model</strong> at your pricelist, spreadsheet or ERP export —<br>
   get correct, BOM-aware entities in the Rattle CPQ configurator (rattleapp.de).
 </p>
@@ -39,6 +39,12 @@ You have a pricelist. It is a spreadsheet of surcharges, written by a salesperso
       ──────────────────  ◀──  ───────────────────  ◀──  ────────────────────
       groups · options ·       idempotent ensure_*        groups, options, BOM
       parts · constraints      (re-run = no-op)           rules, constraints
+            │
+            ▼
+      rattle-crm-quotes        ← the money end
+      ─────────────────
+      customer · opportunity · configuration → FINALIZE (lock it)
+      quote · line items · discount · document · status · revise
 ```
 
 Every arrow is a skill. Every artifact between them is a JSON Schema you can validate. Nothing is a black box, and nothing is invented — where your data is silent, the chain **stops and asks** rather than guessing.
@@ -72,7 +78,7 @@ Goal: every AI model gets the same consulting expertise — the #1 configurator 
 ## What's inside
 
 ```
-skills/                        15 Anthropic-format Skills (model-agnostic)
+skills/                        16 Anthropic-format Skills (model-agnostic)
   ├─ Configurator domain (11) ─
   rattle-onboarding/           ★ DAY 0. Empty tenant → working configurator. Everything else assumes this.
   rattle-ingest/               ★ Raw file → column roles → source-mapping.json. The FIRST data link.
@@ -82,6 +88,7 @@ skills/                        15 Anthropic-format Skills (model-agnostic)
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
   rattle-bom-builder/          Variant-BOM expert: usage_subclauses + option_scalings + numbered options
   rattle-apply-config/         Workflow: apply a recommendation idempotently
+  rattle-crm-quotes/           ★ THE MONEY END. Configuration → finalize → quote → line items → status
   rattle-audit/                Workflow: scan a live tenant against 6 structural checks
   rattle-document-templates/   Workflow: build offer/quote/ccms/custom templates
   rattle-tenant-memory/        Per-tenant preferences (file-based, explicit-write only)
@@ -90,21 +97,23 @@ skills/                        15 Anthropic-format Skills (model-agnostic)
   rattle-safety-notices/       ISO 7010 + ISO 3864-2 + ANSI Z535.6, EditorJS safety_notice block
   rattle-ghs-statements/       CLP H/P/EUH codes + 9 GHS pictograms, EditorJS hp_statement block
   rattle-techdoc-language/     IEC/IEEE 82079-1 Clause 5 quality criteria, mood, tone, terminology
-agents/                        7 subagents (each preloads its skills via `skills:` frontmatter)
+agents/                        8 subagents (each preloads its skills via `skills:` frontmatter)
   rattle-onboarder             ★ Day-0 bootstrap. Refuses a tenant that already has products.
   rattle-consultant            Senior configurator consultant (orchestrates; the usual entry point)
   rattle-auditor               Live-tenant configurator auditor — read-only, enforced by allowlist
   rattle-config-builder        Idempotent builder — the ONLY agent allowed to write to the API
+  rattle-quote-author          ★ Quote-to-cash. Revises rather than mutating a sent quote.
   rattle-bom-architect         Senior variant-BOM architect (parts → placements → bom_items)
   rattle-techdoc-author        Senior tech writer (inventory → audit → plan → build → translate)
   rattle-techdoc-auditor       Tech-doc auditor (14 checks) — read-only, enforced by allowlist
-commands/                      9 slash commands
+commands/                      10 slash commands
   /rattle-onboard              ★ Day 0 — take an empty tenant to a working configurator
   /rattle-ingest               ★ Map a raw spreadsheet / ERP export onto Rattle entities
   /rattle-analyse              Pricelist anti-pattern analysis
   /rattle-suggest-config       Produce a BOM-aware configuration JSON
   /rattle-audit                Audit a live tenant catalogue
   /rattle-build-bom            Design / fix / validate a variant BOM
+  /rattle-build-quote          ★ Configuration → quote → line items → document → status
   /rattle-build-offer          Build / fix an offer / quote / ccms / custom template
   /rattle-build-techdoc        Build a technical documentation from N input manuals
   /rattle-audit-techdoc        Audit a tech-doc against ISO 20607 / IEC 82079-1 / MRL/MVO
@@ -141,7 +150,7 @@ Nothing here needs to be published. The bundle is Markdown plus a zero-dependenc
 | Client | Skills | Live API | How |
 |---|---|---|---|
 | **Claude Code** | ✅ native | ✅ MCP | `/plugin install grimoire` — [§1](#1-claude-code-richest) |
-| **Claude.ai web chat** | ✅ upload | ⚠️ remote MCP | `make skills-zip` → upload 15 zips — [§2](#2-claudeai-web-chat) |
+| **Claude.ai web chat** | ✅ upload | ⚠️ remote MCP | `make skills-zip` → upload 16 zips — [§2](#2-claudeai-web-chat) |
 | **Codex CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` + `AGENTS.md` for free — [§4](#4-codex-cli-and-gemini-cli) |
 | **Gemini CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` for free — [§4](#4-codex-cli-and-gemini-cli) |
 | **Cursor / Windsurf / Claude Desktop** | ✅ via MCP | ✅ MCP | No Skills mechanism — the MCP server serves both — [§3](#3-mcp--cursor-windsurf-claude-desktop) |
@@ -149,7 +158,7 @@ Nothing here needs to be published. The bundle is Markdown plus a zero-dependenc
 | **Gemini app** (Spark) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
 | **Custom GPT Action** | — | ❌ | 462 operations vs a ~30-operation ceiling — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
 
-**The 15 skills conform to the [Agent Skills open standard](https://agentskills.io)** — `name` + `description` frontmatter, progressive disclosure. Claude.ai takes them as uploads; Codex CLI and Gemini CLI discover them from `.agents/skills/` with **zero porting**.
+**The 16 skills conform to the [Agent Skills open standard](https://agentskills.io)** — `name` + `description` frontmatter, progressive disclosure. Claude.ai takes them as uploads; Codex CLI and Gemini CLI discover them from `.agents/skills/` with **zero porting**.
 
 ## Install
 
@@ -162,7 +171,7 @@ Nothing here needs to be published. The bundle is Markdown plus a zero-dependenc
 
 The plugin **prompts you for your Rattle API key at install** and stores it in your OS keychain — there is no `.env` to hand-edit. It also asks for your base URL, default tenant, and whether the MCP server may write to your live tenant (**off** by default).
 
-Restart Claude Code and you get: 9 slash commands, 15 auto-loading skills, 7 invocable subagents, and the `rattle` MCP server wired up with your key.
+Restart Claude Code and you get: 10 slash commands, 16 auto-loading skills, 8 invocable subagents, and the `rattle` MCP server wired up with your key.
 
 Nothing needs to be published for this to work — Claude Code reads `.claude-plugin/marketplace.json` directly from the repo's default branch. Push to `main` and every user's next `/plugin update grimoire` picks it up.
 
@@ -253,12 +262,12 @@ node grimoire/scripts/mcp_smoke.mjs
 
 ### 4. Codex CLI and Gemini CLI
 
-Both read the **[Agent Skills open standard](https://agentskills.io)** from `.agents/skills/`, and this repo ships exactly that. The 15 skills are discovered with **zero porting** — no config, no conversion.
+Both read the **[Agent Skills open standard](https://agentskills.io)** from `.agents/skills/`, and this repo ships exactly that. The 16 skills are discovered with **zero porting** — no config, no conversion.
 
 ```bash
 git clone https://github.com/rattleai/grimoire.git
 node grimoire/bin/grimoire.mjs install --target ./my-project
-# writes .agents/skills/ (15 skills) + mcp/ + AGENTS.md + commands/ + schemas/
+# writes .agents/skills/ (16 skills) + mcp/ + AGENTS.md + commands/ + schemas/
 ```
 
 Then add the API:
