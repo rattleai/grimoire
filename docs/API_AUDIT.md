@@ -12,7 +12,9 @@ Most API feedback comes from a human who read the docs. This comes from **buildi
 
 That drives the ranking. **A loud error is cheap; a silent wrong result is expensive.** An endpoint that returns `422` teaches the caller something. An endpoint that accepts a payload, returns `200`, and quietly does nothing teaches the caller a lie — and in CPQ a lie propagates into a customer's BOM, their pricing, and the offer PDF they send to *their* customer.
 
-Every number here was produced by a script run against the published spec (reproduction at the end). Where we say "an agent will get this wrong," it is because **we got it wrong**, and the workaround is now permanently in our codebase.
+Every number here was produced by a script run against the published spec (reproduction at the end). Where a claim could not be settled from the spec alone, we **probed a live tenant with read-only `GET`s** and say so explicitly — P1-7 is the result, and it changed our conclusion **and caught a bug in our own code.**
+
+Where we say "an agent will get this wrong," it is because **we got it wrong**, and the workaround is now permanently in our codebase.
 
 ---
 
@@ -21,6 +23,10 @@ Every number here was produced by a script run against the published spec (repro
 We probed for these specifically. They are genuinely well-disciplined and we want the team to know it.
 
 - **Error contract: 100% consistent.** All **1,601** declared 4xx/5xx responses use `ProblemDetails` (RFC 9457), with `type/title/status/detail/instance/request_id` and a per-field `errors[].code` on 422. **Zero exceptions.** Most APIs make you regex prose. This one doesn't.
+- **The runtime error *messages* are outstanding** — and they saved this audit. `GET /products/32?expand=groups` returns:
+  > *"Unknown expansion 'groups'. Valid expansions: areas, gallery, models, price_overrides, pricing_presets, videos."*
+
+  It names the bad value **and enumerates every good one.** That is exactly right, and it is the only reason we could establish ground truth without backend access (see P1-7). **The tragedy is that this enumeration exists only at runtime, in a `400`, when it belongs in the spec** — where a client could read it *before* making the request.
 - **Nullable/required: zero contradictions.** Across 1,369 properties, **0** fields are both `required` and nullable; **0** are both `required` and `default: null`. We validated the detector against known positives — the zero is real.
 - **`DELETE`: 69 operations, all return `204`.** Perfectly uniform.
 - **No `GET` performs a mutation.** Checked all of them.
@@ -284,19 +290,45 @@ Of 389 JSON 2xx responses: **363 use `{"data": …}`; 22 are bare objects.** All
 
 **Fix.** Enumerate legal `match` keys per resource; `$ref` the real `*CreateRequest` into `body` via a discriminator.
 
-## P1-7. Reading a configuration tree is N×M
+## P1-7. `expand` is two-thirds undocumented — we probed a live tenant to find out
 
-`expand` exists on **1 of 258 paths** — `GET /products/{id}` — supporting only `areas` and `gallery` (a free string, not an enum). Not groups, options, BOM, or constraints.
+`expand` exists on **1 of 258 paths** (`GET /products/{id}`), typed as a free string, and its description says:
 
-Worse: **`GET /options/{optionId}/area-config` has `area_id` as a _required_ query parameter** and returns a single row. There is no list-all. Our own audit tooling documents the cost:
+> "Comma-separated list of expansions: `areas`, `gallery`"
+
+**That is not what the API does.** We ran read-only probes against a live tenant (2026-07-14) and the API told us the truth in its own error messages:
+
+| Probe | Result |
+|---|---|
+| `expand=areas` | ✅ 200 |
+| `expand=gallery` | ✅ 200 |
+| `expand=models` | ✅ 200 — **undocumented** |
+| `expand=price_overrides` | ✅ 200 — **undocumented** |
+| `expand=pricing_presets` | ✅ 200 — **undocumented** |
+| `expand=videos` | ✅ 200 — **undocumented** |
+| `expand=areas.groups` | ✅ 200 — **dot-notation works, and is undocumented** |
+| `expand=areas.groups,gallery,models` | ✅ 200 — **comma-combining works, undocumented** |
+| `expand=areas.groups.options` | ❌ **400** — *"exceeds maximum depth of 2"* |
+| `expand=groups` | ❌ 400 — *"Valid expansions: areas, gallery, models, price_overrides, pricing_presets, videos"* |
+
+So: **the spec documents 2 of 6 expansions, and mentions neither the dot-notation nor its depth-2 limit.** Two-thirds of the feature is invisible.
+
+**Credit where it's due:** the `400` bodies are *excellent* — they name the offending value **and enumerate every valid one**. That is exactly what a good API does, and it is the only reason we could establish the truth without backend access. **Please put that enumeration in the spec, where a client can read it before making the request instead of after.**
+
+**We were wrong too, and we've fixed it.** Our own skill told agents to call `expand=areas.groups.options`. **It has never worked** — it is a `400`. That bug is now corrected in `skills/rattle-suggest-config/SKILL.md`, and this is a good illustration of the report's thesis: **an undocumented feature and a hallucinated feature are indistinguishable from the outside.** We guessed, the spec didn't contradict us, and the guess shipped.
+
+**The real cost.** `options` is **not expandable at any depth** — the deepest a single call reaches is groups. So assembling a product's configuration graph is **irreducibly N+1**. On a real tenant, one product with 2 areas / 8 groups / 19 options costs **9 HTTP requests.** A 200-product catalogue is thousands.
+
+Worse still: **`GET /options/{optionId}/area-config` has `area_id` as a _required_ query parameter** and returns a single row. There is no list-all. Our audit tooling documents the consequence:
 
 > *"There is no list-all-overrides endpoint for an option, so we must iterate the option's group's area links."*
 
 For a 500-option catalogue across 6 areas that is **~3,000 sequential requests to audit price overrides alone.**
 
-**A discrepancy we want resolved:** our skill tells agents to call `GET /products/{id}?expand=areas.groups.options` to fetch the whole product graph in one request. The spec documents only `areas` and `gallery`. **One of us is wrong.** If dotted deep-expansion works, it's a significant undocumented feature. If not, we have a bug and every agent using it is doing an N+1 crawl.
-
-**Fix.** Make `expand` an enum; extend to `groups`, `options`, `constraints`, `bom`. **Make `area_id` optional on `/options/{optionId}/area-config`** — a one-line change that deletes an entire N×M loop.
+**Fix.**
+1. **Document the four missing expansions, the dot-notation, and the depth-2 limit** — then make `expand` an `enum` so a client can discover them from the spec.
+2. **Add `options` as an expandable value** (`expand=areas.groups.options`, i.e. raise max depth to 3). This single change collapses the most common read in the entire product from N+1 to 1.
+3. **Make `area_id` optional on `/options/{optionId}/area-config`** — one line, deletes an entire N×M loop.
 
 ## P1-8. 78 of 116 collection endpoints declare no pagination
 
@@ -486,7 +518,7 @@ All 463 operations declare `429`. **None** declares `Retry-After`, `X-RateLimit-
 | 5 | **P0-3** Disambiguate PUT vs PATCH | Silent field-nulling on a standard REST idiom. | Small |
 | 6 | **P1-1** Promote 119 free strings to `enum` (start with `doc_type`) | `doc_type: "datasheet"` currently validates. | Spec only |
 | 7 | **P2-6** Add `quote` to the `DocType` enum | Quote-template cloning appears simply broken. | Trivial |
-| 8 | **P1-7** `area_id` optional on area-config; extend `expand` | Deletes a ~3,000-request N×M loop. | Small |
+| 8 | **P1-7** Document the 4 hidden expansions + dot-notation; add `options` as expandable; `area_id` optional on area-config | Two-thirds of `expand` is undocumented. Adding `options` collapses the most common read in the product from **N+1 to 1**. The area-config change alone deletes a ~3,000-request loop. | Small |
 | 9 | **P0-5** One money type; fix `part_cost` | Silent precision loss that compounds up the BOM tree. | Migration |
 | 10 | **P2-1** `Product.sku` | Most commercially significant gap. `product_sku` is already on the quote line with no writer. | Medium |
 | 11 | **P2-2 / P2-3** Quantity-aware constraints; fractional numbered options | Unblocks most of industrial configuration. | Medium |
@@ -540,7 +572,24 @@ sorted(S["ProductCreateRequest"]["properties"])                # no sku
 S["CloneRequest"]["properties"]["doc_type"]
 ```
 
-Every count in this report was asserted by script against the published spec. We re-verified all of them before publishing and **corrected two of our own claims** in the process.
+**The live probe (P1-7)** — read-only, and it is how we found the four hidden expansions:
+
+```bash
+# Every valid expansion, straight from the API's own 400:
+curl -s -H "Authorization: Bearer $RATTLE_API_KEY" \
+     -H "User-Agent: grimoire/1.0" \
+     "https://www.rattleapp.de/api/v1/products/{id}?expand=groups" | jq -r .detail
+# → "Unknown expansion 'groups'. Valid expansions: areas, gallery, models,
+#    price_overrides, pricing_presets, videos."
+
+# The depth limit nobody documented:
+curl -s … "…/products/{id}?expand=areas.groups.options" | jq -r .detail
+# → "Expansion 'areas.groups.options' exceeds maximum depth of 2."
+```
+
+(Note: Cloudflare returns **1010 / `browser_signature_banned`** to the default `python-urllib` User-Agent. Any client must send a real UA — worth documenting for integrators, as it looks like an auth failure but isn't.)
+
+Every count in this report was asserted by script against the published spec. We re-verified all of them before publishing and **corrected three of our own claims** in the process — including the `expand` bug that was live in our own skill.
 
 ---
 
