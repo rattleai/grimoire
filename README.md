@@ -124,18 +124,23 @@ tests/                         262 tests, ~97% coverage
 8. **Author normatively-correct chemical hazard statements** — H/P/EUH codes + GHS pictograms resolved live from `/api/v1/hp-statements`.
 9. **Translate any document** to any of the 24+ supported EU locales while preserving normative wording (signal words, CLP statements) byte-identical from the official tables.
 
+## Which client are you using?
+
+Nothing here needs to be published. The bundle is Markdown plus a zero-dependency Node script, so **a git clone is a complete install**.
+
+| Client | Skills | Live API | How |
+|---|---|---|---|
+| **Claude Code** | ✅ native | ✅ MCP | `/plugin install grimoire` — [§1](#1-claude-code-richest) |
+| **Codex CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` + `AGENTS.md` for free — [§3](#3-codex-cli-and-gemini-cli) |
+| **Gemini CLI** | ✅ native | ✅ MCP | Reads `.agents/skills/` for free — [§3](#3-codex-cli-and-gemini-cli) |
+| **Cursor / Windsurf / Claude Desktop** | ✅ via MCP | ✅ MCP | No Skills mechanism — the MCP server serves both — [§2](#2-mcp--cursor-windsurf-claude-desktop) |
+| **ChatGPT app** (Developer mode) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§5](#5-chatgpt-and-gemini-the-consumer-chat-apps) |
+| **Gemini app** (Spark) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§5](#5-chatgpt-and-gemini-the-consumer-chat-apps) |
+| **Custom GPT Action** | — | ❌ | 462 operations vs a ~30-operation ceiling — [§5](#5-chatgpt-and-gemini-the-consumer-chat-apps) |
+
+**The 14 skills already conform to the [Agent Skills open standard](https://agentskills.io)** — `name` + `description` frontmatter, progressive disclosure. Codex CLI and Gemini CLI discover them from `.agents/skills/` with **zero porting**.
+
 ## Install
-
-Pick the path that matches your tooling — they're not mutually exclusive.
-
-| Path | Best for | Needs publishing? |
-|---|---|---|
-| **1. Claude Code plugin** | Claude Code users | **No** — installs straight from GitHub |
-| **2. MCP server** | Cursor, Windsurf, Claude Desktop, ChatGPT | **No** — clone and point at it |
-| **3. npx installer** | Any AGENTS.md tool (Codex, Aider, Continue) | Yes — or clone and run the script directly |
-| **4. Python CLI** | Terminal-driven, one-shot commands | Yes — or `pip install -e .` from a clone |
-
-Paths **1 and 2 work today with nothing published**. That is deliberate: the bundle is text and a zero-dependency script, so a git clone is a complete install.
 
 ### 1. Claude Code (richest)
 
@@ -160,7 +165,7 @@ git clone https://github.com/rattleai/grimoire.git
 /plugin install grimoire
 ```
 
-### 2. MCP — Cursor, Windsurf, Claude Desktop, ChatGPT
+### 2. MCP — Cursor, Windsurf, Claude Desktop
 
 The MCP server is how clients **without** a native Skills mechanism get the same system. It hands them the skills *and* live API access:
 
@@ -210,9 +215,37 @@ node grimoire/scripts/mcp_smoke.mjs
 
 **It is read-only until you say otherwise.** A live CPQ tenant is not a sandbox, and a generic passthrough in an agent loop could otherwise rewrite a customer's catalogue in one call. Writes belong in `rattle-config-builder`, which pauses for confirmation.
 
-### 3. npx installer (Codex, Aider, Continue, any AGENTS.md tool)
+### 3. Codex CLI and Gemini CLI
 
-Copies the skills, subagents, commands, schemas, examples, the MCP server and `AGENTS.md` into your project, ready for any agent that reads `AGENTS.md` (the cross-platform standard).
+Both read the **[Agent Skills open standard](https://agentskills.io)** from `.agents/skills/`, and this repo ships exactly that. The 14 skills are discovered with **zero porting** — no config, no conversion.
+
+```bash
+git clone https://github.com/rattleai/grimoire.git
+node grimoire/bin/grimoire.mjs install --target ./my-project
+# writes .agents/skills/ (14 skills) + mcp/ + AGENTS.md + commands/ + schemas/
+```
+
+Then add the API:
+
+```bash
+# Codex CLI — also reads AGENTS.md automatically (14 KB, well under its 32 KiB cap)
+codex mcp add rattle -- node ./my-project/mcp/server.mjs
+```
+
+```jsonc
+// Gemini CLI — .gemini/settings.json
+{
+  "mcpServers": {
+    "rattle": { "command": "node", "args": ["./my-project/mcp/server.mjs"] }
+  },
+  // opt in to AGENTS.md; Gemini CLI defaults to GEMINI.md
+  "context": { "fileName": ["AGENTS.md", "GEMINI.md"] }
+}
+```
+
+### 4. npx installer (Aider, Continue, any AGENTS.md tool)
+
+Copies the skills, subagents, commands, schemas, examples, the MCP server and `AGENTS.md` into your project.
 
 > **Not yet on npm.** `@rattleai/grimoire` is unpublished, so `npx @rattleai/grimoire` will 404. Run the installer from a clone — it is the same script the npm package would ship:
 
@@ -229,7 +262,25 @@ Idempotent — re-running just refreshes the files. `--help` lists every option.
 
 Once published, the same thing becomes `npx @rattleai/grimoire install`.
 
-### 4. Python CLI (optional execution layer)
+### 5. ChatGPT and Gemini — the consumer chat apps
+
+Short version: **both can work, but neither will talk to a local server, and connecting them has a real security cost.** If you have a ChatGPT or Gemini subscription, the *CLI* (§3) is the path of least resistance and needs no deployment at all.
+
+**Both apps are remote-only.** ChatGPT's Developer mode accepts SSE / streaming-HTTP MCP servers; the Gemini app's Spark connector asks for an *MCP server URL*. Neither can spawn a local `stdio` process. So `mcp/server.mjs` as it stands — a stdio server — cannot be plugged into either. It would need an HTTPS transport and a public deployment.
+
+> [!WARNING]
+> **Do not deploy this server publicly without adding authentication.** Its headline tool, `rattle_request`, is a *generic authenticated passthrough* carrying your tenant API key. Behind a public no-auth URL, anyone who learns that URL gets your tenant's API access — and if writes are enabled, they can rewrite your catalogue. ChatGPT permits "no authentication" connectors; that is exactly the trap. If you take this route: put real auth in front of it, keep `RATTLE_MCP_ALLOW_WRITES` off, and treat the URL as a credential.
+
+**A Custom GPT Action will not work.** GPT Actions cap out at roughly **30 operations**; the Rattle API has **462**. There is no way to import the spec. (This is precisely why the MCP server has an `rattle_api_search` tool instead of one tool per endpoint — it sidesteps the ceiling entirely.) A curated ≤30-operation facade spec would be needed, which is a separate piece of work.
+
+**The knowledge alone, with no tools.** If you just want the consulting expertise in a chat window and are willing to give up live API access, upload the skills as files:
+
+- **ChatGPT** — a Project or Custom GPT "Knowledge" upload (roughly 20 files).
+- **Gemini** — a Gem (roughly 10 files).
+
+Start with `skills/rattle-configurator/SKILL.md` (the #1 rule), `skills/rattle-ingest/SKILL.md`, and `AGENTS.md`. You lose progressive disclosure and every script, but the rules and anti-patterns still land.
+
+### 6. Python CLI (optional execution layer)
 
 Only needed for terminal-driven, one-shot commands that call your AI provider directly. **The skills and agents do not require it** — they are model-agnostic text.
 

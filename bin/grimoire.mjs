@@ -123,6 +123,27 @@ function resolveTargetForArtifact(target, layout, srcName) {
   return path.join(target, srcName);
 }
 
+/**
+ * Also publish the skills at `.agents/skills/` — the Agent Skills open standard
+ * (agentskills.io). Codex CLI and Gemini CLI both discover skills there natively,
+ * and both require exactly the `name` + `description` frontmatter our SKILL.md
+ * files already carry. Without this, an install is only discoverable by Claude
+ * Code, and every other agent sees a directory of Markdown it never reads.
+ *
+ * Copied, not symlinked: a symlink would dangle the moment the user moves or
+ * vendors the directory, and Windows checkouts do not reliably honour links.
+ */
+async function installAgentSkills(target, layout, dryRun) {
+  const base = layout === "user" ? os.homedir() : target;
+  const dst = path.join(base, ".agents", "skills");
+  const src = path.join(PACKAGE_ROOT, "skills");
+  if (!(await pathExists(src))) return null;
+  console.log(`* skills → ${dst}  (Agent Skills standard — Codex, Gemini CLI)`);
+  await copyRecursive(src, dst, dryRun);
+  console.log("");
+  return dst;
+}
+
 async function install(args) {
   const target = path.resolve(args.target);
   if (args.layout !== "flat" && args.layout !== "claude" && args.layout !== "user") {
@@ -160,6 +181,8 @@ async function install(args) {
     console.log("");
   }
 
+  await installAgentSkills(target, args.layout, args.dryRun);
+
   const COMMANDS =
     "/rattle-ingest, /rattle-analyse, /rattle-suggest-config, /rattle-audit,\n" +
     "    /rattle-build-bom, /rattle-build-offer, /rattle-build-techdoc, /rattle-audit-techdoc";
@@ -178,11 +201,20 @@ async function install(args) {
   console.log("  - Start with your own data:  /rattle-ingest <your-pricelist.xlsx>");
   console.log("    It maps the columns onto Rattle entities and stops on anything it");
   console.log("    would otherwise have to guess.");
+  const server = path.join(target, "mcp", "server.mjs");
   console.log("");
-  console.log("  - Using Cursor / Windsurf / Claude Desktop (no native Skills)? Wire up the");
-  console.log("    MCP server so the agent can reach the skills and the API:");
-  console.log(`      "command": "node", "args": ["${path.join(target, "mcp", "server.mjs")}"]`);
-  console.log("    It is read-only until you set RATTLE_MCP_ALLOW_WRITES=1.");
+  console.log("  - Codex CLI — skills are already discoverable at .agents/skills/. Add the API:");
+  console.log(`      codex mcp add rattle -- node "${server}"`);
+  console.log("");
+  console.log("  - Gemini CLI — skills are already discoverable at .agents/skills/. Add the API");
+  console.log("    to .gemini/settings.json:");
+  console.log(`      {"mcpServers":{"rattle":{"command":"node","args":["${server}"]}}}`);
+  console.log("");
+  console.log("  - Cursor / Windsurf / Claude Desktop — no Skills mechanism, so use the MCP");
+  console.log("    server for BOTH the knowledge and the API:");
+  console.log(`      {"command":"node","args":["${server}"]}`);
+  console.log("");
+  console.log("  The MCP server is read-only until you set RATTLE_MCP_ALLOW_WRITES=1.");
 }
 
 function help() {
