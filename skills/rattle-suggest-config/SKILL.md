@@ -23,7 +23,20 @@ If the user wants to explore *whether* the input has issues, run `rattle-priceli
    - `rattle-configurator/references/anti-patterns.md` — make sure no proposed group itself reproduces an anti-pattern.
    - `rattle-configurator/references/system-prompts.md` § `system_prompt_suggest_configuration` — the prompt template you are following.
 
-2. **Fetch the existing catalogue (if a tenant is named).** Call `GET /groups` (paginated with `?cursor=` / `?limit=`; the route does NOT accept `?include=options`). For each group, fetch options separately via `GET /groups/{id}/options`, OR fetch the whole product graph in one shot via `GET /products/{id}?expand=areas.groups.options`. The first 50 groups go into the prompt's "Existing Groups & Options (MUST check for reuse)" section. When a proposed group's name matches or is very similar to an existing one, set:
+2. **Fetch the existing catalogue (if a tenant is named).** Two calls minimum, then one per group — **there is no single call that returns options.** Verified against a live tenant, 2026-07-14:
+
+   ```
+   GET /products/{id}?expand=areas.groups     ← areas + their groups, in one call
+   GET /groups/{id}/options                   ← then ONE call per group. Unavoidable.
+   ```
+
+   **`expand` rules, none of which are in the OpenAPI spec — do not guess here:**
+   - Valid values are exactly **`areas`, `gallery`, `models`, `price_overrides`, `pricing_presets`, `videos`**. Anything else is a `400` (the error helpfully lists the valid set).
+   - **Dot-notation works, to a maximum depth of 2.** `expand=areas.groups` is fine. **`expand=areas.groups.options` is a `400`** — *"exceeds maximum depth of 2"*. An earlier revision of this skill told you to use it; it never worked.
+   - Combine with commas: `expand=areas.groups,gallery,models`.
+   - **`options` is not an expandable value at any depth.** Options are always N+1: one `GET /groups/{id}/options` per group. On a real tenant a 2-area / 8-group / 19-option product costs **9 requests**. Budget for it; don't try to avoid it.
+
+   `GET /groups` is paginated (`?cursor=` / `?limit=`) and does **not** accept `?include=options`. The first 50 groups go into the prompt's "Existing Groups & Options (MUST check for reuse)" section. When a proposed group's name matches or is very similar to an existing one, set:
    - `reuse_existing: true`
    - `existing_group_id: <id>`
    - `price_overrides`: a map of `area_name → option_name → price` for area-specific pricing differences (these become `option-area-config` writes downstream).

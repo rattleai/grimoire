@@ -143,6 +143,7 @@ Three parallel audits (endpoint coverage, Pydantic + SQLAlchemy schema precision
 - `OptionAreaConfig` — full 9 REST-overridable fields documented (was 4); `?area_id=` required on every method; `DELETE`-with-`?field=` clear semantics; `NULL` = inherit.
 - Drop phantom `datasheet` doc_type from data-model.md and configurator/SKILL.md; backend registers `{offer, quote, technical_doc, ccms, custom}`.
 - `?include=options` does not exist — paginate `/groups` + `GET /groups/{id}/options` or use `?expand=areas.groups.options` on product.
+  > **Corrected in 0.7.0 — the second half of this was wrong.** `?expand=areas.groups.options` returns **`400 — exceeds maximum depth of 2`**; it never worked. Verified against a live tenant 2026-07-14. The real ceiling is `?expand=areas.groups`, and **`options` is not expandable at any depth** — it is always N+1 (`GET /groups/{id}/options` per group). See `docs/API_AUDIT.md` § P1-7.
 - 12 configuration rules → **11** (actual count).
 - `catalogue_state.json` was documented but never implemented — removed from tenant-memory layout.
 
