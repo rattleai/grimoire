@@ -1,7 +1,7 @@
 {
   "name": "@rattleai/grimoire",
   "version": "0.7.0",
-  "description": "Grimoire — the AI-native Skills + Agents system for the Rattle CPQ product configurator (rattleapp.de). Installs 17 Anthropic-format Skills, 9 subagents, 11 slash commands, 6 JSON Schema output contracts, golden I/O examples, a zero-dependency Rattle MCP server, and a cross-platform AGENTS.md — so any AI client (Claude Code, Cursor, Windsurf, Claude Desktop, Codex, Aider, Continue) can turn a customer's raw pricelist or BOM export into correct, BOM-aware Rattle configurator entities.",
+  "description": "Grimoire — the AI-native Skills + Agents system for the Rattle CPQ product configurator (rattleapp.de). Installs 18 Anthropic-format Skills, 10 subagents, 12 slash commands, 6 JSON Schema output contracts, golden I/O examples, a zero-dependency Rattle MCP server, and a cross-platform AGENTS.md — so any AI client (Claude Code, Cursor, Windsurf, Claude Desktop, Codex, Aider, Continue) can turn a customer's raw pricelist or BOM export into correct, BOM-aware Rattle configurator entities.",
   "type": "module",
   "bin": {
     "grimoire": "./bin/grimoire.mjs",
