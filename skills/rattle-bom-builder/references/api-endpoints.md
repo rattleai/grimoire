@@ -26,7 +26,9 @@ REST endpoints for parts, placements, and BomItems. All require `products:read` 
 | POST | `/api/v1/parts/{id}/ghost/materialize` | Materialise a resolved phantom |
 | GET | `/api/v1/parts/export` | Bulk export (returns JSON document) |
 
-> **There is no `POST /api/v1/parts/import` endpoint.** Bulk authoring goes through repeated calls to the create endpoints above (or via the idempotent `ensure_*` operations from `rattle-apply-config` + the BOM operation grammar in `agents/rattle-config-builder.md`). The only sibling export route is `GET /api/v1/parts/export`.
+> **Bulk authoring: use `POST /api/v1/parts/batch` and `POST /api/v1/bom/batch`.** There is no endpoint *named* `/parts/import`, which earlier revisions of this file wrongly read as "there is no bulk import at all" — there is, and it is good. The batch endpoints take up to 100 operations, are savepoint-isolated per item, return `207 Multi-Status` with per-item results so you can retry only the failures, and support `action: "upsert"` with a `match` field (find-or-create). Prefer them over a loop of single creates.
+>
+> **Caveat:** `BatchOperationRequest.match` is typed `additionalProperties: true` in the spec, so the legal match keys per resource are undocumented — verify against a test tenant before relying on a given key. Export is `GET /api/v1/parts/export` (NDJSON).
 
 Body (Create part) — every field accepted by `PartCreateRequest` (`extra="forbid"`):
 
