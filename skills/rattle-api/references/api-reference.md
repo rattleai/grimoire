@@ -9,7 +9,7 @@
 - **Base URL**: `https://www.rattleapp.de/api/v1` (override via env var `RATTLE_BASE_URL`).
 - **OpenAPI version**: 3.1.0
 - **Spec version**: 1.0.0
-- **Operations**: 462 across 257 paths and 37 resource groups.
+- **Operations**: 463 across 258 paths and 37 resource groups.
 
 ## Authentication
 
@@ -138,7 +138,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Opportunities | 7 | [#opportunities](#opportunities) |
 | Options | 15 | [#options](#options) |
 | Part Documents | 11 | [#part-documents](#part-documents) |
-| Parts | 32 | [#parts](#parts) |
+| Parts | 33 | [#parts](#parts) |
 | Price Lists | 8 | [#price-lists](#price-lists) |
 | Price Overrides | 6 | [#price-overrides](#price-overrides) |
 | Product Media | 10 | [#product-media](#product-media) |
@@ -486,6 +486,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Part Documents | DELETE | `/api/v1/parts/{partId}/document-links/{linkId}` | Remove a document link |
 | Part Documents | GET | `/api/v1/parts/{partId}/revisions/{revisionId}/document-links` | List document links for a revision |
 | Part Documents | POST | `/api/v1/parts/{partId}/revisions/{revisionId}/document-links` | Create a document link for a revision |
+| Parts | GET | `/api/v1/areas/{id}/placements` | List placements on an area |
 | Parts | GET | `/api/v1/parts` | List parts |
 | Parts | POST | `/api/v1/parts` | Create a part |
 | Parts | PUT | `/api/v1/parts/bom/{id}` | Update a BOM item |
@@ -1312,7 +1313,11 @@ Batch/bulk operations for creating, updating, deleting, or upserting multiple en
 ### `POST /api/v1/areas/batch` — Batch areas operations
 _operationId_: `batchAreas`
 
-Execute up to 100 create/update/delete/upsert operations on areas. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on areas.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1329,7 +1334,11 @@ Execute up to 100 create/update/delete/upsert operations on areas. Returns 200 i
 ### `POST /api/v1/batch` — Universal batch operations
 _operationId_: `universalBatch`
 
-Execute multiple operations across different resource types in a single request. Max 100 operations. Returns 200 if all succeed, 207 if any fail.
+Execute multiple operations across different resource types in a single request. Max 100 operations.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `UniversalBatchRequest`
@@ -1346,7 +1355,11 @@ Execute multiple operations across different resource types in a single request.
 ### `POST /api/v1/bom/batch` — Batch bom operations
 _operationId_: `batchBom`
 
-Execute up to 100 create/update/delete/upsert operations on bom. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on bom.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1363,7 +1376,11 @@ Execute up to 100 create/update/delete/upsert operations on bom. Returns 200 if 
 ### `POST /api/v1/customers/batch` — Batch customers operations
 _operationId_: `batchCustomers`
 
-Execute up to 100 create/update/delete/upsert operations on customers. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on customers.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1380,7 +1397,11 @@ Execute up to 100 create/update/delete/upsert operations on customers. Returns 2
 ### `POST /api/v1/groups/batch` — Batch groups operations
 _operationId_: `batchGroups`
 
-Execute up to 100 create/update/delete/upsert operations on groups. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on groups.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1397,7 +1418,11 @@ Execute up to 100 create/update/delete/upsert operations on groups. Returns 200 
 ### `POST /api/v1/options/batch` — Batch options operations
 _operationId_: `batchOptions`
 
-Execute up to 100 create/update/delete/upsert operations on options. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on options.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1414,7 +1439,11 @@ Execute up to 100 create/update/delete/upsert operations on options. Returns 200
 ### `POST /api/v1/parts/batch` — Batch parts operations
 _operationId_: `batchParts`
 
-Execute up to 100 create/update/delete/upsert operations on parts. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on parts.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1431,7 +1460,11 @@ Execute up to 100 create/update/delete/upsert operations on parts. Returns 200 i
 ### `POST /api/v1/products/batch` — Batch products operations
 _operationId_: `batchProducts`
 
-Execute up to 100 create/update/delete/upsert operations on products. Returns 200 if all succeed, 207 if any fail.
+Execute up to 100 create/update/delete/upsert operations on products.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -2731,7 +2764,7 @@ Advanced rules use one of two `rule_json` shapes, validated and canonicalised id
 * **Forbidden pair** — `{"invalid": [a, b]}` with exactly two option ids from different groups (or the same multi-select group). Optional `"direction": "one_way"` plus `"source": a` makes resolution directed (selecting the source auto-removes the target); validity stays symmetric. Omit `direction` for a symmetric rule.
 * **N-way mutual exclusion** — `{"type": "at_most_n", "options": [...], "max_selected": N}` with at least two distinct options and `1 <= max_selected < len(options)`.
 
-Both shapes accept an optional `"requires"` list of condition clauses (`anyOf` / `allOf` / `groupSelections`, chained with `"op": "AND"|"OR"`) that gates when the rule is active. All referenced option ids must belong to the product.
+Both shapes accept an optional `"requires"` list of condition clauses (`anyOf` / `allOf` / `groupSelections`, chained with `"operator": "AND"|"OR"`, default AND) that gates when the rule is active. This is the same condition grammar as a placement's `usage_subclauses` (see the `UsageSubclause` schema) — `groupSelections` and `operator` mean the same thing in both; constraint rules additionally accept the `anyOf`/`allOf` option-id shorthands. All referenced option ids must belong to the product.
 
 **Request body:**
 - `application/json` **required** — schema: `ForbiddenRuleCreateRequest`
@@ -5499,8 +5532,26 @@ _operationId_: `createRevisionDocumentLink`
 
 PLM (Product Lifecycle Management) parts catalog. Parts have placements on areas and Bill of Materials (BOM) hierarchies for manufacturing. Scope: `parts:read`, `parts:write`.
 
+### `GET /api/v1/areas/{id}/placements` — List placements on an area
+_operationId_: `listAreaPlacements`
+
+The bulk read path for a configurable BOM: returns **every** part placement on the area, cursor-paginated (`limit` up to 100, default 100). Each item is a full placement — `part_id`, `area_id`, `usage_subclauses`, `option_scalings` — so you can reconstruct the area's conditional BOM in a handful of requests instead of one per part. Unknown query parameters are rejected with `400`.
+
+**Query parameters:**
+- `cursor` (string) — Opaque cursor for the next page
+- `limit` (integer) — Items per page (1-100, default 100)
+
+**Responses:**
+- `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `GET /api/v1/parts` — List parts
 _operationId_: `listParts`
+
+Lists parts (cursor-paginated). Only the documented query parameters are accepted — any unknown parameter is rejected with `400` rather than silently ignored.
 
 **Query parameters:**
 - `cursor` (string) — Opaque cursor for the next page
@@ -5508,10 +5559,13 @@ _operationId_: `listParts`
 - `status` (string) — Filter by lifecycle status
 - `part_type` (string) — Filter by part type
 - `search` (string) — Search by number or name
+- `area_id` (integer) — Only parts that have a placement on this area. A non-integer value returns 400; an unknown area returns 404.
 
 **Responses:**
 - `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ### `POST /api/v1/parts` — Create a part
@@ -5519,7 +5573,7 @@ _operationId_: `createPart`
 
 **Request body:**
 - `application/json` **required** — schema: `PartCreateRequest`
-  - `bom_structure` (string)
+  - `bom_structure` (string) — 'normal' — an ordinary part/assembly. 'ghost' — a phantom assembly: a structural container that groups BOM ...
   - `commodity_code` (object)
   - `custom_fields` (object)
   - `integration_metadata` (object)
@@ -5529,7 +5583,7 @@ _operationId_: `createPart`
   - `part_name` (string) **required**
   - `part_number` (string) **required**
   - `part_type` (object)
-  - `phantom_resolve_mode` (string)
+  - `phantom_resolve_mode` (string) — For ghost (phantom) parts, controls how the phantom is resolved when materialised: 'dissolve' inlines the c...
   - `status` (string)
   - _...2 more — see `components.schemas` in `openapi.json`_
 
@@ -5550,13 +5604,13 @@ _operationId_: `updateBomItem`
   - `effective_to` (object)
   - `ghost_part` (object)
   - `note` (object)
-  - `option_scalings` (object)
+  - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
   - `order_index` (object)
   - `priority` (object)
   - `quantity` (object)
   - `scrap_percent` (object)
   - `uom` (object)
-  - `usage_subclauses` (object)
+  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
 - `200` — Success
@@ -5575,13 +5629,13 @@ _operationId_: `patchBomItem`
   - `effective_to` (object)
   - `ghost_part` (object)
   - `note` (object)
-  - `option_scalings` (object)
+  - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
   - `order_index` (object)
   - `priority` (object)
   - `quantity` (object)
   - `scrap_percent` (object)
   - `uom` (object)
-  - `usage_subclauses` (object)
+  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
 - `200` — Success
@@ -5602,7 +5656,7 @@ _operationId_: `deleteBomItem`
 ### `GET /api/v1/parts/ghosts` — List ghost parts
 _operationId_: `listGhostParts`
 
-List ghost (phantom assembly) parts. Scope: `parts:read`.
+List ghost (phantom assembly) parts — parts whose `bom_structure` is `ghost`. A ghost is a structural grouping whose children are pulled into the parent on BOM explosion; it is never itself purchased. You only need ghost parts if you model phantom sub-assemblies — a plain conditional BOM (parts placed on areas with `usage_subclauses`) does not require them. Scope: `parts:read`.
 
 **Query parameters:**
 - `cursor` (string) — Opaque cursor for the next page
@@ -5699,11 +5753,11 @@ _operationId_: `updatePartPlacement`
 - `application/json` **required** — schema: `PartPlacementUpdateRequest`
   - `area_id` (object)
   - `ghost_part` (object)
-  - `option_scalings` (object)
+  - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
   - `order_index` (object)
   - `quantity` (object)
   - `uom` (object)
-  - `usage_subclauses` (object)
+  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
 - `200` — Success
@@ -5719,11 +5773,11 @@ _operationId_: `patchPartPlacement`
 - `application/json` **required** — schema: `PartPlacementUpdateRequest`
   - `area_id` (object)
   - `ghost_part` (object)
-  - `option_scalings` (object)
+  - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
   - `order_index` (object)
   - `quantity` (object)
   - `uom` (object)
-  - `usage_subclauses` (object)
+  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
 - `200` — Success
@@ -5833,7 +5887,7 @@ _operationId_: `createBomItem`
   - `effective_to` (object)
   - `ghost_part` (object)
   - `note` (object)
-  - `option_scalings` (object)
+  - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
   - `order_index` (integer)
   - `parent_part_id` (integer) **required**
   - `priority` (integer)
@@ -5964,6 +6018,8 @@ Check ghost (phantom assembly) status and ghost-toggle eligibility for a part. S
 ### `GET /api/v1/parts/{id}/placements` — List part placements
 _operationId_: `listPartPlacements`
 
+Returns **all** placements for this part in a single `{"data": [...]}` response — this endpoint is not paginated and takes no `cursor`/`limit`. To read a whole configurable BOM without one request per part, use `GET /areas/{id}/placements`, which is cursor-paginated.
+
 **Responses:**
 - `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
@@ -5977,12 +6033,12 @@ _operationId_: `createPartPlacement`
 - `application/json` **required** — schema: `PartPlacementCreateRequest`
   - `area_id` (integer) **required**
   - `ghost_part` (boolean)
-  - `option_scalings` (object)
+  - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
   - `order_index` (integer)
   - `part_id` (integer) **required**
   - `quantity` (number)
   - `uom` (string)
-  - `usage_subclauses` (object)
+  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
 - `201` — Created

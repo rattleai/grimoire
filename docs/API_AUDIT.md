@@ -1,0 +1,557 @@
+# Rattle REST API — audit findings
+
+**For:** the Rattle backend team
+**Spec audited:** `https://www.rattleapp.de/docs/api/openapi.json`, fetched **2026-07-14** — OpenAPI 3.1, **463 operations · 258 paths · 37 tags · 210 schemas · 1,369 schema fields**
+**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 14 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
+
+---
+
+## Why this report is different
+
+Most API feedback comes from a human who read the docs. This comes from **building an AI agent that must call the API correctly with no human checking its work** — a much harsher test. A human reads a prose caveat and remembers it. An agent reads the machine-readable spec and does exactly what it says.
+
+That drives the ranking. **A loud error is cheap; a silent wrong result is expensive.** An endpoint that returns `422` teaches the caller something. An endpoint that accepts a payload, returns `200`, and quietly does nothing teaches the caller a lie — and in CPQ a lie propagates into a customer's BOM, their pricing, and the offer PDF they send to *their* customer.
+
+Every number here was produced by a script run against the published spec (reproduction at the end). Where we say "an agent will get this wrong," it is because **we got it wrong**, and the workaround is now permanently in our codebase.
+
+---
+
+## What is already correct — please don't "fix" these
+
+We probed for these specifically. They are genuinely well-disciplined and we want the team to know it.
+
+- **Error contract: 100% consistent.** All **1,601** declared 4xx/5xx responses use `ProblemDetails` (RFC 9457), with `type/title/status/detail/instance/request_id` and a per-field `errors[].code` on 422. **Zero exceptions.** Most APIs make you regex prose. This one doesn't.
+- **Nullable/required: zero contradictions.** Across 1,369 properties, **0** fields are both `required` and nullable; **0** are both `required` and `default: null`. We validated the detector against known positives — the zero is real.
+- **`DELETE`: 69 operations, all return `204`.** Perfectly uniform.
+- **No `GET` performs a mutation.** Checked all of them.
+- **Batch is excellent.** 10 endpoints, `207 Multi-Status` with per-item results, savepoint isolation, 100 ops/request, a universal `POST /batch`, **and `action: upsert` with a `match` field**. NDJSON export for products/parts/customers. Better than most CPQ APIs, and better than we assumed.
+- **`usage_subclauses` is beautifully specified** — `$ref: UsageSubclause`, with the left-to-right boolean fold semantics spelled out. It is the hardest concept in the domain and the **best-documented field in the spec**. It is the proof that the rest could look like this.
+- **`401`/`429` declared on 100% of operations.** Action endpoints are uniformly `POST` + verb-noun across 23 verbs.
+
+**Three findings we killed as false** — we'd rather lose a finding than send you chasing one:
+
+| Suspected | Reality |
+|---|---|
+| "No bulk/batch endpoints" | **False.** 10 + a universal `/batch`. Well designed. |
+| "No upsert; clients need get-or-create loops" | **False.** `action: upsert` with `match`. *(One residual issue — P1-6.)* |
+| "No bulk BOM import" | **False.** `POST /bom/batch` covers it. Our own skill says otherwise — **that's our bug, not yours**, and we're fixing it. |
+
+---
+
+# P0 — Silent corruption
+
+A caller does everything the spec says and still writes wrong data, with a `200 OK`. Fix these first.
+
+## P0-1. The spec declares **zero header parameters** — while the API requires four
+
+```python
+>>> {p["in"] for op in all_operations for p in op.get("parameters", [])}
+{'query'}                       # path params are declared at path level; header: ZERO
+>>> len(spec["components"]["parameters"])
+0
+```
+
+**Not one `header` parameter across 463 operations.** Yet the API's own prose describes a header contract in four places:
+
+| Header | Where it's documented | What it does |
+|---|---|---|
+| `X-Constraints-Version` | `POST /constraints` description + `info.description` | **Optimistic locking on an atomic replace-all** |
+| `X-Price-Lists-Version` | `info.description` | Optimistic locking |
+| `X-Idempotency-Key` | 8 batch endpoint descriptions ("24 h TTL") | **Safe retries** |
+| `If-None-Match` | `GET /configurations/states/by-code/{code}` | ETag conditional caching |
+
+`POST /api/v1/constraints` says it outright:
+
+> "Atomically replaces all option-level forbidden combinations for a product. **Include the `X-Constraints-Version` header for optimistic concurrency control.**"
+
+…and then declares `parameters` **not at all** (the key is absent, not empty), and no `409` response — while **23 other endpoints do declare `409`.**
+
+**Consequence.** Every spec-driven consumer — codegen, SDKs, MCP tool generation, an AI agent — is **structurally incapable** of sending these headers. So:
+
+- **Lost update.** Two users edit constraints concurrently. `POST /constraints` *replaces all pairs*. The second write **silently destroys the first, with a `200 OK`.** No error. No warning. The configurator starts selling combinations that cannot be built.
+- **Duplicate writes.** A batch that times out and retries double-applies, because the idempotency mechanism **you built** is invisible.
+- The client cannot even know it is causing either.
+
+**Fix.** Declare all four as real `parameter` objects, plus the `409` on the OCC endpoints. **This is pure spec work against behaviour the backend already implements** — and nothing else on this list can cause a silent lost update.
+
+## P0-2. You cannot `PUT` back the object the API just gave you
+
+```python
+GET  /api/v1/products/{id}   → ProductResponse:      22 fields
+PUT  /api/v1/products/{id}   → ProductUpdateRequest:  9 fields, additionalProperties: false
+
+# 13 fields the server SENDS and then REFUSES to accept back:
+id · created_at · updated_at · links · image_url · background_url · gallery_count ·
+public_token · areas_version · constraints_version · options_version · parts_version · pricing_version
+```
+
+**`readOnly: true` appears ZERO times in the entire spec.** `writeOnly`: zero.
+
+**Consequence.** The single most common REST idiom — *fetch, change one field, send it back* — **returns `422`**, because `additionalProperties: false` rejects the server-computed fields the server itself just sent. Every client must hand-maintain a per-resource allowlist of which fields are safe to echo. Across 45 resources that is **200 response-only fields** to strip by hand.
+
+An agent cannot infer this. It fetches a product, sets `name`, PUTs it, and gets a 422 listing fields it never touched.
+
+**Fix.** Mark those 200 fields `readOnly: true`. **Zero API behaviour change**, and every generated client and every agent immediately does the right thing — codegen omits `readOnly` fields from request bodies automatically. This is the highest ratio of value to effort in the entire report.
+
+## P0-3. `PUT` and `PATCH` are byte-identical aliases on 37 of 39 paths
+
+- **39 paths expose both `PUT` and `PATCH`. On 37, the request schema is identical.**
+- **43 of 47 `PUT` bodies have no `required` array at all** — every field optional.
+- **21 `PUT`-only paths; 0 `PATCH`-only.**
+
+**Consequence.** RFC 9110 says `PUT` **replaces**. An all-optional `PUT` body says it **merges**. The spec does not disambiguate — so an agent applying standard REST semantics (GET → modify one field → PUT) will either work fine, or **silently null out every field it omitted**. It cannot tell which from the spec, and neither can we.
+
+That is a data-destruction path with a `200 OK` on it. And an agent that learned "PATCH for partial updates" hits `405` on 21 paths.
+
+**Fix.** Pick one verb per path. If `PUT` really merges, say so explicitly in the description — but the honest fix is to make `PUT` replace (with `required` fields) and `PATCH` merge.
+
+## P0-4. `rule_json` — the constraint DSL — is untyped, and your examples teach a shape that silently never executes
+
+`ForbiddenRuleCreateRequest.rule_json`, in its entirety:
+
+```json
+{ "title": "Rule Json" }
+```
+
+No `type`. No `description`. No `example`. No schema. (`CombinationRuleCreateRequest.condition` is `{"anyOf": [{}, {"type":"null"}]}` — an **empty schema**.)
+
+This field decides **which option combinations a customer is allowed to buy.**
+
+**Consequence — this happened to us.** The correct shape is a single object:
+
+```json
+{"requires": [<clause>, …], "invalid": [<option_id>, …]}
+```
+
+A **legacy array shape** — `[{"if": {...}, "then": {"forbid_options": [...]}}]` — is *accepted on write and silently dropped by the runtime evaluator*. The rule saves. Returns `200`. **Never fires.** The customer buys the forbidden combination, and nobody finds out until a machine ships with parts that don't fit.
+
+We shipped that bug into our skills, our examples and our prompt templates. **We got it from an example in your spec.** It took a line-by-line audit against backend source to catch. **Every integrator who trusts the spec has it wrong right now.**
+
+**Fix.**
+1. Schema it: `ForbiddenRuleJson { requires: RuleClause[], invalid: integer[] }`, with `RuleClause` as the `anyOf`/`allOf`/`groupSelections` union. **You already did exactly this for `UsageSubclause` — copy it.**
+2. Type `CombinationRuleCreateRequest.condition`.
+3. **`422` the legacy array.** A loud failure is worth a hundred silent ones. If back-compat demands it stays, mark it `deprecated: true` and state **that it does not execute**.
+4. Purge the legacy `{if, then}` examples from the spec.
+
+## P0-5. Money is encoded seven different ways, and `part_cost` is an integer
+
+**76 price/amount/cost/discount/tax fields, in 7 different type-sets:**
+
+| Type | Count | Examples |
+|---|---|---|
+| `string` | 26 | `OptionResponse.price`, `ProductResponse.base_price` |
+| `number` (float) | 16 | `QuoteAnalyticsSnapshotResponse.total_amount` |
+| **`integer`** | **3** | **`Part{Create,Update}Request.part_cost`, `PartResponse.part_cost`** |
+| `number \| string` | 11 | `LineItemCreateRequest.unit_price`, `PriceOverrideCreateRequest.override_price` |
+| `integer \| number \| string` | 2 | `Product{Create,Update}Request.base_price` |
+
+Three distinct defects:
+
+**`part_cost` is the only integer money field, with no documented unit.** €12.50 cannot be represented. And `part_cost` **rolls up through BOM explosion into product cost** — ghost parts are forced to `part_cost=0` with cost rolling up from children — so **one rounded child silently poisons every ancestor in the tree.** Across a 5,000-line BOM that is a real number on a real quote.
+
+**Type flips across the read/write boundary.** `override_price` is `number|string` on the request and `string` on the response. `ProductCreateRequest.base_price` accepts `string|integer|number`; the response returns `string`. You cannot round-trip without a coercion the spec doesn't describe.
+
+**`float` in the analytics schemas** exposes quote totals to binary-float drift.
+
+**Consequence.** An agent summing a BOM will concatenate strings, or `int`-truncate a `part_cost`, and return a **plausible-but-wrong number with a `200 OK`.** Nothing errors. This lands directly on the money path.
+
+**Fix.** One money type across the surface — decimal-as-string (`"12.50"`), matching the existing majority. Migrate `part_cost` (or rename it `part_cost_cents` and *say* the unit). Kill the multi-type unions: accept one type, return the same type.
+
+## P0-6. `servers: [{"url": "/"}]` while every path embeds `/api/v1`
+
+**Consequence.** The natural base URL is `https://www.rattleapp.de/api/v1` — it's what the docs hand you. Concatenating it with a spec path gives `/api/v1/api/v1/products` → `404`. **Every generated client and every agent hits this.** We had to write a `normalizePath()` shim and defend it with a test.
+
+**Fix.** Either `servers: [{"url": "https://www.rattleapp.de/api/v1"}]` and drop the prefix from path keys, **or** keep the paths and set the server to `https://www.rattleapp.de`. Both are correct; the current combination isn't. **One line.**
+
+## P0-7. Eight request schemas silently swallow unknown fields
+
+`additionalProperties` is `false` on **116 of 124** request schemas — which is *good*, and means a typo'd field gets a loud `422`.
+
+The **8 exceptions** are the danger, precisely because they're exceptions:
+
+```
+QuoteDetailsUpsertRequest      → PUT|PATCH /quotes/{quoteId}/details
+QuoteContactAddRequest         → POST /quotes/{quoteId}/contacts
+PartGroupCreateRequest         → POST /parts/groups
+PartGroupUpdateRequest         → PATCH|PUT /parts/groups/{groupId}
+GroupAreaLinkRequest           → POST /groups/{id}/areas
+GalleryReorderRequest          → POST /products/{productId}/gallery/reorder
+CompanyContactCreateRequest / CompanyContactUpdateRequest
+```
+
+**Consequence.** An agent learns from 116 schemas that a bad field `422`s — then hits `/quotes/{id}/details`, where its dropped field returns `200`. **The inconsistency is worse than either policy would be.**
+
+**Fix.** `additionalProperties: false` on all 8.
+
+---
+
+# P1 — Machine-readability
+
+The API works. The *spec* under-describes it, so everything that consumes the spec flies blind.
+
+## P1-1. 119 enum-shaped fields are free strings; the whole spec has 14 enums
+
+There are **14 string enums** in 210 schemas. There are **119 string fields whose names are unambiguously enum-shaped** (`*_type`, `status`, `state`, `*_mode`, `role`, `lifecycle_state`, …) typed as free strings.
+
+Worse — **7 fields are an enum on one schema and a free string on another.** The vocabulary is known; it just isn't published where it's needed:
+
+| Field | Enum in | Free string in |
+|---|---|---|
+| **`doc_type`** | `CloneRequest` = `['offer','technical_doc','ccms','custom']` | **`DocumentTemplateCreateRequest`** (the primary create endpoint!), `DocumentTemplateResponse`, `PartDocumentCreateRequest` |
+| `attr_type` | `AttributeCreateRequest` | `AttributeResponse` |
+| `method` | `EndpointCreateRequest` | `EndpointResponse` |
+| `inheritance_mode`, `format`, `execution_mode`, `status` | their Request | their Response |
+
+And `CombinationRuleCreateRequest.rule_type` is a **regex pattern**, not an enum:
+`{"pattern": "^(forced|prerequisite|warning|visibility|recommendation|default|set_quantity)$"}` — codegen emits `string`, not a union.
+
+`WebhookCreateRequest.events` is `array[string]` with **no enum at all** — the subscribable event set is undiscoverable from the spec.
+
+**Consequence.** `POST /documents/templates` with `doc_type: "datasheet"` **passes schema validation.** The agent believes it succeeded. `additionalProperties: false` rejects unknown *keys*, never unknown *values*. And with every response-side enum a free string, an agent cannot exhaustively branch on `status` — it must guess the state machine.
+
+**See also P2-6:** the one `doc_type` enum that does exist **is missing `quote`.**
+
+**Fix.** Promote all 119 to `enum`, starting with `doc_type` on `DocumentTemplateCreateRequest` — the correct vocabulary already exists two schemas away.
+
+## P1-2. 93% of schema fields have no description
+
+| | count | share |
+|---|---|---|
+| Schema fields with no `description` | 1,274 / 1,369 | **93%** |
+| Operations with no `description` | 294 / 463 | **63%** |
+| Operations with no `summary` | 0 / 463 | **0%** ✅ |
+
+**Consequence.** For 93% of fields, an agent must infer semantics from the field's *name*. `part_cost` — cents or euros? Per unit or per lot? `catalog_meta` — what goes in it? It guesses, and a guess in a BOM is a wrong quantity on a real quote.
+
+`UsageSubclause` proves you can do this superbly. Extend that standard, starting with the fields an integration actually writes.
+
+## P1-3. 24 free-form `object` fields with no shape
+
+```
+ForbiddenRuleCreateRequest.rule_json      ← P0-4, the worst
+CombinationRuleCreateRequest.condition    ← an EMPTY schema {}
+OptionCreateRequest.price_scalings        ← P1-4
+BatchOperationRequest.match / .body       ← P1-6
+StructureBlockCreateRequest.visibility
+EndpointCreateRequest.response_extract
+PartChangelogEntryResponse.changes
+GalleryImageResponse.variants
+…plus integration_metadata ×6, custom_fields ×4
+```
+
+Some are *legitimately* open (`integration_metadata`, `custom_fields` — customer-defined). But `rule_json`, `condition`, `price_scalings`, `visibility`, `match` and `response_extract` are **first-class product features with a fixed grammar**, typed as "an object, good luck."
+
+**Fix.** Schema the ones with a grammar. For the genuinely open ones, *say so* ("arbitrary customer-defined key/value; never interpreted by Rattle") so callers know the freedom is intentional.
+
+## P1-4. `option_scalings` is documented. `price_scalings` — its twin — is `additionalProperties: true`
+
+```jsonc
+// BomItemCreateRequest.option_scalings  ✅
+{ "additionalProperties": {"type": "number"},
+  "description": "Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to
+                  the line's base quantity in proportion to a numbered option's selected amount…" }
+
+// OptionCreateRequest.price_scalings  ❌
+{ "additionalProperties": true, "title": "Price Scalings" }
+```
+
+Same mechanism. One fully specified; the other is `any`.
+
+**Consequence.** An agent that learned `option_scalings` assumes `price_scalings` matches. And a scaling keyed against a **non-numbered** option is a **silent no-op** — accepted with a `200`, does nothing. The result is a wrong *price* — the one number the customer definitely reads.
+
+**Fix.** Type it identically, with the parallel description — and **`422` on a key that isn't an `is_numbered: true` option id**, instead of silently ignoring it.
+
+## P1-5. The `{"data": …}` envelope covers 93%, and the hole is the batch API
+
+Of 389 JSON 2xx responses: **363 use `{"data": …}`; 22 are bare objects.** All 22 are batch/inbound — and they use **three mutually incompatible shapes**:
+
+```
+{total, succeeded, failed, results}   ← the 9 standard batch endpoints
+{created, updated, errors}            ← POST /inbound/customers/batch
+{count, product_id}                   ← POST /inbound/parts/batch
+{job_id, status, task_id}             ← POST /inbound/triggers/{suffix}
+```
+
+**Consequence.** An agent doing `response["data"]` gets a `KeyError` (loud, fine). But the far more common **defensive** `response.get("data", [])` yields `[]` — so the agent concludes a 100-item batch **wrote nothing**, and may retry the entire thing.
+
+**Fix.** Wrap batch results in `data`; collapse the three inbound shapes into the standard one.
+
+## P1-6. Batch `upsert` is powerful and schema-blind
+
+`BatchOperationRequest.action` includes `upsert` with a `match` field ("Match fields for upsert") — genuinely good. But **`match` is `{additionalProperties: true}`**, and so is `body`.
+
+**Consequence.** Which fields are legal match keys, per resource, is **entirely undocumented**. An integrator cannot tell from the spec whether they may match a product on `name` — and certainly not on `sku`, which doesn't exist (P2-1). **The most valuable endpoint in the API is unusable without trial and error.**
+
+**Fix.** Enumerate legal `match` keys per resource; `$ref` the real `*CreateRequest` into `body` via a discriminator.
+
+## P1-7. Reading a configuration tree is N×M
+
+`expand` exists on **1 of 258 paths** — `GET /products/{id}` — supporting only `areas` and `gallery` (a free string, not an enum). Not groups, options, BOM, or constraints.
+
+Worse: **`GET /options/{optionId}/area-config` has `area_id` as a _required_ query parameter** and returns a single row. There is no list-all. Our own audit tooling documents the cost:
+
+> *"There is no list-all-overrides endpoint for an option, so we must iterate the option's group's area links."*
+
+For a 500-option catalogue across 6 areas that is **~3,000 sequential requests to audit price overrides alone.**
+
+**A discrepancy we want resolved:** our skill tells agents to call `GET /products/{id}?expand=areas.groups.options` to fetch the whole product graph in one request. The spec documents only `areas` and `gallery`. **One of us is wrong.** If dotted deep-expansion works, it's a significant undocumented feature. If not, we have a bug and every agent using it is doing an N+1 crawl.
+
+**Fix.** Make `expand` an enum; extend to `groups`, `options`, `constraints`, `bom`. **Make `area_id` optional on `/options/{optionId}/area-config`** — a one-line change that deletes an entire N×M loop.
+
+## P1-8. 78 of 116 collection endpoints declare no pagination
+
+Where pagination *is* declared it is disciplined — 37 endpoints pair `cursor`+`limit` with a `meta` sibling, and **0 accept a `limit` without returning `meta`.** Credit for that.
+
+But only **38 of 116** collection `GET`s declare it at all. The other **78** declare neither `cursor` nor `limit` — including `/areas/{id}/groups`, `/areas/library`, `/attributes/{id}/values`, `/catalog-filters`, `/baselines`.
+
+**Consequence.** A caller cannot tell whether such a list is inherently bounded (fine) or unbounded-and-silently-truncated (data loss at scale). `/areas/{id}/groups` on a large catalogue is exactly the list that outgrows a default page — and an agent that reads 25 of 200 groups will confidently propose a **duplicate group that already exists.**
+
+**Fix.** Declare `cursor`/`limit`, or state in the description that the list is complete and bounded. **Silence is the problem.**
+
+## P1-9. Nothing is marked `deprecated`
+
+`deprecated: true` — **0 of 463 operations; 1 of 1,369 fields.**
+
+Yet legacy shapes demonstrably exist and are accepted: the legacy `rule_json` array (saves, never executes), `technical_documentation` as an alias for `doc_type=technical_doc`, and the legacy plurals `offers`/`quotes`.
+
+**Consequence.** A caller cannot distinguish "the supported way" from "the way that still parses but is on its way out." We only learned which was which by reading backend source.
+
+**Fix.** `deprecated: true` on every legacy path, field and enum value, naming the replacement. Free, and the clearest possible signal to an integrator.
+
+---
+
+# P2 — Capability gaps
+
+Things a customer genuinely cannot do.
+
+## P2-1. Products have no SKU — and the API already reads one back
+
+**The most commercially significant gap in the API.**
+
+`ProductCreateRequest` accepts exactly: `base_price · catalog_meta · currency · description · integration_metadata · is_active · language · name`. No `sku`, no `article_number` — on any product request or response.
+
+**The smoking gun:**
+
+```python
+>>> spec["components"]["schemas"]["QuoteLineItemResponse"]["properties"]["product_sku"]
+{"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Product Sku"}
+```
+
+**`QuoteLineItemResponse.product_sku` exists** — and ships in your own example as `"WIN-PREM-001"`. The API surfaces a product SKU **on the customer-facing quote line**, the exact place an article number matters most. And there is **no public write path to ever populate it.** `sku` appears zero times as a settable field in the entire spec. It renders `null` on every quote.
+
+**Consequence.** Every customer arrives with a pricelist keyed by article number — the most universal column in the domain, the join key to their ERP. There is nowhere canonical to put it. We were forced to invent a convention (`integration_metadata.<key>`), which is **unindexed** (no lookup by article number), **unvalidated** (no uniqueness), and **ours** — so two integrators pick two different keys and neither can read the other's data. Every ERP sync degrades to fetching the whole catalogue and matching client-side.
+
+Contrast: `Part` has `part_number`. `Option`/`Group` have `key`. `Quote` has `quote_number`. **Product, Customer and Area have nothing.**
+
+**Fix.** Add `sku: string | null` to `Product{Create,Update}Request` + `ProductResponse`; unique index per tenant; `?sku=` exact-match filter; support it as a batch `match` key; wire it to `QuoteLineItemResponse.product_sku`. Same for `Customer.external_id`.
+
+## P2-2. Constraints can *write* a quantity but cannot *read* one
+
+The constraint DSL is presence-based only: clauses test whether an option is *selected*. No clause can read an option's numeric amount — even though `ConfigurationCalculateRequest.option_amounts` proves the runtime **has** those amounts at evaluation time.
+
+**The asymmetry is stark.** `CombinationRuleCreateRequest` supports `rule_type: set_quantity` with `quantity_factor`, `quantity_offset`, `quantity_rounding`. **A rule can set a quantity as its effect — but cannot test one as its condition.**
+
+**Consequence.** These are **not expressible, at all:**
+
+- "Forbid the standard frame when panel count > 20."
+- "Require the reinforced base above 15 m of run length."
+- "This motor is valid only for 4–8 units."
+
+**The configurator will happily let a customer order 40 panels on a frame rated for 20**, and that invalid configuration flows into a quote and onto the shop floor. In machinery most real rules are quantity-dependent. **This is the single largest class of missing configurator logic.**
+
+**Fix.** Add a numeric clause: `{"option_amount": {"option_id": 117, "op": "gt", "value": 20}}`, AND-folded alongside the presence clauses, evaluated against the `option_amounts` map the calculator already receives. A DSL gap, not an architectural one.
+
+## P2-3. Numbered options are integer-only, end to end
+
+```json
+"number_min":  {"type": "integer", "minimum": 0, "maximum": 1000000}
+"number_step": {"type": "integer", "minimum": 1, …}
+```
+
+Not just an authoring limit — `ConfigurationCalculateRequest.option_amounts` is `{"additionalProperties": {"type": "integer"}}`, so the amount is an integer through the **entire pipeline**.
+
+**Consequence.** A numbered option cannot express **2.5 m of profile**, **0.5 kg of coating**, or **1.75 m² of glass**. Every continuous quantity — length, area, weight, volume — is unrepresentable. That is cut-to-length, sheet goods, cabling, textiles.
+
+The only workaround is unit inflation (model in mm, divide in the BOM factor). It is not free: **the customer sees `3000` where they think in `3 m`**, `number_unit` becomes a lie relative to their mental model, and every client carries an out-of-band conversion factor the API does not store. **Off-by-1000 errors here are silent and quote-destroying.**
+
+Note the floor is inconsistent with the ceiling: **`option_scalings` is already `type: number`. The BOM side supports fractions. Only the option side is integer-locked.**
+
+**Fix.** Widen `number_min/max/step` and `option_amounts` to decimal. Validate `(amount − min) % step == 0` in decimal, not float.
+
+## P2-4. Fields accepted, returned `200`, and discarded
+
+`ProductCreateRequest.currency` — its own description:
+
+> "Accepted but ignored — currency is derived from the company's base price list"
+
+But `currency` **is** returned on `ProductResponse`. A client writes `"USD"`, gets `200 OK`, reads back something else, never sees an error.
+
+Same class: **`UsageSubclause.operator` is "ignored on the first term."** An author who writes `operator: AND` on clause 0 gets `OR` with **no warning**.
+
+Note: the schemas `422` on **unknown** fields but silently discard **known-and-ignored** ones. **The API is strict about fields it doesn't know and permissive about fields it knows and throws away. That is backwards.**
+
+**Fix.** Never return `200` for a write you discard. Either honour `currency` or `422` it. Reject a non-default first-clause `operator` rather than silently overriding it.
+
+## P2-5. Parts have no image — not writable, not even readable
+
+`part_img` appears **zero times in the entire spec.** Image upload exists for products (+ a full `/gallery`), areas, and options (even per-area). **Parts get nothing.** The field is populated only by the internal connector ingest pipeline; for parts created via the public API it stays `NULL` forever.
+
+**Consequence.** Spare-parts catalogues, assembly instructions and exploded-view BOM UIs — core CPQ deliverables — cannot show part images through the public API.
+
+**Fix.** Add `POST/DELETE /parts/{partId}/image`, mirroring the options route. Expose `part_img` on `PartResponse`.
+
+## P2-6. The one `doc_type` enum is missing `quote`
+
+```jsonc
+CloneRequest.doc_type: {"enum": ["offer", "technical_doc", "ccms", "custom"]}   // ← where is "quote"?
+```
+
+**`quote` is a registered doc_type** — there is an entire `dynamic:document_line_items` contract around it — **and it is absent from the only enum in the spec.** On the face of it, **you cannot clone a quote template.** That looks like a plain omission. (Everywhere else `doc_type` is a free string — see P1-1.)
+
+**Fix.** One `DocType` enum, referenced everywhere, **including `quote`**. Model the legacy values (`offers`, `quotes`, `technical_documentation`) as a separate `DocTypeFilter` enum, marked `deprecated`.
+
+## P2-7. Webhooks cover quotes only — the catalogue emits nothing
+
+The infrastructure is solid (`/webhooks`, `/deliveries`, `/rotate-secret`, `/test`). But the only event types referenced anywhere are **`quote.created`, `quote.status_changed`, `quote.updated`**. Nothing for product, part, option, group, area, bom, constraint, price-list, or document.
+
+**Consequence.** Any system mirroring the catalogue — ERP, PIM, storefront, search index — **must poll.** There is no way to react to "a part cost changed" or "an option was added" — precisely the events that invalidate a cached price or BOM. Combined with P1-7 (no `expand`), a full catalogue poll is thousands of requests.
+
+**Fix.** Emit `<resource>.{created,updated,deleted}` for product, part, option, group, area, bom_item, constraint, price_list. Publish the enum in `WebhookCreateRequest.events`.
+
+---
+
+# P3 — Consistency
+
+Individually harmless. Together they mean an agent cannot generalise from one endpoint to the next — and **every generalisation it makes is a coin flip.**
+
+## P3-1. 39 distinct path-parameter names; 13 resources use more than one
+
+Across 419 path params: **39 distinct names in 3 casing conventions** — 25 camelCase (`productId`, `partId`…), 9 snake_case (`area_id`, `block_id`, `contact_id`…), 5 bare (`id`, `code`, `hash`, `lang`, `suffix`). `{id}` alone appears 106 times.
+
+**13 of 59 resources name their own identifier more than one way** — and the *same resource* switches convention between its base path and its sub-resources:
+
+```
+/parts/{id}                     /products/{id}
+/parts/{id}/bom                 /products/{productId}/areas
+/parts/{partId}/revisions       /products/{productId}/areas/{areaId}
+```
+
+`areas` and `contacts` use **three** conventions each:
+
+```
+/areas/{id}/groups              /company/contacts/{id}
+/areas/{areaId}/options         /customers/{id}/contacts/{contact_id}
+/groups/{id}/areas/{area_id}    /quotes/{quoteId}/contacts/{contactId}
+```
+
+**Consequence.** Loud `404`, so it's recoverable — but **it defeats few-shot generalisation entirely.** An agent that has seen `/parts/{id}` cannot construct `/parts/{partId}/revisions`; it must look up all 258 paths individually. This is the finding that most directly costs an agent its ability to *guess*.
+
+**Fix.** `{id}` for the resource that owns the path; `{parentId}` only to disambiguate a nested parent. One casing. **This changes the *spec*, not the *URLs*** — path-param names are local identifiers. Nearly free.
+
+## P3-2. Create/update asymmetry: 37 create-only and 19 update-only fields
+
+Two patterns are *correct* — keep them: immutable FKs are create-only (`Area.product_id`, `Option.group_id`, `BomItem.parent_part_id`), and lifecycle state is update-only (`ChangeOrder.state`).
+
+The inconsistencies:
+
+- **`order_index` is creatable on 13 resources but update-only on 5** (`Product`, `PriceList`, `Language`, `CatalogFilterDimension`, `CatalogFilterValue`). Same field, same meaning, arbitrarily different — forcing a create-then-PATCH round trip on exactly those 5, for no stated reason.
+- **`Quote`**: `discount_amount`, `discount_percent`, `tax_amount`, `terms_and_conditions` are update-only. **You cannot create a discounted quote in one call.**
+- **`DocumentTemplate` can be published two ways** — `PATCH {is_published: true}` *or* `POST /templates/{id}/publish` — with no statement of which is authoritative or whether they agree.
+
+## P3-3. `429` on every operation, with no `Retry-After`
+
+All 463 operations declare `429`. **None** declares `Retry-After`, `X-RateLimit-Limit`, `-Remaining` or `-Reset`.
+
+**Consequence.** A rate-limited client cannot back off correctly — only guess. Agents are *bursty* by nature (they fan out reads), so they will hit this and guess badly.
+
+## P3-4. Smaller items, each one line
+
+- **`DELETE /documents/content-blocks/images` is the only operation with a body on a `DELETE`.** Bodies on DELETE are **widely stripped by proxies and HTTP clients** → **silent no-op deletion**. Move the URL to a query param.
+- **3 image uploads declare no `requestBody` at all** — the multipart body exists only in prose ("Send as multipart/form-data with field name 'image'"). A spec-driven client sends an empty POST.
+- **POST success codes vary** — `201`×76, `200`×38, `202`×7. And `Location` is **missing on 15 of 78** POSTs that can return `201`. An agent gating on `201` mishandles the 38 creates that return `200`.
+- **Read-only actions use POST.** `POST /parts/{id}/bom/explode` is documented `Scope: parts:read` — a read via POST — while its siblings `GET /bom/flat` and `GET /bom/tree` are GETs. `POST /parts/{id}/bom/validate` takes **no body** yet is a POST, while the equivalent `GET /documents/templates/{id}/validate-config` is a GET.
+- **5 orphan schemas** are defined but referenced by no operation (`ApiKeyCreateRequest`, `CompanyContactCreateRequest`, …). The endpoints exist but use **inline** schemas — which is also why they escaped the `additionalProperties: false` policy in P0-7.
+- **5 Response schemas declare no `required` fields whatsoever** — an agent cannot rely on *any* field being present.
+
+---
+
+# Suggested order of work
+
+| # | Finding | Why now | Cost |
+|---|---|---|---|
+| 1 | **P0-1** Declare the 4 headers + `409` | Silent lost update on an atomic replace-all. Nothing else here destroys data with a `200 OK`. | **Spec only** |
+| 2 | **P0-2** `readOnly: true` on the 200 response-only fields | Makes read-modify-write work for every client and agent, automatically. | **Spec only** |
+| 3 | **P0-6** Fix `servers` / `/api/v1` | One line. Every generated client hits it. | **One line** |
+| 4 | **P0-4** Schema `rule_json`; `422` the legacy shape | Constraints that save and never fire. Ships broken machines. | Small |
+| 5 | **P0-3** Disambiguate PUT vs PATCH | Silent field-nulling on a standard REST idiom. | Small |
+| 6 | **P1-1** Promote 119 free strings to `enum` (start with `doc_type`) | `doc_type: "datasheet"` currently validates. | Spec only |
+| 7 | **P2-6** Add `quote` to the `DocType` enum | Quote-template cloning appears simply broken. | Trivial |
+| 8 | **P1-7** `area_id` optional on area-config; extend `expand` | Deletes a ~3,000-request N×M loop. | Small |
+| 9 | **P0-5** One money type; fix `part_cost` | Silent precision loss that compounds up the BOM tree. | Migration |
+| 10 | **P2-1** `Product.sku` | Most commercially significant gap. `product_sku` is already on the quote line with no writer. | Medium |
+| 11 | **P2-2 / P2-3** Quantity-aware constraints; fractional numbered options | Unblocks most of industrial configuration. | Medium |
+| 12 | **P3-1** Normalise path params | Cheap, and it makes the API learnable. | Spec only |
+
+**The cheapest high-value pass — items 1, 2, 3, 6, 7 — is almost entirely *spec* work against behaviour the backend already implements.** Together they remove the silent lost-update path, make read-modify-write work, fix the universal double-prefix trap, stop `doc_type` typos validating, and unbreak quote cloning. **We'd estimate under a day, and it would be the single highest-leverage day anyone spends on this API this quarter.**
+
+---
+
+# A pattern worth naming
+
+Two of the sharpest gaps — `product_sku` and `part_img` — share a shape: **fields the internal connector pipeline can populate but the public API cannot.** Both surface on read paths or adjacent schemas, which makes them *look* supported right up until an integrator tries to write one.
+
+That asymmetry between the ingest pipeline and the public API is where a disproportionate share of these findings live, and it will keep producing new ones unless the public API is treated as a first-class writer of the same model.
+
+---
+
+# Reproducing every finding
+
+```bash
+git clone https://github.com/rattleai/grimoire.git && cd grimoire
+python3 scripts/build_api_reference.py     # fetches the live spec → docs/openapi.json
+```
+
+```python
+import json; d = json.load(open("docs/openapi.json"))
+S, P = d["components"]["schemas"], d["paths"]
+
+# P0-1 — the header is in the prose, not in the parameters
+P["/api/v1/constraints"]["post"]["description"]      # "...Include the X-Constraints-Version header..."
+"parameters" in P["/api/v1/constraints"]["post"]     # False
+list(P["/api/v1/constraints"]["post"]["responses"])  # ['200','401','422','429'] — no 409
+
+# P0-2 — you cannot PUT back what you GET
+set(S["ProductResponse"]["properties"]) - set(S["ProductUpdateRequest"]["properties"])
+# 13 fields the server sends and refuses back
+S["ProductUpdateRequest"]["additionalProperties"]    # False  → 422
+
+# P0-4 — the constraint DSL, in full
+S["ForbiddenRuleCreateRequest"]["properties"]["rule_json"]     # {'title': 'Rule Json'}
+
+# P0-6 — the double-prefix trap
+d["servers"]                                          # [{'url': '/'}]
+list(P)[0]                                            # '/api/v1/analytics/...'
+
+# P2-1 — the smoking gun: a read-only SKU with no writer
+S["QuoteLineItemResponse"]["properties"]["product_sku"]        # exists
+sorted(S["ProductCreateRequest"]["properties"])                # no sku
+
+# P2-6 — quote missing from the only doc_type enum
+S["CloneRequest"]["properties"]["doc_type"]
+```
+
+Every count in this report was asserted by script against the published spec. We re-verified all of them before publishing and **corrected two of our own claims** in the process.
+
+---
+
+# Closing
+
+We built Grimoire because the **Rattle domain model is genuinely good** — `usage_subclauses`, ghost parts, `alt_group`, area-scoped overrides, savepoint-isolated batch upserts, a 100%-consistent RFC 9457 error contract. These are sophisticated, well-conceived primitives, and the fact that an AI agent can be taught to use them correctly is a compliment to the design.
+
+**The gap is not in the model. It is that the spec describes a fraction of what the API knows** — and the parts it omits are exactly the parts that bite: the concurrency header, the constraint grammar, the idempotency key, the read-only fields, the SKU that already exists on the quote line.
+
+An integrator with backend access can find these. **An autonomous agent — increasingly who is calling your API — cannot.**
+
+Closing P0 and P1 would make this an API an AI can drive **safely, without a human checking its work.** In CPQ that is a real competitive position, and it is much closer than this list makes it look.
+
+Happy to pair on any of it, and happy to re-run this audit against a new spec whenever you'd like.
