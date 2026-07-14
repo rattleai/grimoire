@@ -2,7 +2,7 @@
 
 **For:** the Rattle backend team
 **Spec audited:** `https://www.rattleapp.de/docs/api/openapi.json`, fetched **2026-07-14** — OpenAPI 3.1, **463 operations · 258 paths · 37 tags · 210 schemas · 1,369 schema fields**
-**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 16 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
+**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 17 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
 
 ---
 
@@ -209,7 +209,142 @@ So the spec is not merely incomplete here; **it is actively wrong**, and the end
 
 > We also found a `ConfiguratorSettingsResponse`-adjacent unknown: `require_customer_info` has no `show_customer_info` sibling, unlike the other seven `require_*`/`show_*` pairs. We could not determine whether it is a master switch, an independent requirement, or legacy. **Please clarify** — we left it alone rather than guess.
 
-## P0-8. Eight request schemas silently swallow unknown fields
+## P0-8. Six mechanisms can set one option's price. The spec never says which wins.
+
+Pricing is the one thing a CPQ system cannot get subtly wrong. **Six separate mechanisms can set the price of a single option:**
+
+| # | Mechanism | Keyed on | Endpoint |
+|---|---|---|---|
+| 1 | `Option.price` | the option | `POST /options` |
+| 2 | **Option price-override** | **(option, area, price_list)** — all three `required` | `POST /options/{id}/price-overrides` |
+| 3 | **Advanced price** | **(option, `condition_option_id`, area?, price_list?)** — a *conditional* price | `POST /options/{id}/advanced-prices` |
+| 4 | **Area / Product price-override** | (area\|product, price_list) | `POST /{areas,products}/{id}/price-overrides` |
+
+Plus **pricing presets** (product-level fees/surcharges) as a fifth layer — and a **sixth**, `PUT /options/{id}/area-config`, which carries a `price` and is scoped to an area with **no price list at all** (see P0-9d), so the six do not even share a single axis.
+
+**Nowhere in the spec is the resolution order stated.** We grepped all 463 operations and 210 schemas:
+
+```
+"precedence"      → 1 hit — and it is about usage_subclauses BOOLEAN OPERATORS, not pricing
+"resolution order" → 0
+"takes priority"   → 0
+"most specific"    → 0
+"falls back"       → 0
+"overrides the"    → 0
+```
+
+**Consequence.** A tenant configures an option price-override *and* an area price-override for the same option and price list. **Which one does the customer pay?** The API knows. The spec does not say. The client cannot know, and — this is the part that matters — **it will not error.** It will return a price. A plausible one. Possibly the wrong one, on a quote that goes to a customer.
+
+This is the single highest-consequence undocumented behaviour in the API. Every other silent-wrongness finding in this report costs you a BOM line or a retry. **This one costs you money, on a document with your customer's signature on it.**
+
+**We refused to guess.** Our pricing skill does **not** assert a precedence order. Instead it teaches agents to determine it empirically per tenant — using `POST /configurations/calculate` (*"Resolve constraints, compute pricing, and return a configuration state"*) as the oracle — and to record the observed order in tenant memory. That is a workaround for a documentation gap, and it should not be necessary.
+
+**Fix.** Document the resolution order. One paragraph in `info.description` would do it. Ideally also expose it: a `price_breakdown` in the `/calculate` response showing which mechanism supplied the final number would make pricing auditable, which for a CPQ system is close to a compliance requirement.
+
+## P0-9. `advanced-prices` — a conditional-price engine with no schema, no description, and no name
+
+Five operations exist under `/options/{optionId}/advanced-prices`. Their request and response schemas are **inline** — `AdvancedPriceCreateRequest` does not exist in `components`. The endpoint summary is *"Create an advanced price"*. The description is **`null`**.
+
+Here is the entire published definition of the mechanism:
+
+```json
+{ "properties": {
+    "advanced_price":      {"type": "string"},
+    "area_id":             {"type": "integer"},
+    "condition_option_id": {"type": "integer"},
+    "price_list_id":       {"type": "integer"} },
+  "required": ["condition_option_id", "advanced_price"] }
+```
+
+`condition_option_id` is **required** — which tells us, by inference alone, that this is a **cross-option conditional price**: *this option costs X **when that other option is also selected**.*
+
+That is a genuinely powerful CPQ feature — bundle pricing, cross-sell discounts, "the premium paint is cheaper if you also take the premium trim." It is the kind of thing a competitor puts on a datasheet.
+
+**Consequence.** It is undiscoverable. No description, no named schema, no example, no mention in `info.description`. **We worked out what it does by reading a required field name.** An integrator will never find it, and an AI agent certainly won't. You have built a feature nobody can use.
+
+**Fix.** Name the schemas (`AdvancedPriceCreateRequest` / `AdvancedPriceResponse`), write one sentence of description, add an example. This is 20 minutes of work on a feature that is presumably worth considerably more than that.
+
+## P0-9b. `X-Price-Lists-Version` has no source. The OCC header cannot be obtained.
+
+P0-1 said the four required headers are undeclared. The price-list one is worse than undeclared — **it is unobtainable.**
+
+`info.description` says:
+
+> "Bulk-replace endpoints for constraints and price lists use version headers (`X-Constraints-Version`, `X-Price-Lists-Version`) for optimistic locking. **Read the current version from a GET response**, send it back."
+
+So we went to read it:
+
+```python
+>>> sorted(spec["components"]["schemas"]["PriceListResponse"]["properties"])
+['created_at', 'currency', 'description', 'id', 'is_base', 'links', 'name', 'order_index', 'updated_at']
+# fields containing "version": NONE
+```
+
+**`PriceListResponse` carries no version field of any kind.** There is nothing to read. The only candidate anywhere in the API is `ProductResponse.pricing_version`, and that it is the value for this header is **our inference, not a documented fact.**
+
+**Consequence.** A client that *knows about* the header (which, per P0-1, it cannot) still **cannot construct it**. The optimistic-locking mechanism protecting bulk price-override replacement is therefore not merely undiscoverable — **it is unusable.** Concurrent `/price-overrides/replace` calls silently overwrite each other, and there is no defence available to the caller.
+
+**Fix.** Return the version on `PriceListResponse` (and say which field feeds which header), then declare the header per P0-1.
+
+## P0-9c. Within one resource family, a typo `422`s on one endpoint and is swallowed on the next
+
+The three price-override families look like siblings. They are not:
+
+| Endpoint | Request body | `additionalProperties: false`? |
+|---|---|---|
+| `POST /options/{id}/price-overrides` | **named** — `$ref: PriceOverrideCreateRequest` | **yes** → typo `422`s ✅ |
+| `POST /products/{id}/price-overrides` | **named** — `ProductPriceOverrideCreateRequest` | **yes** → typo `422`s ✅ |
+| `POST /areas/{id}/price-overrides` | **inline**, unnamed | **no** → **typo silently swallowed, `201`** ❌ |
+
+The area body is also `override_price: string` only, while the option body accepts `number \| string`.
+
+**Consequence.** An integrator writes the option override, gets a clean `422` on a typo, and reasonably concludes the API validates. They then write the *area* override — the same concept, the adjacent endpoint — and their typo'd field vanishes with a `201`. **The inconsistency is inside a single resource family, on the money path.**
+
+The same pattern holds for `advanced-prices` and `PUT /options/{id}/area-config` (see P0-9d) — both inline, both permissive.
+
+**Fix.** Name the inline schemas and set `additionalProperties: false`. This extends the list in P0-10 from 8 *named* schemas to include every *inline* body too.
+
+## P0-9d. There is a sixth price-setting mechanism, and it needs no price list at all
+
+`PUT /options/{optionId}/area-config?area_id=` — scope `prices:write` — carries a **`price`** field in an inline body.
+
+So it sets an option's price **per area, with no price list involved**, entirely outside the price-list axis that every other override is keyed on.
+
+**Consequence.** P0-8 asked which of five mechanisms wins. **It is six.** And this one is orthogonal to the price-list dimension the other five share, which makes the undocumented resolution order strictly harder to reason about — not just unordered, but not even a total order over a single axis.
+
+**Fix.** Document it in the resolution order (P0-8), and say plainly how a price-list-scoped override interacts with a price-list-less one.
+
+## P0-9e. `limit` declares `default: 200` and `maximum: 100`, and its prose says 500
+
+```jsonc
+// GET /configurations/states/by-code/{code}/parts
+"limit": {
+  "schema":      { "default": 200, "maximum": 100, "minimum": 1, "type": "integer" },
+  "description": "Max parts per page (default 200, max 500)"
+}
+```
+
+**The default exceeds the maximum.** Three different numbers appear in one parameter: the schema's `default` (200), the schema's `maximum` (100), and the description (500).
+
+**Consequence.** The declared default is **schema-invalid against its own constraint**. A strict validator rejects it. A generated client sends `limit=200` — its own documented default — and gets a `422`. A caller who trusts the description sends `limit=500` and gets a `422`. **There is no value a caller can derive from this parameter that is guaranteed to work except by ignoring all three numbers and guessing.**
+
+This one is a 30-second fix and it is the sort of thing that erodes trust in everything around it.
+
+## P0-9f. The itemised price oracle is promised in prose and absent from the schema
+
+`GET /configurations/states/by-code/{code}/selections` describes itself as:
+
+> "Returns each selected option **enriched with group name, option name, price, quantity**, and wishlist status."
+
+Its **declared `200` schema is `ConfigurationStateResponse`** — the same scalar state object as `/calculate`, with **no per-option array and no per-option price** anywhere in it.
+
+**Consequence.** This endpoint, if it behaves as described, is **the answer to P0-8** — an itemised price breakdown would let a caller see *which mechanism supplied each number*, collapsing the entire precedence problem to a single read. As declared, it returns a scalar and answers nothing.
+
+Either the schema is wrong (and a valuable feature is hidden — the P0-7 pattern again), or the description is wrong (and it promises something it does not deliver). **We could not determine which without writing to a live tenant, and did not.**
+
+**Fix.** Whichever it is — make them agree. If the runtime really does return per-option prices, **say so in the schema, and P0-8 becomes much less urgent.**
+
+## P0-10. Eight request schemas silently swallow unknown fields
 
 `additionalProperties` is `false` on **116 of 124** request schemas — which is *good*, and means a typo'd field gets a loud `422`.
 
@@ -624,6 +759,8 @@ All 463 operations declare `429`. **None** declares `Retry-After`, `X-RateLimit-
 | 1 | **P0-1** Declare the 4 headers + `409` | Silent lost update on an atomic replace-all. Nothing else here destroys data with a `200 OK`. | **Spec only** |
 | 2 | **P0-2** `readOnly: true` on the 200 response-only fields | Makes read-modify-write work for every client and agent, automatically. | **Spec only** |
 | 2b | **P0-7** Regenerate `ConfiguratorSettingsResponse` | The spec describes **5 fields that don't exist** and omits the **20 that do** — and they govern the customer-capture UX. Zero overlap. | **Spec only** |
+| 2c | **P0-8** Document the pricing resolution order | Four mechanisms can set one option's price and the spec never says which wins. Every other silent-wrongness finding costs a retry; **this one costs money on a signed quote.** One paragraph fixes it. | **Spec only** |
+| 2d | **P0-9** Name + describe `advanced-prices` | A cross-option conditional-price engine with no schema, no description, and no name. We deduced what it does from a required field name. **A feature nobody can find.** | **Spec only** |
 | 3 | **P0-6** Fix `servers` / `/api/v1` | One line. Every generated client hits it. | **One line** |
 | 4 | **P0-4** Schema `rule_json`; `422` the legacy shape | Constraints that save and never fire. Ships broken machines. | Small |
 | 5 | **P0-3** Disambiguate PUT vs PATCH | Silent field-nulling on a standard REST idiom. | Small |
