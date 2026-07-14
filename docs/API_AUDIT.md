@@ -2,7 +2,7 @@
 
 **For:** the Rattle backend team
 **Spec audited:** `https://www.rattleapp.de/docs/api/openapi.json`, fetched **2026-07-14** — OpenAPI 3.1, **463 operations · 258 paths · 37 tags · 210 schemas · 1,369 schema fields**
-**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 17 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
+**Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 18 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
 
 ---
 
@@ -33,6 +33,7 @@ We probed for these specifically. They are genuinely well-disciplined and we wan
 - **Batch is excellent.** 10 endpoints, `207 Multi-Status` with per-item results, savepoint isolation, 100 ops/request, a universal `POST /batch`, **and `action: upsert` with a `match` field**. NDJSON export for products/parts/customers. Better than most CPQ APIs, and better than we assumed.
 - **`usage_subclauses` is beautifully specified** — `$ref: UsageSubclause`, with the left-to-right boolean fold semantics spelled out. It is the hardest concept in the domain and the **best-documented field in the spec**. It is the proof that the rest could look like this.
 - **`401`/`429` declared on 100% of operations.** Action endpoints are uniformly `POST` + verb-noun across 23 verbs.
+- **Translation staleness is properly designed.** `POST /content-blocks/{id}/locales/{locale_id}/translate` sets a `source_content_hash`, and the target locale's **`is_stale`** flag flips to `true` if the source changes afterwards. That is exactly the right primitive for keeping a multilingual manual honest, and most systems do not have it. **Keep it — and please expose it more prominently**, because the glossary that should constrain the same translator is invisible (P0-9g).
 
 **Three findings we killed as false** — we'd rather lose a finding than send you chasing one:
 
@@ -343,6 +344,85 @@ Its **declared `200` schema is `ConfigurationStateResponse`** — the same scala
 Either the schema is wrong (and a valuable feature is hidden — the P0-7 pattern again), or the description is wrong (and it promises something it does not deliver). **We could not determine which without writing to a live tenant, and did not.**
 
 **Fix.** Whichever it is — make them agree. If the runtime really does return per-option prices, **say so in the schema, and P0-8 becomes much less urgent.**
+
+## P0-9g. The glossary lock is invisible — and it is the only thing standing between DeepL and your brand terminology
+
+`/translations/dictionary` (6 operations) is the **translation glossary**: the mechanism that stops a machine translator rendering a locked brand term however it likes. Its entire published definition:
+
+```jsonc
+// POST /translations/dictionary — summary: "Create or update a dictionary entry"
+// description: null
+// schema: INLINE, unnamed
+{ "properties": { "base_term":    {"type": "string"},
+                  "translations": {"type": "object", "additionalProperties": {"type": "string"}} },
+  "required": ["base_term", "translations"] }
+```
+
+`GET /translations/dictionary` — *"Returns company-wide translation dictionary entries."* — takes **no query parameters at all**. Not filterable. Not paginated.
+
+**Consequence.** The API ships a **DeepL-backed machine translator** (`POST /documents/templates/{id}/translate` — *"Translate all structure block titles and attached content block locales… via DeepL"*) and, separately, a glossary that constrains it. **The translator is documented. The glossary is not.** An integrator will find the first and never the second — and will therefore machine-translate a technical documentation with no terminological control at all.
+
+In this domain that is not cosmetic. A locked term (a part name, a brand term, a regulated abbreviation) rendered three different ways across a manual is an `IEC/IEEE 82079-1` Clause 5 *consistency* defect.
+
+**Fix.** Name the schema, describe what the dictionary is *for* (one sentence: "terms that must translate a specific way, or not at all"), state whether the DeepL pass actually consults it, and add filtering/pagination to the `GET`.
+
+## P0-9h. Which entities can be translated at all is undiscoverable
+
+`PUT /translations` upserts translations in bulk:
+
+```jsonc
+{"translations": [{"entity_id": integer, "entity_type": string, "field": string, "language": string, "value": …}]}
+```
+
+**`entity_type` is a free string. `field` is a free string. Neither has an enum.**
+
+**Consequence.** A caller cannot determine **which entities are translatable**, nor **which of their fields**. `entity_type: "prodcut"` (typo) and `field: "nmae"` are both schema-valid. `GET /translations?entity_type=` filters on a vocabulary documented nowhere.
+
+The `language` field appears on **20 schemas** — product, area, group, option, and more — so the translatable surface is clearly broad. It is simply not stated.
+
+**Fix.** Enum both. `entity_type` is a closed set the backend already knows.
+
+## P0-9i. A `PATCH` that says "partially update" and then deletes your other languages
+
+```
+PATCH /api/v1/translations/dictionary/{entry_id}
+
+  summary:     "Partially update a dictionary entry"
+  description: "Same semantics as PUT — a supplied `translations` map
+                replaces (does not merge)."
+```
+
+**The operation contradicts itself inside its own definition.** The summary says *partially update*. The description says it does not.
+
+**Consequence.** A dictionary entry holds `{base_term, {lang: translation}}` — the company-wide glossary. A caller adding Spanish does the obvious thing:
+
+```jsonc
+PATCH /translations/dictionary/42   { "translations": { "ES": "husillo" } }
+→ 200 OK
+```
+
+**English, French, Italian and German are now gone.** Silently. From the company-wide terminology lock. The next machine translation of every document renders those terms however DeepL feels.
+
+RFC 5789 defines `PATCH` as *partial* modification. Every other `PATCH` in this API behaves that way, which is exactly what makes this one lethal: an integrator who has correctly learned `PATCH` from the other 38 paths will destroy data here on their first try, and the endpoint's own **summary** will have told them it was safe.
+
+This is the single easiest way to destroy data in the whole API, and it is reachable by doing the *conventional* thing.
+
+**Fix.** Either make `PATCH` merge (correct, and what the summary already promises), or **remove `PATCH` entirely** and leave only `PUT` — whose "Replace a dictionary entry" summary is honest. Do not keep a `PATCH` that replaces. At minimum, change the summary to say "Replace" and the docs to shout it.
+
+## P0-9j. `is_stale` exists on one locale type and not its sibling
+
+| Schema | `source_content_hash` | `is_stale` |
+|---|---|---|
+| `ContentBlockLocaleResponse` | ✅ | ✅ |
+| **`StructureBlockLocaleResponse`** | ✅ | ❌ **missing** |
+
+Structure-block locales are **chapter and section titles**. Content-block locales are their bodies.
+
+**Consequence.** You can ask whether a translated chapter *body* is stale. You **cannot ask the same about its title** — even though the hash that would answer it is right there on the response. And because the `source_content_hash` algorithm is undocumented, a client cannot recompute it to find out.
+
+So: a technical writer edits a chapter title in German. Every translated title is now wrong. **Nothing in the API will tell you**, and a document ships with a heading that contradicts its own body.
+
+**Fix.** Add `is_stale` to `StructureBlockLocaleResponse`. The hash is already there; this is a computed boolean the backend can produce for free.
 
 ## P0-10. Eight request schemas silently swallow unknown fields
 
@@ -759,6 +839,7 @@ All 463 operations declare `429`. **None** declares `Retry-After`, `X-RateLimit-
 | 1 | **P0-1** Declare the 4 headers + `409` | Silent lost update on an atomic replace-all. Nothing else here destroys data with a `200 OK`. | **Spec only** |
 | 2 | **P0-2** `readOnly: true` on the 200 response-only fields | Makes read-modify-write work for every client and agent, automatically. | **Spec only** |
 | 2b | **P0-7** Regenerate `ConfiguratorSettingsResponse` | The spec describes **5 fields that don't exist** and omits the **20 that do** — and they govern the customer-capture UX. Zero overlap. | **Spec only** |
+| 2b2 | **P0-9i** Make dictionary `PATCH` merge (or delete it) | Its **summary says "Partially update"** and its description says it **replaces**. A `PATCH` adding one language **silently deletes the others**. Easiest data loss in the API, reachable by doing the conventional thing. | **Trivial** |
 | 2c | **P0-8** Document the pricing resolution order | Four mechanisms can set one option's price and the spec never says which wins. Every other silent-wrongness finding costs a retry; **this one costs money on a signed quote.** One paragraph fixes it. | **Spec only** |
 | 2d | **P0-9** Name + describe `advanced-prices` | A cross-option conditional-price engine with no schema, no description, and no name. We deduced what it does from a required field name. **A feature nobody can find.** | **Spec only** |
 | 3 | **P0-6** Fix `servers` / `/api/v1` | One line. Every generated client hits it. | **One line** |

@@ -58,7 +58,9 @@ The bundle has **significant gaps** in: numbered options on the sales/UX side, q
 
 ## P1 — Significant gaps; production-ready needs them
 
-### P1-1. `rattle-pricing-strategy` skill
+### ~~P1-1. `rattle-pricing-strategy` skill~~ — **CLOSED** (shipped as `rattle-pricing`)
+
+> Shipped 2026-07-14. 37 API ops. Building it surfaced the highest-consequence undocumented behaviour in the API: **six mechanisms can set one option's price and Rattle does not document which wins** (audit § P0-8). The skill therefore asserts **no precedence table** and teaches empirical determination via `POST /configurations/calculate`. Also documented `advanced-prices`, an undocumented cross-option conditional-price engine (§ P0-9).
 
 **Scope.** `PriceList`, `PriceListVersion`, `PricingAdjustmentPreset`, area / option / product price-overrides, currency handling, volume-discount tiers, customer-specific pricing, version pinning per quote.
 
@@ -66,13 +68,17 @@ The bundle has **significant gaps** in: numbered options on the sales/UX side, q
 
 **Includes.** Decision tree for "where does this discount belong?" (option vs price-list vs quote-time adjustment). Audit rule: detect price-list drift across product variants.
 
-### P1-2. `rattle-crm-quotes` skill (and optional `rattle-quote-author` agent)
+### ~~P1-2. `rattle-crm-quotes` skill~~ — **CLOSED** (with `rattle-quote-author`)
+
+> Shipped 2026-07-14. 49 API ops. Surfaced that **there is no `POST /configurations`** — the API can price, find and lock a configuration but cannot create one, so headless quote-to-cash is impossible (audit § P2-1c). Also: `POST /quotes` silently auto-creates an opportunity (§ P2-1d), and the entire sales lifecycle is a free string with no enum (§ P2-1b).
 
 **Scope.** `Customer`, `CustomerLink`, `CustomerContactPerson`, `Opportunity`, `Quote`, `QuoteVersion`, `primary_quote_id`. The lifecycle: configuration → quote → published offer → accepted → ordered.
 
 **Why.** The entire CRM/quote layer is invisible to all 6 current agents. Tenants who use Rattle as their quote engine (not just the configurator) get no guidance.
 
-### P1-3. `rattle-i18n` skill
+### ~~P1-3. `rattle-i18n` skill~~ — **CLOSED** (with `rattle-translator`)
+
+> Shipped 2026-07-14. 25 API ops. The core rule: **every string is in exactly one of three buckets** — free prose (machine-translate via DeepL), **regulated text (locale-resolved, NEVER AI-translated — a DeepL'd CLP statement is a legal defect in a CE-marked document)**, and brand terms (glossary-locked). Surfaced that the glossary that should constrain the translator is invisible (audit § P0-9g) and that the translatable entity set is undiscoverable (§ P0-9h).
 
 **Scope.** `TranslationDictionaryEntry` (glossary lock — terms that must never be AI-translated), `TranslationText` (per-entity translation cache), translation-memory pattern, segment-lock heuristics, AI-translate-vs-resolve-vs-glossary fallback chain. Per-customer language for offers (`Configuration.offer_language`).
 
@@ -92,7 +98,9 @@ The bundle has **significant gaps** in: numbered options on the sales/UX side, q
 
 **Why.** Backend feature exists (`tests/test_document_block_conditions.py` confirms). Cross-cuts offer + techdoc + ccms. Zero skill coverage today.
 
-### P1-6. `rattle-onboarding` skill (and `rattle-onboarder` agent)
+### ~~P1-6. `rattle-onboarding` skill~~ — **CLOSED** (with `rattle-onboarder`)
+
+> Shipped 2026-07-14. Day 0: empty tenant → working configurator. **The base price list must exist before the first product** — `Product.currency` is accepted-and-ignored, so getting the order wrong denominates the whole tenant in the wrong currency with a `200 OK`. Surfaced that `ConfiguratorSettingsResponse` is entirely fictional: 5 declared fields, 20 real ones, **zero overlap** (audit § P0-7).
 
 **Scope.** First-time tenant setup: load areas template library, set offer language, register first product, create first configuration, run baseline audit, populate `memory/<tenant>/profile.md`. Bootstraps the workflow that every other agent assumes already happened.
 
