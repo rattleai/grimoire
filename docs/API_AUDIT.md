@@ -4,6 +4,25 @@
 **Spec audited:** `https://www.rattleapp.de/docs/api/openapi.json`, fetched **2026-07-14** — OpenAPI 3.1, **463 operations · 258 paths · 37 tags · 210 schemas · 1,369 schema fields**
 **Auditor:** [Grimoire](https://github.com/rattleai/grimoire) — 18 AI Skills that drive this API to build product configurations, variant BOMs, and CE-compliant technical documentation.
 
+> ### Start here, not with this document
+>
+> This is the **diagnosis** — 42 findings, with evidence. It is worth reading once.
+>
+> But a 40-page audit does not get fixed, and **a failing test does**:
+>
+> ```bash
+> git clone https://github.com/rattleai/grimoire.git && cd grimoire
+> python3 scripts/rattle_api_conformance.py     # fetches your live spec. No credentials needed.
+> ```
+>
+> It is **red on 27 checks** today. Fix one, it goes green. Drop it in your CI and gate on the
+> exit code (which is the failure count) so a fixed defect cannot silently regress.
+>
+> - **[`API_REMEDIATION.md`](API_REMEDIATION.md)** — the prescription: what to change, in what
+>   order, with copy-pasteable OpenAPI. **Wave 1 is one day and removes every silent-corruption
+>   path in the API.**
+> - **This document** — the reasoning behind each one.
+
 ---
 
 ## Why this report is different
