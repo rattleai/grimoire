@@ -52,6 +52,15 @@ jobs:
       - name: Validate the shipped bundle
         run: python3 scripts/validate_bundle.py
 
+      # The conformance suite audits RATTLE's spec, not ours — so it is expected to
+      # fail, and must not gate our build. We run it anyway, against the checked-in
+      # spec, so that (a) it cannot rot, and (b) the count in API_REMEDIATION.md stays
+      # honest. `|| true` because a red result here is a finding, not a defect in us.
+      - name: Rattle API conformance (informational — audits Rattle, not Grimoire)
+        run: |
+          python3 scripts/rattle_api_conformance.py --offline || true
+          echo "::notice::Rattle API conformance is informational. See docs/API_REMEDIATION.md"
+
       # Claude.ai enforces the Agent Skills spec at the upload dialog and REJECTS
       # a description over 1024 chars — while Claude Code merely truncates at
       # 1536. Three skills once sat between the two and would have been turned

@@ -501,6 +501,9 @@ Full conventions: `AGENTS.md` (cross-platform) and `CLAUDE.md` (Claude-Code-spec
 - [`ROADMAP.md`](ROADMAP.md) — prioritised backlog (P0/P1/P2) of skills, agents, and slash commands needed to close the value-chain gaps the PR #14 audits identified.
 - [`PUBLISHING.md`](PUBLISHING.md) — how to release to npm, PyPI, and the Claude Code marketplace.
 - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (462 operations).
+- [`docs/API_AUDIT.md`](docs/API_AUDIT.md) — **42 findings against the Rattle REST API**, every one reproduced by script against the published spec. The diagnosis.
+- [`docs/API_REMEDIATION.md`](docs/API_REMEDIATION.md) — **the fix plan for Rattle engineers.** Organised by work, with copy-pasteable OpenAPI. Wave 1 is one day and removes every silent-corruption path.
+- [`scripts/rattle_api_conformance.py`](scripts/rattle_api_conformance.py) — **a red/green test for every finding.** `python3 scripts/rattle_api_conformance.py` — no credentials needed. Red on 27 checks today.
 - [`SETUP.md`](SETUP.md) — beginner-friendly setup guide.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guidelines.
 - [`SECURITY.md`](SECURITY.md) — security policy.
