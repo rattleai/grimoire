@@ -23,15 +23,15 @@ OpportunityResponse.stage         { "type": "string" }                          
 // Read-only — settable on NO request schema
 OpportunityResponse.status        { "type": "string", "default": "open" }
 
-// POST /quotes/{quoteId}/contacts
-QuoteContactAddRequest.role       { "type": "string", "maxLength": 100 }
+// QuoteContactResponse (read-only; removed from POST /quotes/{quoteId}/contacts, which now takes only contact_id)
+QuoteContactResponse.role         { "type": "string", "maxLength": 100 }
 
 // Filters
 GET /quotes?status=<string>            // "Filter by status"  — legal values documented nowhere
 GET /opportunities?stage=<string>      // "Filter by stage"   — legal values documented nowhere
 ```
 
-**Four free-string state fields, one free-string role field, two filters over vocabularies that are never published, and zero enums.**
+**Four free-string state fields, two filters over vocabularies that are never published, and zero enums** — and the quote-contact `role` free-string field has since been **removed from the write request** (it is read-only on `QuoteContactResponse` now).
 
 `PUT /quotes/{id}/status` will accept `"aproved"`. It will accept `"banana"`. It will accept any of 50 characters. The schema has no opinion, and the endpoint declares no `422` for a bad status value — only the generic one.
 
@@ -124,7 +124,7 @@ A status that returns rows **exists in this tenant**. A status that returns zero
 
 5. **Never build a state diagram out of guesses.** If asked to render a pipeline, a funnel, or a status dropdown, use the tenant's observed vocabulary and **say that it is observed, not declared**.
 
-6. **The same rules apply to `stage`** (opportunity) and to `role` (quote contact). Both are free strings with no enum. `role` is the least visible of the three and therefore the easiest to typo into a value nothing else in the tenant uses.
+6. **The same rules apply to `stage`** (opportunity) — a free string with no enum. (The quote-contact `role` field was once a third such vocabulary; the current spec has **removed it from the write request** — `QuoteContactAddRequest` now takes only `contact_id` — so there is no longer a `role` to set, only one to read on `QuoteContactResponse`.)
 
 7. **Record the vocabulary once a human has confirmed it.** `memory/<tenant>/profile.md`, under a `## Conventions` heading — `rattle-tenant-memory` is explicit-write only, so show the file and get consent. A vocabulary recorded there is honoured by every later session; one that is not is re-guessed every time.
 

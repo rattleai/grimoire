@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — API spec refreshed; several audit findings resolved upstream
+
+Re-ran `scripts/build_api_reference.py` against the live spec. The surface grew, and — more consequentially — the backend shipped fixes for defects the skills had documented as workarounds. Leaving the skills untouched would have told agents to route around problems that no longer exist, or (worse) to refuse a task the API can now do.
+
+| | was | now |
+|---|---|---|
+| operations | 463 | **472** |
+| paths | 258 | **260** |
+| schemas | 210 | **223** |
+
+- **Path parameters renamed** across ~45 paths: `{id}` → resource-specific `{areaId}` / `{groupId}` / `{optionId}` / `{partId}` / `{priceListId}` / `{productId}` / `{quoteId}` / `{customerId}`; plus `{lang}` → `{localeId}` on document block locales (**still a language code, not an integer, despite the name**) and inbound `{suffix}` → `{triggerId}`. The generated reference + mirror carry the new forms; hand-written skill prose that used the old ones was updated.
+- **New endpoints surfaced in the skills:** `POST /configurations` (the headless write path to a saved, finalizable, quotable configuration — **rattle-crm-quotes had explicitly stated this did not exist**), `POST /placements/batch`, and the declarative `PUT /parts/{partId}/bom` sync.
+- **Resolved defects reflected in the skills** (these were active falsehoods that caused refuse-task / 422 / mis-map):
+  - OCC/idempotency headers are now declared (`X-Constraints-Version`, `X-Price-Lists-Version`, `X-Idempotency-Key`) and `PriceListResponse` gained a `version` field — but the price-override `/replace` endpoints still declare neither a header nor a `409`, so that specific P0-1 danger stands (narrowed, not retired).
+  - `advanced-prices` schemas are now named (`AdvancedPrice{Create,Update,Response}`) with `additionalProperties: false`; `PATCH` removed (PUT-only, and it can now re-scope `area_id`/`price_list_id`); precedence over an option price-override and null-scoping are now documented.
+  - `Product.sku` now exists (ERP join key → flows to `QuoteLineItemResponse.product_sku`); part images now have an upload route (`POST /parts/{partId}/image` → `image_url`); `is_stale` now exists on `StructureBlockLocaleResponse`; configurator settings are now typed (`ConfiguratorSettings{Response,UpdateRequest}`, `additionalProperties: false`). The "does not exist / no route / spec doesn't match live" claims were corrected in `rattle-crm-quotes`, `rattle-ingest`, `rattle-i18n`, and `rattle-onboarding`.
+  - `QuoteContactAddRequest.role` was removed from the write request (now read-only on `QuoteContactResponse`).
+  - Constraint `rule_json` is formalized as `ForbiddenRuleJson` / `RuleClause`, with a new `at_most_n` cardinality rule type.
+- **Surface counts updated** across README, CLAUDE.md, the MCP server tool descriptions, and skill descriptions. The point-in-time audit reports (`docs/API_AUDIT.md`, `docs/API_REMEDIATION.md`) were **left as the dated records they are** — their internal counts describe the audited snapshot and were not renumbered.
+
 ## [0.7.0] - 2026-07-14
 
 The theme of this release is **making the bundle installable and usable by someone who is not us** — closing the gap between "a repo full of good knowledge" and "a system a stranger can install and point at their own data."

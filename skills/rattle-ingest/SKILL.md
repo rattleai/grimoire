@@ -114,11 +114,11 @@ Do **not** invent `"17 Zoll", price 0, recommended true`. The placeholder is not
 | `number_unit` | `mm`, `Stk` | Header ~ Eingabeeinheit/Number unit | `option.number_unit` |
 | `constraint_exclusion` | `nicht mit 19 Zoll; ohne Encoder` | Header ~ Ausschluss/nicht kombinierbar/Excludes; list-like text | `forbidden` pairs (`POST /constraints`, body field `forbidden`) or a `constraint_rule` — see `rattle-suggest-config` |
 | `description` | long prose | Header ~ Beschreibung/Langtext/Bemerkung; avg sample length ≥ 40 | `product.description` / `option.description` / `group.description`. **Narrative prose is a `description-area-smell`** — it belongs in a document template, not an area. |
-| `image_ref` | `wheel19.png`, `https://…` | Values match an image extension or an http(s) URL | Upload via `POST /options/{optionId}/image` (or `/products/{productId}/image`, `/areas/{areaId}/image`). **There is no public upload route for `Part.part_img`** — do not map part images. |
+| `image_ref` | `wheel19.png`, `https://…` | Values match an image extension or an http(s) URL | Upload via `POST /options/{optionId}/image` (or `/products/{productId}/image`, `/areas/{areaId}/image`, and now `/parts/{partId}/image` → `image_url` on `PartResponse`). |
 | `locale` | `DE`, `de-DE` | Header ~ Sprache/Language; values match a locale pattern | `language` on product / area / group / option (max 8 chars, default `DE`) |
 | `ignore` | internal margin, buyer initials, colour codes | Deliberately excluded after review | Nothing. Must still appear in `unmapped_columns[]` or carry role `ignore` — the audit trail proves it was seen. |
 
-**Fields that do not exist — do not invent them.** There is no `Product.sku`, no `Option.sku`, no writable `Product.currency`, and no public `Part.part_img` upload route. `Part.part_cost` is an **integer** (`ge=0`), not a decimal: a `12,50` cost column must be rounded and the rounding raised as a `part-cost-rounded` warning.
+**Fields — watch the shape.** `Product.sku` **now exists** (map the ERP article number there — `string ≤255`, unique per tenant → `409`) and `Part` images now have an upload route (`POST /parts/{partId}/image`). Still absent — do not invent them: `Option.sku`, and a writable `Product.currency` (accepted but ignored). `Part.part_cost` is an **integer** (`ge=0`), not a decimal: a `12,50` cost column must be rounded and the rounding raised as a `part-cost-rounded` warning.
 
 ## Output contract
 

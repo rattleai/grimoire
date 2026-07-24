@@ -219,9 +219,11 @@ A slot fills a `{1}` placeholder in an official statement: `H340` = *"May cause 
 Not an EditorJS block — a chapter/section **title**, stored per-language.
 
 ```
-PUT /api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{lang}
+PUT /api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{localeId}
 StructureBlockLocaleUpsertRequest: {"title": "1. Einführung"}    (required, 1–500 chars)
 ```
+
+The `{localeId}` segment is named misleadingly: it is a **language code** (e.g. `DE`), uppercased server-side — not an integer locale id. Only the content-block route (`…/content-blocks/{id}/locales/{localeId}`) keys on an integer.
 
 | Field | Bucket | Notes |
 |---|---|---|
@@ -251,7 +253,7 @@ Run this **before** any translation of a technical documentation. It takes minut
 7. **Verify against the authorities**, not against the source: `GET /safety-notices/signal-words?locale=<target>`, `GET /hp-statements/<code>?locale=<target>`.
 8. **Re-audit the language.** Imperative mood on every `avoidance[]` bullet and every procedure step. Array lengths preserved. Cross-reference numbers unchanged. Decimal separators not "converted".
 9. **Re-label the cover.** *"Übersetzung der Originalbetriebsanleitung"*. MRL §1.7.4.1. **The translator will not do this for you — it will translate the words "Originalbetriebsanleitung" and produce a false claim.**
-10. **Check `is_stale` on every target locale before you ship.** And remember it does not exist for structure-block titles.
+10. **Check `is_stale` on every target locale before you ship** — structure-block titles included: `StructureBlockLocaleResponse` now carries `is_stale` and `source_content_hash`.
 
 ---
 

@@ -15,7 +15,7 @@ AI-native workspace for the Rattle product configurator (rattleapp.de). The repo
 | `skills/rattle-onboarding/` | **Day 0.** Empty tenant → working configurator. Every other skill assumes this already happened. Walks company → languages → **base price list (before any product — `Product.currency` is silently ignored and the currency comes from the base list)** → conventions → areas → the 19 configurator-settings flags → first product → baseline audit → tenant profile. Refuses a tenant that already has products (that is a migration, not an onboarding). |
 | `skills/rattle-ingest/` | **First link of the data chain.** Raw customer file (Excel / CSV / ERP export) → 24 column roles → 5 sheet shapes → reviewable `source-mapping.json` + normalized rows. Enforces the #1 rule at the door: a surcharge column with no standard sibling is a **blocker**, never a guess. Includes `scripts/profile_source.py`. |
 | `skills/rattle-configurator/` | Core consulting knowledge. **Always load first.** |
-| `skills/rattle-api/` | REST API surface (auth, pagination, 462 operations across 257 paths, OpenAPI spec). |
+| `skills/rattle-api/` | REST API surface (auth, pagination, 472 operations across 260 paths, OpenAPI spec). |
 | `skills/rattle-pricelist-analysis/` | Workflow: scan input for anti-patterns. Includes `scripts/detect_anti_patterns.py`. |
 | `skills/rattle-suggest-config/` | Workflow: produce BOM-aware configuration recommendation JSON. |
 | `skills/rattle-document-templates/` | Workflow: build offer/quote/custom/ccms templates honouring the doc_type contract. (Use `rattle-techdoc` for `doc_type=technical_doc`; `datasheet` is not a registered backend doc_type.) |
@@ -111,7 +111,7 @@ make format                        # Auto-format with Ruff
 
 ## Rattle REST API Reference
 
-A comprehensive reference of all **462 REST API operations across 257 paths and 37 resource groups** is at `docs/API_REFERENCE.md`. It is **generated** — never hand-edited.
+A comprehensive reference of all **472 REST API operations across 260 paths and 37 resource groups** is at `docs/API_REFERENCE.md`. It is **generated** — never hand-edited.
 
 The generator **fetches the live spec by default** from <https://www.rattleapp.de/docs/api/openapi.json> (published alongside the human docs at `/docs/api/reference`). A checked-in copy goes stale silently, and nobody notices until an agent calls an endpoint that moved:
 
@@ -171,7 +171,7 @@ Product
 - **usage_subclauses** on BOM items: `[{"option_id": 301, "factor": 1.0}]` — when option 301 is selected, this BOM line is active with quantity × factor.
 - **Option area-config** (`/options/{id}/area-config`): per-area overrides for option price, description, recommended flag — avoids duplicating groups.
 - **Pair-level constraints** (`POST /constraints`): simple option-option exclusions as `{option_id1, option_id2}` pairs. Atomically replaces all pairs for a product (use `X-Constraints-Version` header).
-- **Constraint rules** (`POST /constraints/rules`): conditional logic. `rule_json` is a single **object** — `{"requires": [<clause>, …], "invalid": [<option_id>, …]}` — where clauses are AND-folded and each clause is `anyOf` / `allOf` / `groupSelections` over option ids. The legacy array shape `[{"if": …, "then": {"forbid_options": …}}]` is **silently dropped** by the runtime evaluator (`app/utils/constraint_solver._rule_active`), so a rule written that way looks applied but never fires. The constraint DSL is presence-based only: no clause can read an option's numeric amount, so a quantity threshold ("forbid when panels > 20") is **not expressible** as a constraint.
+- **Constraint rules** (`POST /constraints/rules`): conditional logic. `rule_json` is a single **object** — `{"requires": [<clause>, …], "invalid": [<option_id>, …]}` — where clauses are AND-folded and each clause is `anyOf` / `allOf` / `groupSelections` over option ids. The legacy array shape `[{"if": …, "then": {"forbid_options": …}}]` is **silently dropped** by the runtime evaluator (`app/utils/constraint_solver._rule_active`), so a rule written that way looks applied but never fires. The constraint DSL is presence-based only: no clause can read an option's numeric amount, so a quantity threshold ("forbid when panels > 20") is **not expressible** as a constraint. The current spec formalizes `rule_json` as the named schema `ForbiddenRuleJson` (clauses typed as `RuleClause`, `additionalProperties: false`) and adds a cardinality rule — `type: "at_most_n"` with `options` + `max_selected` — that caps how many options may be selected from a set; that cap is a count of *selections*, still not a read of an option's amount, so the quantity-threshold limitation stands.
 
 ### Configuration Rules
 

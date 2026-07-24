@@ -277,7 +277,7 @@ Same `applied` / `skipped` / `errors` shape as `rattle-apply-config` and `rattle
 | `ensure_dictionary_entry` | `base_term` | `GET /translations/dictionary` (**no filters, no pagination — read all of it**) → `POST` / `PATCH …/{entry_id}`. **`PATCH` REPLACES the map: `GET`, merge locally, send it whole.** |
 | `upsert_translations` | **(entity_type, entity_id, field, language)** | `PUT /translations` — bulk. **`entity_type` and `field` are free strings: read the tenant's vocabulary, never invent one.** Rate limit **30/minute**. |
 | `ensure_content_locale` | **(block_id, language, `version`)** | `GET …/locales` → `POST …/locales` (upsert on `(language, version)`) / `PUT …/locales/{locale_id}`. **`blocks` XOR `template_name`.** |
-| `ensure_structure_block_locale` | (block_id, `lang`) | `PUT …/structure/blocks/{block_id}/locales/{lang}` — a true upsert. **Body is `{title}` and nothing else.** |
+| `ensure_structure_block_locale` | (block_id, `lang`) | `PUT …/structure/blocks/{block_id}/locales/{localeId}` — a true upsert. **The `{localeId}` URL segment is a language code (e.g. `DE`), uppercased server-side — NOT an integer, despite the name** (the content-block route below is the one keyed by an integer). **Body is `{title}` and nothing else.** |
 | `translate_content_locale` | (block_id, locale_id, target_language) | `POST …/locales/{locale_id}/translate` → **`201`**, returns the target `ContentBlockLocaleResponse` — **read `is_stale` and `source_content_hash` back from it.** Declares **`504`**. |
 
 **One operation that is NOT an `ensure_*`, because it is bulk, destructive-by-overwrite, and not verifiable from its own response:**
@@ -303,7 +303,7 @@ rattle-techdoc-language   the mood, the register, the original-language obligati
 - **Never assert what the bulk translate does to a regulated block.** Verify it on a clone; report what you observed.
 - **Never assume the glossary lock is wired to the translator.** The spec does not say it is. Watch a term survive before you trust it.
 - **Never `PATCH` a dictionary entry with a partial map.** It replaces. `GET`, merge, send whole.
-- **Never ship a document without checking `is_stale`** — and remember it does not exist for structure-block titles.
+- **Never ship a document without checking `is_stale`** — structure-block titles included: `StructureBlockLocaleResponse` now carries `is_stale` (and `source_content_hash`) too.
 - **Never leave a translated cover claiming to be the Originalbetriebsanleitung.** MRL §1.7.4.1.
 - **Never invent an `entity_type` or a `field`.** Read the tenant's; if the one you need is absent, ask.
 - **Harden the source before you translate it.** Omit `signalWord`, blank `resolvedText`. A regulated string that is not in the document cannot be mistranslated.

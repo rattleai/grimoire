@@ -1,8 +1,8 @@
 # Advanced prices — the conditional price nobody documented
 
-**Five operations. No named schema. No field descriptions. A summary that reads, in full, *"Create an advanced price"*.**
+**Four operations. For most of this feature's life: no named schema, no field descriptions, and a `POST` summary that read, in full, *"Create an advanced price"*.** The current spec has caught up on the worst of it — the request bodies are now named, described schemas that reject unknown fields, and the precedence rule against an option price-override is finally stated. This file records both: what the spec now settles, and what it still does not.
 
-It is the only mechanism in Rattle that prices an option **relative to the rest of the configuration** — and it is, by a wide margin, the least documented feature on the money path. This file is the documentation.
+It is the only mechanism in Rattle that prices an option **relative to the rest of the configuration** — and it was, for a long time, by a wide margin the least documented feature on the money path. This file is the documentation.
 
 ---
 
@@ -12,15 +12,12 @@ It is the only mechanism in Rattle that prices an option **relative to the rest 
 GET    /api/v1/options/{optionId}/advanced-prices              200
 POST   /api/v1/options/{optionId}/advanced-prices              201
 PUT    /api/v1/options/{optionId}/advanced-prices/{priceId}    200
-PATCH  /api/v1/options/{optionId}/advanced-prices/{priceId}    200
 DELETE /api/v1/options/{optionId}/advanced-prices/{priceId}    204
 ```
 
-The **only** prose Rattle provides about any of them, in its entirety:
+**The redundant `PATCH` is gone.** Earlier revisions of the spec carried both `PUT` and `PATCH` on `/{priceId}`; the current spec keeps only `PUT`. Update is one verb now.
 
-> **`GET`** — *"List advanced prices — List **condition-based price overrides** for an option. **Not paginated.**"*
-
-That is the whole documentation. The `POST` has a summary (*"Create an advanced price"*) and **no description**. The `PUT`, `PATCH` and `DELETE` have summaries and no descriptions. There is **no named schema in `components`** — `AdvancedPriceCreateRequest` **does not exist**. The request bodies are **inline**, so a code generator emits an untyped `dict` and an agent reading the spec sees a feature with no explanation attached.
+The spec now describes the mechanic. `GET`, `POST` and `PUT` each carry a description — *"Cross-option conditional pricing: set what this option costs **when** another option (`condition_option_id`) is also selected, optionally scoped to an area and/or price list. An advanced price outranks an option price-override during pricing resolution."* Only `DELETE` has no description. The request bodies are **named schemas** — `AdvancedPriceCreateRequest`, `AdvancedPriceUpdateRequest` — with per-field descriptions, so a code generator emits a typed model rather than an untyped `dict`.
 
 **Scope:** `prices:write` to create, `prices:read` to list.
 
@@ -28,37 +25,46 @@ That is the whole documentation. The `POST` has a summary (*"Create an advanced 
 
 ## 2 · The schema, verbatim
 
-Copied byte-for-byte out of `docs/openapi.json`. `POST /api/v1/options/{optionId}/advanced-prices` → `requestBody.content["application/json"].schema`:
+Copied out of `docs/openapi.json`. `POST /api/v1/options/{optionId}/advanced-prices` → `AdvancedPriceCreateRequest`:
 
 ```json
 {
-  "properties": {
-    "advanced_price":      {"type": "string"},
-    "area_id":             {"type": "integer"},
-    "condition_option_id": {"type": "integer"},
-    "price_list_id":       {"type": "integer"}
-  },
+  "additionalProperties": false,
   "required": ["condition_option_id", "advanced_price"],
-  "type": "object"
+  "type": "object",
+  "properties": {
+    "advanced_price":      {"type": "string", "pattern": "^-?\\d+(\\.\\d+)?$"},
+    "condition_option_id": {"type": "integer"},
+    "area_id":             {"type": "integer"},
+    "price_list_id":       {"type": "integer"}
+  }
 }
 ```
 
-Four fields. Two required. **No `additionalProperties: false`** — see § 6.
+Four fields. Two required. **`additionalProperties: false` is now set** — a typo'd field is a loud `422`, not a silently-swallowed `201` (this is the fix to the old § 6 trap; see § 6 for what was NOT fixed). `advanced_price` carries a decimal `pattern` — note the leading `-?`: a **negative** advanced price is schema-valid.
 
-The update bodies are narrower still:
+The update body, `AdvancedPriceUpdateRequest` on `PUT /options/{optionId}/advanced-prices/{priceId}`:
 
-```jsonc
-// PUT  /options/{optionId}/advanced-prices/{priceId}
-{ "properties": {"advanced_price": {"type": "string"}}, "required": ["advanced_price"], "type": "object" }
-
-// PATCH /options/{optionId}/advanced-prices/{priceId}
-{ "properties": {"advanced_price": {"type": "string"}}, "type": "object" }
+```json
+{
+  "additionalProperties": false,
+  "required": ["advanced_price"],
+  "type": "object",
+  "properties": {
+    "advanced_price":      {"type": "string", "pattern": "^-?\\d+(\\.\\d+)?$"},
+    "area_id":             {"type": ["integer", "null"]},
+    "price_list_id":       {"type": ["integer", "null"]},
+    "condition_option_id": {"type": "integer", "readOnly": true},
+    "option_id":           {"type": "integer", "readOnly": true},
+    "id":                  {"type": "integer", "readOnly": true}
+  }
+}
 ```
 
 Two things follow, and both matter:
 
-- **Only the price is updatable.** `condition_option_id`, `area_id` and `price_list_id` are **create-only**. You cannot re-point an advanced price at a different condition option. `PATCH` will not move it and **will not complain** — the field is silently dropped (§ 6). **DELETE and re-POST.**
-- **`PUT` requires `advanced_price`; `PATCH` does not.** This is the *only* place in the pricing surface where the two verbs genuinely differ (contrast audit § **P0-3**: `PUT` and `PATCH` are byte-identical aliases on 37 of 39 paths). A `PATCH` with an empty body `{}` is schema-valid and does nothing.
+- **The scoping IS updatable now; the condition is not.** `PUT` accepts `area_id` and `price_list_id` (both nullable — send `null` to widen to "all"). Only `condition_option_id` is create-only (`readOnly`, alongside `id` and `option_id`). So to **re-scope** an advanced price to a different area or price list, `PUT` it. To **re-point** it at a different condition option, you still **DELETE and re-POST** — `PUT` will reject `condition_option_id` as read-only.
+- **`PUT` requires `advanced_price`.** Even a scope-only change must resend the current price. (There is no `PATCH` to send a partial body — see § 1.)
 
 ---
 
@@ -77,10 +83,10 @@ The `GET` description confirms the reading in the API's own words: *"**condition
 | `{optionId}` (path) | **The option being priced.** The one whose cost changes. | ✅ (path) |
 | `condition_option_id` | **The option whose selection triggers the price.** A *different* option — typically in a *different* group. | ✅ |
 | `advanced_price` | The price `{optionId}` takes **when the condition holds**. A decimal **string**. | ✅ |
-| `area_id` | Optional narrowing. Presumably scopes the rule to one area. | ❌ |
-| `price_list_id` | Optional narrowing. Presumably scopes the rule to one price list. | ❌ |
+| `area_id` | Optional narrowing. Restricts the rule to one area; `null`/omitted = all areas. | ❌ |
+| `price_list_id` | Optional narrowing. Restricts the rule to one price list; `null`/omitted = all lists. | ❌ |
 
-**"Presumably" is doing real work in those last two rows, and it is deliberate.** The spec says nothing about what omitting them means (§ 7).
+The last two rows are now **documented**, not inferred: the schema descriptions state *"omit for all areas"* / *"omit for all"* and the create-schema description says *"`null` = applies to all"* (§ 7 tracks what changed).
 
 ---
 
@@ -95,7 +101,7 @@ Every configurator eventually meets a price that is **not a property of one opti
 
 **Without a conditional price, every one of these forces a bad modelling choice** — usually a combinatorial explosion of duplicate options ("Premium paint", "Premium paint with trim") that violates `reuse-over-duplicate`, doubles the BOM surface, and multiplies every constraint you then have to write to keep them mutually exclusive.
 
-`advanced_prices` solves it in one row. **It deserves to be the best-documented field in the pricing surface. It is the worst.**
+`advanced_prices` solves it in one row.
 
 ---
 
@@ -134,7 +140,7 @@ POST /api/v1/options/311/advanced-prices
 {"condition_option_id": 315, "advanced_price": "500.00", "price_list_id": 4}
 ```
 
-The rule now names the partner list. **Whether the retail list therefore falls back to `Option.price`, or to an ordinary price-override, or to something else — that is the precedence question, and it is not documented.** See `price-resolution.md` § 2.
+The rule now names the partner list. On the partner list the advanced price applies and **outranks an option price-override** (now documented — § 7). On the **retail** list this scoped rule does not apply, so option 311 falls back to whatever prices it there — its `Option.price`, or a retail price-override. **Which of those wins on the retail list is the ordinary resolution question** (`price-resolution.md` § 2); the advanced-price-vs-override precedence the spec documents does not settle it, because here no advanced price is in play on the retail list at all.
 
 ### 5.3 Scoped to one area
 
@@ -149,66 +155,61 @@ POST /api/v1/options/311/advanced-prices
 
 **Not a quantity rule.** `condition_option_id` tests **presence**, not amount. "The paint is cheaper when the customer orders more than 20 panels" is **not expressible** — the constraint DSL is presence-based only (audit § **P2-2**, *"the single largest class of missing configurator logic"*), and nothing in the advanced-price schema reads a number either. For amount-driven pricing, the mechanism is `price_scalings` on a **numbered** option — untyped (audit § **P1-4**) and a silent no-op if the option is not `is_numbered: true`.
 
-**Not a discount field.** There is no percentage, no delta, no "minus". `advanced_price` is an **absolute price**, expressed as a decimal string. A "10% bundle discount" must be computed by you, in `Decimal`, and written as the resulting absolute number. **Never compute it in `float`** (audit § **P0-5**).
+**Not a discount field.** There is no percentage, no delta, no "minus". `advanced_price` is an **absolute price**, expressed as a decimal string — the schema description says outright *"this option costs `advanced_price` when the condition holds"*. A "10% bundle discount" must be computed by you, in `Decimal`, and written as the resulting absolute number. **Never compute it in `float`** (audit § **P0-5**). (The `pattern` does permit a leading `-`, so a negative absolute price is accepted at the schema level — but that is a strange thing to want; confirm the total on `/calculate`.)
 
 **Not symmetric.** `POST /options/311/advanced-prices {"condition_option_id": 315, …}` prices **311**, conditional on 315. It says **nothing** about the price of 315. If the trim should also get cheaper when the paint is chosen, that is a **second row**, on option 315, conditioned on 311. Nothing links them, and nothing warns you that you wrote only one half of a rule you thought was symmetric.
 
 ---
 
-## 6 · The inline-schema trap
+## 6 · The inline-schema trap — fixed here, still live next door
 
-**The advanced-price bodies do not set `additionalProperties: false`.**
+**The advanced-price bodies now set `additionalProperties: false`.** A typo'd field on a `POST` or `PUT` to `/advanced-prices` is a loud `422`. The swallow-trap this section used to warn about **no longer applies to advanced prices.**
 
-Across the API, `additionalProperties: false` is set on **116 of 124 named request schemas** — so a typo'd field is a loud `422`, and an agent correctly *learns* that a bad field errors. Audit § **P0-10** names the 8 exceptions.
-
-**These inline bodies are not in that list of 8** — they were not counted, because they are not named schemas at all. In the pricing surface the exceptions are:
+It has **not** been fixed for its neighbours. Across the API, `additionalProperties: false` is set on nearly every *named* request schema — so a typo'd field is a loud `422`. Two pricing bodies are still **inline** and still omit it:
 
 | Endpoint | Body | `additionalProperties: false`? |
 |---|---|---|
-| `POST /options/{id}/price-overrides` | `PriceOverrideCreateRequest` (named) | ✅ typo → `422` |
-| `POST /products/{id}/price-overrides` | `ProductPriceOverrideCreateRequest` (named) | ✅ typo → `422` |
-| `POST /products/{id}/pricing-presets` | `PricingPresetCreateRequest` (named) | ✅ typo → `422` |
-| **`POST /options/{id}/advanced-prices`** | **inline** | ❌ **typo → `201`, field dropped** |
-| **`POST /areas/{id}/price-overrides`** | **inline** | ❌ **typo → `201`, field dropped** |
-| **`PUT /options/{id}/area-config`** | **inline** | ❌ **typo → `200`, field dropped** |
+| `POST /options/{optionId}/price-overrides` | `PriceOverrideCreateRequest` (named) | ✅ typo → `422` |
+| `POST /products/{productId}/price-overrides` | `ProductPriceOverrideCreateRequest` (named) | ✅ typo → `422` |
+| `POST /products/{productId}/pricing-presets` | `PricingPresetCreateRequest` (named) | ✅ typo → `422` |
+| `POST /options/{optionId}/advanced-prices` | **`AdvancedPriceCreateRequest`** (named) | ✅ **now typo → `422`** |
+| **`POST /areas/{areaId}/price-overrides`** | **inline** | ❌ **typo → `201`, field dropped** |
+| **`PUT /options/{optionId}/area-config`** | **inline** | ❌ **typo → `200`, field dropped** |
 
-**Within one resource family, a typo'd field errors on one endpoint and is silently swallowed on the next.** The inconsistency is worse than either policy would be.
-
-**The failure this produces, concretely:**
+**The failure the two remaining inline bodies still produce, concretely** — an area price-override with a mistyped scope field:
 
 ```json
-POST /api/v1/options/311/advanced-prices
-{"condition_option_id": 315, "advanced_price": "500.00", "price_list": 4}
-                                                          ^^^^^^^^^^^^ typo — should be price_list_id
+POST /api/v1/areas/88/price-overrides
+{"override_price": "450.00", "price_list": 4}
+                             ^^^^^^^^^^^ typo — should be price_list_id
 → 201 Created
 ```
 
-**The row exists. The `price_list` key was dropped. The rule is now unscoped** — and whatever unscoped means (§ 7), it is not what you asked for. Nothing errored.
+**The row exists. The `price_list` key was dropped. The override is now unscoped** — and whatever unscoped means, it is not what you asked for. Nothing errored.
 
-**The only defence is to read it back.** `GET /options/{optionId}/advanced-prices` after every write, and **diff what you sent against what came back.** Then verify the *price* through `POST /configurations/calculate` — because a row that exists and a price that applies are two different facts (`price-resolution.md` § 3.6).
+**The defence for the two inline endpoints is to read the write back** — `GET` the list after the write and **diff what you sent against what came back**. For advanced prices the schema now catches the typo for you, but you should still verify the *price* through `POST /configurations/calculate` — because a row that exists and a price that applies are two different facts (`price-resolution.md` § 3.6).
 
-**Report this.** The inline pricing bodies extend audit § **P0-10**'s list of 8 *named* schemas and are not currently counted in `docs/API_AUDIT.md`.
-
-> **The mechanism itself is now reported.** `docs/API_AUDIT.md` § **P0-9** — *"`advanced-prices` — a conditional-price engine with no schema, no description, and no name"* — carries the finding upstream: the schemas are inline, the description is `null`, and *"we worked out what it does by reading a required field name."* The **inline-body swallow** (§ 6 above) is a *separate* defect and is **not** yet in the audit.
+> **Provenance.** `docs/API_AUDIT.md` § **P0-9** recorded advanced-prices as *"a conditional-price engine with no schema, no description, and no name"*, and § **P0-10** flagged the inline bodies that swallow unknown fields. The current spec has **named and described** the advanced-price schemas and given them `additionalProperties: false` — so the P0-9 finding and the advanced-price half of P0-10 are **resolved upstream**. The **area price-override** and **option `area-config`** inline bodies (§ P0-10) are **not** fixed. Treat the audit doc as the point-in-time record it is; this file tracks the current spec.
 
 ---
 
-## 7 · What is NOT known — and must not be guessed
+## 7 · What the spec now settles — and what it still does not
 
-Everything in §§ 1–6 is verified against `docs/openapi.json`. Everything below is **not answerable from the spec**. If a user asks, **say so** and offer to measure it (`price-resolution.md` § 3).
+Everything in §§ 1–6 is verified against `docs/openapi.json`. The table below separates what the current spec **now answers** from what remains **not answerable from the spec**. For the latter, if a user asks, **say so** and offer to measure it (`price-resolution.md` § 3).
 
 | Question | Status |
 |---|---|
-| **Does an advanced price beat an ordinary price-override?** | **UNKNOWN.** No precedence is documented anywhere in the spec. Measure it. Never assert it. |
-| **What if TWO advanced prices on the same option both match** (two condition options both selected)? | **UNKNOWN.** Lowest? Highest? Last created? Summed? Nothing states it, and there is no `priority` or `order_index` field on the entity to break the tie with. **This is a real configuration in a multi-select group, and it is undefined.** |
-| **What does omitting `area_id` mean?** | **UNKNOWN.** "Applies in every area" is the intuitive reading. "Applies in no area" is equally consistent with a schema that says nothing. Measure it. |
-| **What does omitting `price_list_id` mean?** | **UNKNOWN.** Same. Note the option *price-override* makes `price_list_id` **required** — so the pricing surface is not consistent about whether an unscoped price is even a coherent thing. |
-| **Does the condition option have to be in a different group?** | **UNKNOWN.** In a single-select group (`is_multi: false`) two options are mutually exclusive, so an advanced price conditioned on a sibling **could never fire**. The API almost certainly accepts it. **It would be a silent no-op.** Do not author one. |
-| **Can `condition_option_id` point at an option on a different *product*?** | **UNKNOWN**, and it would be nonsensical. The schema is a bare `integer` with no stated referential integrity. Assume not; do not test it in production. |
-| **Is `advanced_price` an absolute price or a delta?** | **Absolute** — inferred from the field name, the `string` money type shared with `override_price` / `Option.price`, and the absence of any sign or percentage field. **Labelled as inference.** Confirm it on the first `/calculate` of any new tenant: a delta and an absolute are trivially distinguishable at the total. |
-| **Is there a `409` on duplicate `(option, condition_option, area, price_list)`?** | **No `409` is declared** on the advanced-price `POST`. The area, product and preset `POST`s all declare one. **Uniqueness is unverified — check the list yourself before creating.** |
+| **Does an advanced price beat an ordinary option price-override?** | **DOCUMENTED.** The create/response schema descriptions and every operation description state it: *"an advanced price outranks **and replaces** an option price-override during pricing resolution."* Read as: when both would price the same option, the advanced price wins. (This does not order it against a *product* override, a pricing preset, or the base price — those remain unstated; see below.) |
+| **What does omitting `area_id` mean?** | **DOCUMENTED.** *"omit for all areas"* / *"`null` = applies to all"*. Omitted or `null` ⇒ every area. |
+| **What does omitting `price_list_id` mean?** | **DOCUMENTED.** Same: omitted or `null` ⇒ every price list. |
+| **What if TWO advanced prices on the same option both match** (two condition options both selected)? | **UNKNOWN.** Lowest? Highest? Last created? Summed? Nothing states it, and there is no `priority` or `order_index` field on the entity to break the tie with. **This is a real configuration in a multi-select group, and it is undefined.** Measure it. |
+| **How does an advanced price rank against a *product* price-override, a pricing preset, or the base price?** | **UNKNOWN.** Only the option-override relationship is documented. The full precedence across all five mechanisms is still not a table anywhere (`price-resolution.md` § 2). |
+| **Does the condition option have to be in a different group?** | **UNSTATED.** In a single-select group (`is_multi: false`) two options are mutually exclusive, so an advanced price conditioned on a sibling **could never fire**. The API almost certainly accepts it. **It would be a silent no-op.** Do not author one. |
+| **Can `condition_option_id` point at an option on a different *product*?** | **UNSTATED**, and it would be nonsensical. The schema is a bare `integer` with no stated referential integrity. Assume not; do not test it in production. |
+| **Is `advanced_price` an absolute price or a delta?** | **Absolute** — now stated in the schema description (*"this option costs `advanced_price`"*), consistent with the `string` money type shared with `override_price` / `Option.price`. Confirm it on the first `/calculate` of any new tenant anyway. |
+| **Is there a `409` on duplicate `(option, condition_option, area, price_list)`?** | **No `409` is declared** on the advanced-price `POST` (responses: `201/401/404/422/429`). The area, product and preset `POST`s all declare one. **Uniqueness is unverified — check the list yourself before creating.** |
 
-**The discipline:** an unknown, stated, costs a sentence. An unknown, guessed, costs a wrong number on a customer's invoice — and it arrives with a `200 OK`, which is precisely why nobody catches it.
+**The discipline is unchanged:** an unknown, stated, costs a sentence. An unknown, guessed, costs a wrong number on a customer's invoice — and it arrives with a `200 OK`, which is precisely why nobody catches it.
 
 ---
 
@@ -219,16 +220,15 @@ ensure_advanced_price
   natural key : (option_id, condition_option_id, area_id, price_list_id)
   REST        : GET  /options/{optionId}/advanced-prices        (NOT paginated — returns all)
                 POST /options/{optionId}/advanced-prices        → 201
-                PATCH /options/{optionId}/advanced-prices/{id}  → only advanced_price is updatable
+                PUT  /options/{optionId}/advanced-prices/{id}   → 200  (price + scoping; condition is read-only)
                 DELETE …/{id}                                    → 204
 ```
 
 1. **`GET` the list.** It is not paginated — the API says so outright — so one call returns everything.
 2. **Match on the full quadruple** `(option_id, condition_option_id, area_id, price_list_id)`. **No `409` is declared**, so the API may well let you create a duplicate. **Do not rely on it to stop you.**
-3. **Absent** → `POST`. **Present with a different price** → `PATCH` with `{"advanced_price": "…"}`. **Present and identical** → `noop`.
-4. **Need to change the condition, the area or the price list?** → **`DELETE` and re-`POST`.** They are create-only, and `PATCH` drops them silently.
-5. **Read it back and diff it** (§ 6 — inline body, no `additionalProperties: false`).
-6. **Verify the price through `POST /configurations/calculate`**, selecting the option **and** the condition option. Then run the **control**: calculate again with the condition option **deselected**, and confirm the advanced price does **not** contribute. A rule that fires unconditionally is worse than no rule.
+3. **Absent** → `POST`. **Present with a different price or scope** → `PUT` (resend `advanced_price`; adjust `area_id` / `price_list_id` as needed — both are updatable, `null` to widen). **Present and identical** → `noop`.
+4. **Need to change the condition option?** → **`DELETE` and re-`POST`.** `condition_option_id` is `readOnly`; `PUT` will reject it. (Area and price-list scope no longer need this — `PUT` moves them.)
+5. **Verify the price through `POST /configurations/calculate`**, selecting the option **and** the condition option. Then run the **control**: calculate again with the condition option **deselected**, and confirm the advanced price does **not** contribute. A rule that fires unconditionally is worse than no rule. (The create body now rejects unknown fields, so a scoping typo `422`s rather than silently dropping — but `/calculate` is still the only proof the price *applies*.)
 
 ```json
 {"type": "ensure_advanced_price",

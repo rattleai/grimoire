@@ -4,7 +4,7 @@
  *
  * Design goal: ZERO DRIFT and ZERO DEPENDENCIES.
  *
- * Drift. The Rattle API has 462 operations across 257 paths. A server that
+ * Drift. The Rattle API has 472 operations across 260 paths. A server that
  * hand-declares one MCP tool per endpoint would rot the day rattleapp.de ships
  * a new endpoint. This server therefore declares NO per-endpoint code at all.
  * It exposes a generic authenticated passthrough (`rattle_request`) plus a
@@ -287,7 +287,7 @@ const TOOLS = [
   {
     name: "rattle_api_search",
     description:
-      "Search the bundled Rattle OpenAPI spec (462 operations / 257 paths) for the endpoints matching a query. " +
+      "Search the bundled Rattle OpenAPI spec (472 operations / 260 paths) for the endpoints matching a query. " +
       "Use this to DISCOVER the right endpoint before calling rattle_request, instead of loading the 7,000-line API reference into context. " +
       "Example queries: 'create option', 'list groups product', 'constraints replace', 'bom item usage subclause'.",
     inputSchema: {
@@ -302,7 +302,7 @@ const TOOLS = [
   {
     name: "rattle_request",
     description:
-      "Execute any Rattle REST API call. This is a generic authenticated passthrough — every one of the 462 operations is reachable through it, " +
+      "Execute any Rattle REST API call. This is a generic authenticated passthrough — every one of the 472 operations is reachable through it, " +
       "and new endpoints work with no change to this server. Discover the right path with rattle_api_search first. " +
       "Paths are relative to the API base: use 'products', not '/api/v1/products'. " +
       "Read-only by default; non-GET requires RATTLE_MCP_ALLOW_WRITES=1.",

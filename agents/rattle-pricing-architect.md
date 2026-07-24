@@ -68,12 +68,12 @@ POST /products/{productId}/price-overrides/replace
 ```
 > *"Delete all existing overrides and replace with the provided set."*
 
-**This is a bulk atomic wipe, and its concurrency control does not exist in the machine-readable spec** (audit § **P0-1**):
+**This is a bulk atomic wipe, and its concurrency control is still not expressible on the `/replace` endpoints in the machine-readable spec** (audit § **P0-1**):
 
 - `info.description` says bulk-replace uses **`X-Price-Lists-Version`** for optimistic locking.
-- **The spec declares ZERO header parameters** across all 463 operations. A spec-driven client is *structurally incapable* of sending it.
+- **No price-override `/replace` endpoint declares the header.** The current spec declares `X-Price-Lists-Version` on price-list CRUD, but **not on any `/replace`** — a spec-driven client is *structurally incapable* of sending it to the endpoint that does the wiping.
 - **No `/replace` declares a `409`.** There is no conflict response to handle.
-- The prose says *"read the current version from a GET response"* — and **`PriceListResponse` carries no version field at all.** The only candidate anywhere is `ProductResponse.pricing_version`, and **that it is the value this header wants is an inference, not documented.** Say so if you use it.
+- The prose says *"read the current version from a GET response"* — **`PriceListResponse` now carries a `version` field**, so that is followable for price-list writes; the `/replace` endpoints just expose no slot to send it in. (`ProductResponse.pricing_version` also exists; which value the header wants is not documented — say so if you use it.)
 
 > **A concurrent `/replace` silently destroys another user's price overrides and returns `200 OK`.** No error. No warning. No conflict. The catalogue then quotes numbers nobody set.
 

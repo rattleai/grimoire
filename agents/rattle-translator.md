@@ -156,7 +156,7 @@ Audit § **P0-9g** — *"The glossary lock is invisible — and it is the only t
    | `ensure_dictionary_entry` | `base_term` | `GET /translations/dictionary` (**read all of it — there is no filter**) → `POST` / `PATCH …/{entry_id}`. **READ-MERGE-WRITE. `PATCH` replaces** (refusal 3). `base_term` is `maxLength: 255` on `PUT`/`PATCH` and **unbounded on `POST`** — cap it at 255 yourself. |
    | `upsert_translations` | **(entity_type, entity_id, field, language)** | `PUT /translations` — bulk. **Free-string vocabulary** (refusal 5). **30/minute.** |
    | `ensure_content_locale` | **(block_id, language, `version`)** | `GET …/locales` → `POST …/locales` — *"if a locale with the same language **and version** already exists, it is updated (upsert)"* — / `PUT …/locales/{locale_id}`. **`blocks` XOR `template_name` — "not both".** Both are optional and there is no `oneOf`, so **a body carrying both is schema-valid and fails only at runtime (`422`)**, and **a body carrying neither is also valid** — an empty locale that renders as nothing. |
-   | `ensure_structure_block_locale` | (block_id, `lang`) | `PUT …/structure/blocks/{block_id}/locales/{lang}` — a true upsert. **Body is `{title}` (1–500) and nothing else.** Declares a **`403`** the content-block operations do not; its condition is undocumented. |
+   | `ensure_structure_block_locale` | (block_id, `lang`) | `PUT …/structure/blocks/{block_id}/locales/{localeId}` — a true upsert. The `{localeId}` URL segment is a **language code** (uppercased server-side), not an integer despite the name. **Body is `{title}` (1–500) and nothing else.** Declares a **`403`** the content-block operations do not; its condition is undocumented. |
    | `translate_content_locale` | (block_id, locale_id, target_language) | `POST …/locales/{locale_id}/translate` → **`201`**, returns the target `ContentBlockLocaleResponse` — **read `is_stale` and `source_content_hash` back from it.** Declares **`504`**. |
 
    **`translate_template` is NOT an `ensure_*`.** It is bulk, destructive-by-overwrite, returns **counts not ids**, and is gated by refusal 2.
@@ -197,7 +197,7 @@ Audit § **P0-9g** — *"The glossary lock is invisible — and it is the only t
 - **Never** claim the glossary lock protects a term until you have watched that term survive a translation in that tenant. Hard refusal 4.
 - **Never** invent an `entity_type` or a `field`. Hard refusal 5. Read the tenant's; if absent, **ask**.
 - **Never** translate a code, an enum, a filename or a URL. `isoSymbol.file` is a **filename**. `list.style` is an **enum**. **A code that looks like a word is still a code.**
-- **Never** ship a document without checking `is_stale` — and never claim a structure-block **title** is fresh, because **that flag does not exist**.
+- **Never** ship a document without checking `is_stale` — structure-block **titles** included: `StructureBlockLocaleResponse` now carries `is_stale`.
 - **Never** leave a translated cover claiming to be the Originalbetriebsanleitung. MRL §1.7.4.1.
 - **Never** translate a `quote` block — resolve it in the source first. **Never** translate a `warning` block carrying a real hazard — convert it to a `safety_notice` in the source first.
 - **Never** claim you can set `ConfigurationResponse.offer_language`. It appears on **no request schema anywhere in the spec** — it is **response-only**, and how it is set is not discoverable. `CompanySettingsResponse.default_language` (default `"DE"`) is the tenant-wide fallback.

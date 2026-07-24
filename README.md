@@ -83,7 +83,7 @@ skills/                        18 Anthropic-format Skills (model-agnostic)
   rattle-onboarding/           ★ DAY 0. Empty tenant → working configurator. Everything else assumes this.
   rattle-ingest/               ★ Raw file → column roles → source-mapping.json. The FIRST data link.
   rattle-configurator/         Core consulting knowledge (the #1 rule, rules, anti-patterns)
-  rattle-api/                  REST API surface (462 ops, OpenAPI spec)
+  rattle-api/                  REST API surface (472 ops, OpenAPI spec)
   rattle-pricelist-analysis/   Workflow: scan input for anti-patterns
   rattle-suggest-config/       Workflow: produce BOM-aware recommendation JSON
   rattle-bom-builder/          Variant-BOM expert: usage_subclauses + option_scalings + numbered options
@@ -131,7 +131,7 @@ rattle_api/                    Python execution layer (CLI, RattleClient, provid
 .claude-plugin/                Plugin + marketplace manifest (Claude Code distribution)
 .mcp.json                      MCP wiring for Cursor / Windsurf / Claude Desktop
 AGENTS.md                      Cross-platform agent rules (Cursor, Codex, Aider, Continue)
-docs/API_REFERENCE.md          Full Rattle REST reference (462 operations)
+docs/API_REFERENCE.md          Full Rattle REST reference (472 operations)
 memory/                        Per-tenant style preferences (gitignored)
 tests/                         262 tests, ~97% coverage
 ```
@@ -162,7 +162,7 @@ Nothing here needs to be published. The bundle is Markdown plus a zero-dependenc
 | **Cursor / Windsurf / Claude Desktop** | ✅ via MCP | ✅ MCP | No Skills mechanism — the MCP server serves both — [§3](#3-mcp--cursor-windsurf-claude-desktop) |
 | **ChatGPT app** (Developer mode) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
 | **Gemini app** (Spark) | ⚠️ via MCP | ⚠️ MCP | Needs a **remote HTTPS** server — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
-| **Custom GPT Action** | — | ❌ | 462 operations vs a ~30-operation ceiling — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
+| **Custom GPT Action** | — | ❌ | 472 operations vs a ~30-operation ceiling — [§6](#6-chatgpt-and-gemini--the-consumer-chat-apps) |
 
 **The 18 skills conform to the [Agent Skills open standard](https://agentskills.io)** — `name` + `description` frontmatter, progressive disclosure. Claude.ai takes them as uploads; Codex CLI and Gemini CLI discover them from `.agents/skills/` with **zero porting**.
 
@@ -223,7 +223,7 @@ The MCP server is how clients **without** a native Skills mechanism get the same
 | Tool | What it does |
 |---|---|
 | `rattle_knowledge_list` / `rattle_knowledge_get` | Serves every skill, reference and schema — Skills for clients that don't have Skills |
-| `rattle_api_search` | Finds the right endpoint among 462 operations without loading a 7,000-line reference into context |
+| `rattle_api_search` | Finds the right endpoint among 472 operations without loading a 7,000-line reference into context |
 | `rattle_request` | Calls any Rattle endpoint. Read-only unless you explicitly enable writes |
 
 Clone once — there is nothing to install, and no npm dependencies to resolve:
@@ -255,14 +255,14 @@ Verify it before wiring it up — this needs no key and touches no network:
 
 ```bash
 node grimoire/scripts/mcp_smoke.mjs
-# OK — 462 API operations reachable, read-only enforced.
+# OK — 472 API operations reachable, read-only enforced.
 ```
 
 **Tell your agent where to start.** These clients have no Skills mechanism, so nothing auto-loads. Put this in your Cursor rules / project instructions / system prompt:
 
 > For any Rattle task, first call `rattle_knowledge_get("skills/rattle-configurator/SKILL.md")` — it carries the #1 rule. Use `rattle_knowledge_list` to find the right skill for the task.
 
-**Why it won't rot.** The Rattle API has 462 operations across 257 paths. A server hand-declaring one tool per endpoint would break every time rattleapp ships a new one. This one declares **no per-endpoint code at all** — `rattle_request` is a generic passthrough, `rattle_api_search` reads the bundled OpenAPI spec. A new endpoint works the day it ships. Node ≥ 18, zero npm dependencies.
+**Why it won't rot.** The Rattle API has 472 operations across 260 paths. A server hand-declaring one tool per endpoint would break every time rattleapp ships a new one. This one declares **no per-endpoint code at all** — `rattle_request` is a generic passthrough, `rattle_api_search` reads the bundled OpenAPI spec. A new endpoint works the day it ships. Node ≥ 18, zero npm dependencies.
 
 **It is read-only until you say otherwise.** A live CPQ tenant is not a sandbox, and a generic passthrough in an agent loop could otherwise rewrite a customer's catalogue in one call. Writes belong in `rattle-config-builder`, which pauses for confirmation.
 
@@ -322,7 +322,7 @@ Short version: **both can work, but neither will talk to a local server, and con
 > [!WARNING]
 > **Do not deploy this server publicly without adding authentication.** Its headline tool, `rattle_request`, is a *generic authenticated passthrough* carrying your tenant API key. Behind a public no-auth URL, anyone who learns that URL gets your tenant's API access — and if writes are enabled, they can rewrite your catalogue. ChatGPT permits "no authentication" connectors; that is exactly the trap. If you take this route: put real auth in front of it, keep `RATTLE_MCP_ALLOW_WRITES` off, and treat the URL as a credential.
 
-**A Custom GPT Action will not work.** GPT Actions cap out at roughly **30 operations**; the Rattle API has **462**. There is no way to import the spec. (This is precisely why the MCP server has an `rattle_api_search` tool instead of one tool per endpoint — it sidesteps the ceiling entirely.) A curated ≤30-operation facade spec would be needed, which is a separate piece of work.
+**A Custom GPT Action will not work.** GPT Actions cap out at roughly **30 operations**; the Rattle API has **472**. There is no way to import the spec. (This is precisely why the MCP server has an `rattle_api_search` tool instead of one tool per endpoint — it sidesteps the ceiling entirely.) A curated ≤30-operation facade spec would be needed, which is a separate piece of work.
 
 **The knowledge alone, with no tools.** If you just want the consulting expertise in a chat window and are willing to give up live API access, upload the skills as files:
 
@@ -500,7 +500,7 @@ Full conventions: `AGENTS.md` (cross-platform) and `CLAUDE.md` (Claude-Code-spec
 - [`CLAUDE.md`](CLAUDE.md) — Claude Code project instructions.
 - [`ROADMAP.md`](ROADMAP.md) — prioritised backlog (P0/P1/P2) of skills, agents, and slash commands needed to close the value-chain gaps the PR #14 audits identified.
 - [`PUBLISHING.md`](PUBLISHING.md) — how to release to npm, PyPI, and the Claude Code marketplace.
-- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (462 operations).
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — full Rattle REST API reference (472 operations).
 - [`docs/API_AUDIT.md`](docs/API_AUDIT.md) — **42 findings against the Rattle REST API**, every one reproduced by script against the published spec. The diagnosis.
 - [`docs/API_REMEDIATION.md`](docs/API_REMEDIATION.md) — **the fix plan for Rattle engineers.** Organised by work, with copy-pasteable OpenAPI. Wave 1 is one day and removes every silent-corruption path.
 - [`scripts/rattle_api_conformance.py`](scripts/rattle_api_conformance.py) — **a red/green test for every finding.** `python3 scripts/rattle_api_conformance.py` — no credentials needed. Red on 27 checks today.

@@ -9,7 +9,7 @@
 - **Base URL**: `https://www.rattleapp.de/api/v1` (override via env var `RATTLE_BASE_URL`).
 - **OpenAPI version**: 3.1.0
 - **Spec version**: 1.0.0
-- **Operations**: 463 across 258 paths and 37 resource groups.
+- **Operations**: 472 across 260 paths and 37 resource groups.
 
 ## Authentication
 
@@ -117,13 +117,13 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Areas | 19 | [#areas](#areas) |
 | Attributes | 11 | [#attributes](#attributes) |
 | Baselines | 4 | [#baselines](#baselines) |
-| Batch | 8 | [#batch](#batch) |
+| Batch | 9 | [#batch](#batch) |
 | Branches | 4 | [#branches](#branches) |
 | Catalog Filters | 10 | [#catalog-filters](#catalog-filters) |
 | Change Orders | 13 | [#change-orders](#change-orders) |
 | Change Requests | 8 | [#change-requests](#change-requests) |
 | Company | 14 | [#company](#company) |
-| Configurations | 8 | [#configurations](#configurations) |
+| Configurations | 9 | [#configurations](#configurations) |
 | Connectors | 22 | [#connectors](#connectors) |
 | Constraints | 16 | [#constraints](#constraints) |
 | Customer Links | 6 | [#customer-links](#customer-links) |
@@ -131,14 +131,14 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Documents | 78 | [#documents](#documents) |
 | Export | 3 | [#export](#export) |
 | Groups | 11 | [#groups](#groups) |
-| Images | 16 | [#images](#images) |
+| Images | 18 | [#images](#images) |
 | Inbound Webhooks | 7 | [#inbound-webhooks](#inbound-webhooks) |
 | Item Revisions | 7 | [#item-revisions](#item-revisions) |
 | Languages | 7 | [#languages](#languages) |
 | Opportunities | 7 | [#opportunities](#opportunities) |
-| Options | 15 | [#options](#options) |
+| Options | 14 | [#options](#options) |
 | Part Documents | 11 | [#part-documents](#part-documents) |
-| Parts | 33 | [#parts](#parts) |
+| Parts | 39 | [#parts](#parts) |
 | Price Lists | 8 | [#price-lists](#price-lists) |
 | Price Overrides | 6 | [#price-overrides](#price-overrides) |
 | Product Media | 10 | [#product-media](#product-media) |
@@ -170,6 +170,15 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Areas | GET | `/api/v1/areas` | List areas |
 | Areas | POST | `/api/v1/areas` | Create an area |
 | Areas | GET | `/api/v1/areas/library` | List library areas |
+| Areas | GET | `/api/v1/areas/{areaId}` | Get an area |
+| Areas | PUT | `/api/v1/areas/{areaId}` | Update an area |
+| Areas | PATCH | `/api/v1/areas/{areaId}` | Partially update an area |
+| Areas | DELETE | `/api/v1/areas/{areaId}` | Delete an area |
+| Areas | GET | `/api/v1/areas/{areaId}/content` | Get area rich content |
+| Areas | PUT | `/api/v1/areas/{areaId}/content` | Update area rich content |
+| Areas | DELETE | `/api/v1/areas/{areaId}/content` | Delete area rich content |
+| Areas | POST | `/api/v1/areas/{areaId}/content/images` | Upload content image |
+| Areas | GET | `/api/v1/areas/{areaId}/groups` | List groups in an area |
 | Areas | GET | `/api/v1/areas/{areaId}/options` | List area options |
 | Areas | GET | `/api/v1/areas/{areaId}/price-overrides` | List area price overrides |
 | Areas | POST | `/api/v1/areas/{areaId}/price-overrides` | Create area price override |
@@ -177,20 +186,11 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Areas | PUT | `/api/v1/areas/{areaId}/price-overrides/{overrideId}` | Update area price override |
 | Areas | PATCH | `/api/v1/areas/{areaId}/price-overrides/{overrideId}` | Partially update area price override |
 | Areas | DELETE | `/api/v1/areas/{areaId}/price-overrides/{overrideId}` | Delete area price override |
-| Areas | GET | `/api/v1/areas/{id}` | Get an area |
-| Areas | PUT | `/api/v1/areas/{id}` | Update an area |
-| Areas | PATCH | `/api/v1/areas/{id}` | Partially update an area |
-| Areas | DELETE | `/api/v1/areas/{id}` | Delete an area |
-| Areas | GET | `/api/v1/areas/{id}/content` | Get area rich content |
-| Areas | PUT | `/api/v1/areas/{id}/content` | Update area rich content |
-| Areas | DELETE | `/api/v1/areas/{id}/content` | Delete area rich content |
-| Areas | POST | `/api/v1/areas/{id}/content/images` | Upload content image |
-| Areas | GET | `/api/v1/areas/{id}/groups` | List groups in an area |
 | Attributes | GET | `/api/v1/attributes` | List technical attributes |
 | Attributes | POST | `/api/v1/attributes` | Create an attribute |
-| Attributes | PUT | `/api/v1/attributes/values/{id}` | Update an attribute value |
-| Attributes | PATCH | `/api/v1/attributes/values/{id}` | Partially update an attribute value |
-| Attributes | DELETE | `/api/v1/attributes/values/{id}` | Delete an attribute value |
+| Attributes | PUT | `/api/v1/attributes/values/{valueId}` | Update an attribute value |
+| Attributes | PATCH | `/api/v1/attributes/values/{valueId}` | Partially update an attribute value |
+| Attributes | DELETE | `/api/v1/attributes/values/{valueId}` | Delete an attribute value |
 | Attributes | GET | `/api/v1/attributes/{id}` | Get an attribute |
 | Attributes | PUT | `/api/v1/attributes/{id}` | Update an attribute |
 | Attributes | PATCH | `/api/v1/attributes/{id}` | Partially update an attribute |
@@ -208,6 +208,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Batch | POST | `/api/v1/groups/batch` | Batch groups operations |
 | Batch | POST | `/api/v1/options/batch` | Batch options operations |
 | Batch | POST | `/api/v1/parts/batch` | Batch parts operations |
+| Batch | POST | `/api/v1/placements/batch` | Batch placements operations |
 | Batch | POST | `/api/v1/products/batch` | Batch products operations |
 | Branches | GET | `/api/v1/branches` | List branches |
 | Branches | POST | `/api/v1/branches` | Create branch |
@@ -255,10 +256,11 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Company | PATCH | `/api/v1/company/connector-settings` | Partially update connector settings |
 | Company | GET | `/api/v1/company/contacts` | List company contacts |
 | Company | POST | `/api/v1/company/contacts` | Create a company contact |
-| Company | PUT | `/api/v1/company/contacts/{id}` | Update a company contact |
-| Company | PATCH | `/api/v1/company/contacts/{id}` | Partially update a company contact |
-| Company | DELETE | `/api/v1/company/contacts/{id}` | Delete a company contact |
+| Company | PUT | `/api/v1/company/contacts/{contactId}` | Update a company contact |
+| Company | PATCH | `/api/v1/company/contacts/{contactId}` | Partially update a company contact |
+| Company | DELETE | `/api/v1/company/contacts/{contactId}` | Delete a company contact |
 | Configurations | GET | `/api/v1/configurations` | List saved configurations |
+| Configurations | POST | `/api/v1/configurations` | Create a saved configuration |
 | Configurations | POST | `/api/v1/configurations/calculate` | Calculate a configuration |
 | Configurations | GET | `/api/v1/configurations/states/by-code/{code}` | Get configuration state by code |
 | Configurations | GET | `/api/v1/configurations/states/by-code/{code}/parts` | Get configured parts (BOM) |
@@ -270,16 +272,16 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Connectors | POST | `/api/v1/connectors` | Create a connector |
 | Connectors | DELETE | `/api/v1/connectors/endpoints/{id}` | Delete a connector endpoint |
 | Connectors | GET | `/api/v1/connectors/jobs` | List connector jobs |
-| Connectors | GET | `/api/v1/connectors/jobs/{id}` | Get a connector job |
-| Connectors | POST | `/api/v1/connectors/jobs/{id}/replay` | Replay a connector job |
+| Connectors | GET | `/api/v1/connectors/jobs/{jobId}` | Get a connector job |
 | Connectors | GET | `/api/v1/connectors/jobs/{jobId}/logs` | List job logs |
+| Connectors | POST | `/api/v1/connectors/jobs/{jobId}/replay` | Replay a connector job |
 | Connectors | GET | `/api/v1/connectors/tasks/{id}` | Get a connector task |
 | Connectors | DELETE | `/api/v1/connectors/tasks/{id}` | Delete a connector task |
 | Connectors | POST | `/api/v1/connectors/tasks/{id}/run` | Run a connector task |
 | Connectors | GET | `/api/v1/connectors/triggers` | List connector triggers |
 | Connectors | POST | `/api/v1/connectors/triggers` | Create a connector trigger |
-| Connectors | PUT | `/api/v1/connectors/triggers/{id}` | Update a connector trigger |
-| Connectors | DELETE | `/api/v1/connectors/triggers/{id}` | Delete a connector trigger |
+| Connectors | PUT | `/api/v1/connectors/triggers/{triggerId}` | Update a connector trigger |
+| Connectors | DELETE | `/api/v1/connectors/triggers/{triggerId}` | Delete a connector trigger |
 | Connectors | GET | `/api/v1/connectors/{id}` | Get a connector |
 | Connectors | PUT | `/api/v1/connectors/{id}` | Update a connector |
 | Connectors | PATCH | `/api/v1/connectors/{id}` | Partially update a connector |
@@ -313,17 +315,17 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Customers | GET | `/api/v1/customers` | List customers |
 | Customers | POST | `/api/v1/customers` | Create a customer |
 | Customers | GET | `/api/v1/customers/search` | Search customers |
+| Customers | GET | `/api/v1/customers/{customerId}` | Get a customer |
+| Customers | PUT | `/api/v1/customers/{customerId}` | Update a customer |
+| Customers | PATCH | `/api/v1/customers/{customerId}` | Partially update a customer |
+| Customers | DELETE | `/api/v1/customers/{customerId}` | Delete a customer |
 | Customers | GET | `/api/v1/customers/{customerId}/configurations` | List customer configurations |
+| Customers | GET | `/api/v1/customers/{customerId}/contacts` | List contacts for a customer |
+| Customers | POST | `/api/v1/customers/{customerId}/contacts` | Add a contact to a customer |
+| Customers | PUT | `/api/v1/customers/{customerId}/contacts/{contactId}` | Update a contact |
+| Customers | DELETE | `/api/v1/customers/{customerId}/contacts/{contactId}` | Remove a contact |
 | Customers | GET | `/api/v1/customers/{customerId}/opportunities` | List customer opportunities |
 | Customers | GET | `/api/v1/customers/{customerId}/quotes` | List customer quotes |
-| Customers | GET | `/api/v1/customers/{id}` | Get a customer |
-| Customers | PUT | `/api/v1/customers/{id}` | Update a customer |
-| Customers | PATCH | `/api/v1/customers/{id}` | Partially update a customer |
-| Customers | DELETE | `/api/v1/customers/{id}` | Delete a customer |
-| Customers | GET | `/api/v1/customers/{id}/contacts` | List contacts for a customer |
-| Customers | POST | `/api/v1/customers/{id}/contacts` | Add a contact to a customer |
-| Customers | PUT | `/api/v1/customers/{id}/contacts/{contact_id}` | Update a contact |
-| Customers | DELETE | `/api/v1/customers/{id}/contacts/{contact_id}` | Remove a contact |
 | Documents | POST | `/api/v1/documents/conditions/preview` | Preview condition evaluation |
 | Documents | GET | `/api/v1/documents/content-blocks` | List content blocks |
 | Documents | POST | `/api/v1/documents/content-blocks` | Create a content block |
@@ -335,10 +337,10 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Documents | DELETE | `/api/v1/documents/content-blocks/{id}` | Delete a content block |
 | Documents | GET | `/api/v1/documents/content-blocks/{id}/locales` | List content block locales |
 | Documents | POST | `/api/v1/documents/content-blocks/{id}/locales` | Create or upsert a content block locale |
-| Documents | GET | `/api/v1/documents/content-blocks/{id}/locales/{locale_id}` | Get a content block locale |
-| Documents | PUT | `/api/v1/documents/content-blocks/{id}/locales/{locale_id}` | Update a content block locale |
-| Documents | DELETE | `/api/v1/documents/content-blocks/{id}/locales/{locale_id}` | Delete a content block locale |
-| Documents | POST | `/api/v1/documents/content-blocks/{id}/locales/{locale_id}/translate` | Translate locale to target language |
+| Documents | GET | `/api/v1/documents/content-blocks/{id}/locales/{localeId}` | Get a content block locale |
+| Documents | PUT | `/api/v1/documents/content-blocks/{id}/locales/{localeId}` | Update a content block locale |
+| Documents | DELETE | `/api/v1/documents/content-blocks/{id}/locales/{localeId}` | Delete a content block locale |
+| Documents | POST | `/api/v1/documents/content-blocks/{id}/locales/{localeId}/translate` | Translate locale to target language |
 | Documents | POST | `/api/v1/documents/content-blocks/{id}/set-version` | Set current version |
 | Documents | GET | `/api/v1/documents/content-directories` | List content directories (tree) |
 | Documents | POST | `/api/v1/documents/content-directories` | Create a content directory |
@@ -394,8 +396,8 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Documents | PUT | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/attachments/{att_id}` | Update an attachment |
 | Documents | DELETE | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/attachments/{att_id}` | Remove an attachment |
 | Documents | GET | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales` | List structure block locales |
-| Documents | PUT | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{lang}` | Upsert structure block locale title |
-| Documents | DELETE | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{lang}` | Delete structure block locale |
+| Documents | PUT | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{localeId}` | Upsert structure block locale title |
+| Documents | DELETE | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{localeId}` | Delete structure block locale |
 | Documents | POST | `/api/v1/documents/templates/{id}/structure/blocks/{block_id}/move` | Move block to new parent |
 | Documents | POST | `/api/v1/documents/templates/{id}/structure/reorder` | Reorder structure blocks |
 | Documents | POST | `/api/v1/documents/templates/{id}/translate` | Translate entire template |
@@ -407,21 +409,23 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Export | GET | `/api/v1/products/export` | Export products (NDJSON) |
 | Groups | GET | `/api/v1/groups` | List groups |
 | Groups | POST | `/api/v1/groups` | Create a group |
-| Groups | GET | `/api/v1/groups/{id}` | Get a group |
-| Groups | PUT | `/api/v1/groups/{id}` | Update a group |
-| Groups | PATCH | `/api/v1/groups/{id}` | Partially update a group |
-| Groups | DELETE | `/api/v1/groups/{id}` | Delete a group |
-| Groups | GET | `/api/v1/groups/{id}/areas` | List areas linked to a group |
-| Groups | POST | `/api/v1/groups/{id}/areas` | Link a group to areas |
-| Groups | DELETE | `/api/v1/groups/{id}/areas/{area_id}` | Unlink a group from an area |
-| Groups | POST | `/api/v1/groups/{id}/duplicate` | Duplicate a group |
-| Groups | GET | `/api/v1/groups/{id}/options` | List options in a group |
+| Groups | GET | `/api/v1/groups/{groupId}` | Get a group |
+| Groups | PUT | `/api/v1/groups/{groupId}` | Update a group |
+| Groups | PATCH | `/api/v1/groups/{groupId}` | Partially update a group |
+| Groups | DELETE | `/api/v1/groups/{groupId}` | Delete a group |
+| Groups | GET | `/api/v1/groups/{groupId}/areas` | List areas linked to a group |
+| Groups | POST | `/api/v1/groups/{groupId}/areas` | Link a group to areas |
+| Groups | DELETE | `/api/v1/groups/{groupId}/areas/{areaId}` | Unlink a group from an area |
+| Groups | POST | `/api/v1/groups/{groupId}/duplicate` | Duplicate a group |
+| Groups | GET | `/api/v1/groups/{groupId}/options` | List options in a group |
 | Images | POST | `/api/v1/areas/{areaId}/image` | Upload area image |
 | Images | DELETE | `/api/v1/areas/{areaId}/image` | Delete area image |
 | Images | POST | `/api/v1/options/{optionId}/image` | Upload option image |
 | Images | DELETE | `/api/v1/options/{optionId}/image` | Delete option image |
 | Images | POST | `/api/v1/options/{optionId}/image/areas/{areaId}` | Upload option area override image |
 | Images | DELETE | `/api/v1/options/{optionId}/image/areas/{areaId}` | Delete option area override image |
+| Images | POST | `/api/v1/parts/{partId}/image` | Upload part image |
+| Images | DELETE | `/api/v1/parts/{partId}/image` | Delete part image |
 | Images | POST | `/api/v1/products/{productId}/background` | Upload product background |
 | Images | DELETE | `/api/v1/products/{productId}/background` | Delete product background |
 | Images | GET | `/api/v1/products/{productId}/gallery` | List gallery images |
@@ -438,7 +442,7 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Inbound Webhooks | POST | `/api/v1/inbound/events` | Send an inbound event |
 | Inbound Webhooks | POST | `/api/v1/inbound/opportunities` | Create an inbound opportunity |
 | Inbound Webhooks | POST | `/api/v1/inbound/parts/batch` | Batch upsert inbound parts |
-| Inbound Webhooks | POST | `/api/v1/inbound/triggers/{suffix}` | Fire a webhook trigger by path |
+| Inbound Webhooks | POST | `/api/v1/inbound/triggers/{triggerId}` | Fire a webhook trigger by path |
 | Item Revisions | GET | `/api/v1/parts/{partId}/revisions` | List revisions for a part |
 | Item Revisions | POST | `/api/v1/parts/{partId}/revisions` | Create a revision |
 | Item Revisions | GET | `/api/v1/parts/{partId}/revisions/{revisionId}` | Get a revision |
@@ -462,19 +466,18 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Opportunities | GET | `/api/v1/opportunities/{id}/quotes` | List quotes for an opportunity |
 | Options | GET | `/api/v1/options` | List options |
 | Options | POST | `/api/v1/options` | Create an option |
-| Options | GET | `/api/v1/options/{id}` | Get an option |
-| Options | PUT | `/api/v1/options/{id}` | Update an option |
-| Options | PATCH | `/api/v1/options/{id}` | Partially update an option |
-| Options | DELETE | `/api/v1/options/{id}` | Delete an option |
-| Options | GET | `/api/v1/options/{id}/effective` | Get effective price for an option |
+| Options | GET | `/api/v1/options/{optionId}` | Get an option |
+| Options | PUT | `/api/v1/options/{optionId}` | Update an option |
+| Options | PATCH | `/api/v1/options/{optionId}` | Partially update an option |
+| Options | DELETE | `/api/v1/options/{optionId}` | Delete an option |
 | Options | GET | `/api/v1/options/{optionId}/advanced-prices` | List advanced prices |
 | Options | POST | `/api/v1/options/{optionId}/advanced-prices` | Create an advanced price |
 | Options | PUT | `/api/v1/options/{optionId}/advanced-prices/{priceId}` | Update an advanced price |
-| Options | PATCH | `/api/v1/options/{optionId}/advanced-prices/{priceId}` | Partially update an advanced price |
 | Options | DELETE | `/api/v1/options/{optionId}/advanced-prices/{priceId}` | Delete an advanced price |
 | Options | GET | `/api/v1/options/{optionId}/area-config` | Get area-specific config for an option |
 | Options | PUT | `/api/v1/options/{optionId}/area-config` | Set area-specific config for an option |
 | Options | DELETE | `/api/v1/options/{optionId}/area-config` | Clear area-specific config for an option |
+| Options | GET | `/api/v1/options/{optionId}/effective` | Get effective price for an option |
 | Part Documents | GET | `/api/v1/part-documents` | List part documents |
 | Part Documents | POST | `/api/v1/part-documents` | Create a part document |
 | Part Documents | GET | `/api/v1/part-documents/{id}` | Get a part document |
@@ -486,9 +489,12 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Part Documents | DELETE | `/api/v1/parts/{partId}/document-links/{linkId}` | Remove a document link |
 | Part Documents | GET | `/api/v1/parts/{partId}/revisions/{revisionId}/document-links` | List document links for a revision |
 | Part Documents | POST | `/api/v1/parts/{partId}/revisions/{revisionId}/document-links` | Create a document link for a revision |
-| Parts | GET | `/api/v1/areas/{id}/placements` | List placements on an area |
+| Parts | GET | `/api/v1/areas/{areaId}/placements` | List placements on an area |
+| Parts | PUT | `/api/v1/areas/{areaId}/placements` | Replace an area's placements (bulk, declarative) |
+| Parts | DELETE | `/api/v1/areas/{areaId}/placements` | Clear an area's placements (bulk) |
 | Parts | GET | `/api/v1/parts` | List parts |
 | Parts | POST | `/api/v1/parts` | Create a part |
+| Parts | GET | `/api/v1/parts/bom/{id}` | Get a BOM item |
 | Parts | PUT | `/api/v1/parts/bom/{id}` | Update a BOM item |
 | Parts | PATCH | `/api/v1/parts/bom/{id}` | Partially update a BOM item |
 | Parts | DELETE | `/api/v1/parts/bom/{id}` | Delete a BOM item |
@@ -499,33 +505,36 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Parts | PUT | `/api/v1/parts/groups/{groupId}` | Update part group |
 | Parts | PATCH | `/api/v1/parts/groups/{groupId}` | Partially update part group |
 | Parts | DELETE | `/api/v1/parts/groups/{groupId}` | Delete part group |
+| Parts | GET | `/api/v1/parts/placements/{id}` | Get a part placement |
 | Parts | PUT | `/api/v1/parts/placements/{id}` | Update a part placement |
 | Parts | PATCH | `/api/v1/parts/placements/{id}` | Partially update a part placement |
 | Parts | DELETE | `/api/v1/parts/placements/{id}` | Delete a part placement |
-| Parts | GET | `/api/v1/parts/{id}` | Get a part |
-| Parts | PUT | `/api/v1/parts/{id}` | Update a part |
-| Parts | PATCH | `/api/v1/parts/{id}` | Partially update a part |
-| Parts | DELETE | `/api/v1/parts/{id}` | Delete a part |
-| Parts | GET | `/api/v1/parts/{id}/bom` | List BOM children |
-| Parts | POST | `/api/v1/parts/{id}/bom` | Add a BOM child |
-| Parts | POST | `/api/v1/parts/{id}/bom/explode` | Explode a BOM tree |
-| Parts | GET | `/api/v1/parts/{id}/bom/flat` | Get flattened BOM |
-| Parts | GET | `/api/v1/parts/{id}/bom/tree` | Get multi-level BOM tree |
-| Parts | POST | `/api/v1/parts/{id}/bom/validate` | Validate BOM integrity |
-| Parts | POST | `/api/v1/parts/{id}/ghost/materialize` | Materialize a ghost assembly |
-| Parts | POST | `/api/v1/parts/{id}/ghost/resolve` | Resolve a ghost assembly |
-| Parts | GET | `/api/v1/parts/{id}/ghost/status` | Get ghost status for a part |
-| Parts | GET | `/api/v1/parts/{id}/placements` | List part placements |
-| Parts | POST | `/api/v1/parts/{id}/placements` | Create a part placement |
-| Parts | GET | `/api/v1/parts/{id}/where-used` | Find where a part is used |
+| Parts | GET | `/api/v1/parts/{partId}` | Get a part |
+| Parts | PUT | `/api/v1/parts/{partId}` | Update a part |
+| Parts | PATCH | `/api/v1/parts/{partId}` | Partially update a part |
+| Parts | DELETE | `/api/v1/parts/{partId}` | Delete a part |
+| Parts | GET | `/api/v1/parts/{partId}/bom` | List BOM children |
+| Parts | POST | `/api/v1/parts/{partId}/bom` | Add a BOM child |
+| Parts | PUT | `/api/v1/parts/{partId}/bom` | Replace a part's BOM children (bulk, declarative) |
+| Parts | DELETE | `/api/v1/parts/{partId}/bom` | Clear a part's BOM children (bulk) |
+| Parts | POST | `/api/v1/parts/{partId}/bom/explode` | Explode a BOM tree |
+| Parts | GET | `/api/v1/parts/{partId}/bom/flat` | Get flattened BOM |
+| Parts | GET | `/api/v1/parts/{partId}/bom/tree` | Get multi-level BOM tree |
+| Parts | POST | `/api/v1/parts/{partId}/bom/validate` | Validate BOM integrity |
 | Parts | GET | `/api/v1/parts/{partId}/changelog` | List part changelog |
+| Parts | POST | `/api/v1/parts/{partId}/ghost/materialize` | Materialize a ghost assembly |
+| Parts | POST | `/api/v1/parts/{partId}/ghost/resolve` | Resolve a ghost assembly |
+| Parts | GET | `/api/v1/parts/{partId}/ghost/status` | Get ghost status for a part |
+| Parts | GET | `/api/v1/parts/{partId}/placements` | List part placements |
+| Parts | POST | `/api/v1/parts/{partId}/placements` | Create a part placement |
+| Parts | GET | `/api/v1/parts/{partId}/where-used` | Find where a part is used |
 | Price Lists | GET | `/api/v1/price-lists` | List price lists |
 | Price Lists | POST | `/api/v1/price-lists` | Create a price list |
 | Price Lists | POST | `/api/v1/price-lists/reorder` | Reorder price lists |
-| Price Lists | GET | `/api/v1/price-lists/{id}` | Get a price list |
-| Price Lists | PUT | `/api/v1/price-lists/{id}` | Update a price list |
-| Price Lists | PATCH | `/api/v1/price-lists/{id}` | Partially update a price list |
-| Price Lists | DELETE | `/api/v1/price-lists/{id}` | Delete a price list |
+| Price Lists | GET | `/api/v1/price-lists/{priceListId}` | Get a price list |
+| Price Lists | PUT | `/api/v1/price-lists/{priceListId}` | Update a price list |
+| Price Lists | PATCH | `/api/v1/price-lists/{priceListId}` | Partially update a price list |
+| Price Lists | DELETE | `/api/v1/price-lists/{priceListId}` | Delete a price list |
 | Price Lists | GET | `/api/v1/price-lists/{priceListId}/overrides` | List price list overrides |
 | Price Overrides | GET | `/api/v1/options/{optionId}/price-overrides` | List price overrides for an option |
 | Price Overrides | POST | `/api/v1/options/{optionId}/price-overrides` | Create a price override |
@@ -546,10 +555,10 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Products | GET | `/api/v1/products` | List products |
 | Products | POST | `/api/v1/products` | Create a product |
 | Products | POST | `/api/v1/products/reorder` | Reorder products |
-| Products | GET | `/api/v1/products/{id}` | Get a product |
-| Products | PUT | `/api/v1/products/{id}` | Update a product |
-| Products | PATCH | `/api/v1/products/{id}` | Partially update a product |
-| Products | DELETE | `/api/v1/products/{id}` | Delete a product |
+| Products | GET | `/api/v1/products/{productId}` | Get a product |
+| Products | PUT | `/api/v1/products/{productId}` | Update a product |
+| Products | PATCH | `/api/v1/products/{productId}` | Partially update a product |
+| Products | DELETE | `/api/v1/products/{productId}` | Delete a product |
 | Products | GET | `/api/v1/products/{productId}/areas` | List assigned areas |
 | Products | POST | `/api/v1/products/{productId}/areas` | Assign an area to a product |
 | Products | POST | `/api/v1/products/{productId}/areas/reorder` | Reorder product areas |
@@ -575,24 +584,24 @@ Other languages should mirror these patterns — there is nothing Rattle-specifi
 | Pull Requests | PATCH | `/api/v1/pull-requests/{prId}` | Partially update pull request |
 | Quotes | GET | `/api/v1/quotes` | List quotes |
 | Quotes | POST | `/api/v1/quotes` | Create a quote |
-| Quotes | GET | `/api/v1/quotes/{id}` | Get a quote |
-| Quotes | PUT | `/api/v1/quotes/{id}` | Update a quote |
-| Quotes | PATCH | `/api/v1/quotes/{id}` | Partially update a quote |
-| Quotes | DELETE | `/api/v1/quotes/{id}` | Delete a quote |
-| Quotes | GET | `/api/v1/quotes/{id}/line-items` | List line items |
-| Quotes | POST | `/api/v1/quotes/{id}/line-items` | Add a line item |
-| Quotes | PUT | `/api/v1/quotes/{id}/line-items/{item_id}` | Update a line item |
-| Quotes | PATCH | `/api/v1/quotes/{id}/line-items/{item_id}` | Partially update a line item |
-| Quotes | DELETE | `/api/v1/quotes/{id}/line-items/{item_id}` | Remove a line item |
-| Quotes | POST | `/api/v1/quotes/{id}/revise` | Create a new revision |
-| Quotes | GET | `/api/v1/quotes/{id}/revisions` | List quote revisions |
-| Quotes | PUT | `/api/v1/quotes/{id}/status` | Update quote status |
+| Quotes | GET | `/api/v1/quotes/{quoteId}` | Get a quote |
+| Quotes | PUT | `/api/v1/quotes/{quoteId}` | Update a quote |
+| Quotes | PATCH | `/api/v1/quotes/{quoteId}` | Partially update a quote |
+| Quotes | DELETE | `/api/v1/quotes/{quoteId}` | Delete a quote |
 | Quotes | GET | `/api/v1/quotes/{quoteId}/contacts` | List quote contacts |
 | Quotes | POST | `/api/v1/quotes/{quoteId}/contacts` | Add contact to quote |
 | Quotes | DELETE | `/api/v1/quotes/{quoteId}/contacts/{contactId}` | Remove contact from quote |
 | Quotes | GET | `/api/v1/quotes/{quoteId}/details` | Get quote details |
 | Quotes | PUT | `/api/v1/quotes/{quoteId}/details` | Upsert quote details |
 | Quotes | PATCH | `/api/v1/quotes/{quoteId}/details` | Partially update quote details |
+| Quotes | GET | `/api/v1/quotes/{quoteId}/line-items` | List line items |
+| Quotes | POST | `/api/v1/quotes/{quoteId}/line-items` | Add a line item |
+| Quotes | PUT | `/api/v1/quotes/{quoteId}/line-items/{item_id}` | Update a line item |
+| Quotes | PATCH | `/api/v1/quotes/{quoteId}/line-items/{item_id}` | Partially update a line item |
+| Quotes | DELETE | `/api/v1/quotes/{quoteId}/line-items/{item_id}` | Remove a line item |
+| Quotes | POST | `/api/v1/quotes/{quoteId}/revise` | Create a new revision |
+| Quotes | GET | `/api/v1/quotes/{quoteId}/revisions` | List quote revisions |
+| Quotes | PUT | `/api/v1/quotes/{quoteId}/status` | Update quote status |
 | Safety | GET | `/api/v1/hp-statements` | List H/P statements |
 | Safety | GET | `/api/v1/hp-statements/{code}` | Resolve an H/P statement |
 | Safety | GET | `/api/v1/safety-logos` | List safety logos |
@@ -843,13 +852,13 @@ _operationId_: `createArea`
 
 **Request body:**
 - `application/json` **required** — schema: `AreaCreateRequest`
-  - `allow_disable` (boolean)
+  - `allow_disable` (boolean) — Whether disable.
   - `area_group_id` (object) — AreaGroup to assign this area to
-  - `description` (string)
-  - `language` (string)
-  - `name` (string) **required**
+  - `description` (string) — Free-text description.
+  - `language` (string) — Language code (e.g. `EN`, `DE`).
+  - `name` (string) **required** — Human-readable name.
   - `order_index` (object) — Position in area list (auto-assigned if omitted)
-  - `price` (string)
+  - `price` (string) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
   - `product_id` (object) — Product to assign this area to
 
 **Responses:**
@@ -866,6 +875,147 @@ List areas not assigned to any product. Not paginated.
 **Responses:**
 - `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/areas/{areaId}` — Get an area
+_operationId_: `getArea`
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/areas/{areaId}` — Update an area
+_operationId_: `updateArea`
+
+**Request body:**
+- `application/json` **required** — schema: `AreaUpdateRequest`
+  - `allow_disable` (object) — Whether disable.
+  - `area_group_id` (object) — AreaGroup to assign this area to (use 0 or null to unassign)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+  - `updated_at` (object) — Timestamp (ISO 8601).
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PATCH /api/v1/areas/{areaId}` — Partially update an area
+_operationId_: `patchArea`
+
+**Request body:**
+- `application/json` **required** — schema: `AreaUpdateRequest`
+  - `allow_disable` (object) — Whether disable.
+  - `area_group_id` (object) — AreaGroup to assign this area to (use 0 or null to unassign)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+  - `updated_at` (object) — Timestamp (ISO 8601).
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/areas/{areaId}` — Delete an area
+_operationId_: `deleteArea`
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/areas/{areaId}/content` — Get area rich content
+_operationId_: `getAreaContent`
+
+Returns the EditorJS rich content blocks for an area. Supports all block types: header, paragraph, list, table, image, quote, delimiter, warning, embed, code, safety_notice, hp_statement.
+
+**Query parameters:**
+- `language` (string) — Language code (e.g. 'DE', 'EN')
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/areas/{areaId}/content` — Update area rich content
+_operationId_: `updateAreaContent`
+
+Create or replace rich content (EditorJS blocks) for an area. Image blocks should reference URLs obtained from the content image upload endpoint.
+
+**Request body:**
+- `application/json` **required** — schema: `AreaContentUpdateRequest`
+  - `area_id` (integer) — Identifier of the related area.
+  - `blocks` (array<object>) **required** — Array of EditorJS block objects. Each must have a 'type' and 'data' key.
+  - `enabled` (boolean) — Whether this content is shown in the configurator
+  - `language` (string) — Language code (e.g. 'DE', 'EN')
+  - `links` (object) — HATEOAS links to this and related resources.
+
+**Responses:**
+- `200` — Success
+- `201` — Created
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/areas/{areaId}/content` — Delete area rich content
+_operationId_: `deleteAreaContent`
+
+Delete rich content for an area. Pass `language` query param to delete a specific language; omit to delete all content.
+
+**Query parameters:**
+- `language` (string) — Language code to delete (omit for all)
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/areas/{areaId}/content/images` — Upload content image
+_operationId_: `uploadAreaContentImage`
+
+Upload an image for use in EditorJS content blocks. Accepts multipart/form-data with a 'file' field. Returns the URL to use in an image block's `data.file.url`.
+
+**Responses:**
+- `201` — Image uploaded
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `413` — Payload Too Large (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/areas/{areaId}/groups` — List groups in an area
+_operationId_: `listAreaGroups`
+
+Returns groups linked to this area. Not paginated.
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ### `GET /api/v1/areas/{areaId}/options` — List area options
@@ -963,135 +1113,6 @@ _operationId_: `deleteAreaPriceOverride`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/areas/{id}` — Get an area
-_operationId_: `getArea`
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PUT /api/v1/areas/{id}` — Update an area
-_operationId_: `updateArea`
-
-**Request body:**
-- `application/json` **required** — schema: `AreaUpdateRequest`
-  - `allow_disable` (object)
-  - `area_group_id` (object) — AreaGroup to assign this area to (use 0 or null to unassign)
-  - `description` (object)
-  - `language` (object)
-  - `name` (object)
-  - `order_index` (object)
-  - `price` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PATCH /api/v1/areas/{id}` — Partially update an area
-_operationId_: `patchArea`
-
-**Request body:**
-- `application/json` **required** — schema: `AreaUpdateRequest`
-  - `allow_disable` (object)
-  - `area_group_id` (object) — AreaGroup to assign this area to (use 0 or null to unassign)
-  - `description` (object)
-  - `language` (object)
-  - `name` (object)
-  - `order_index` (object)
-  - `price` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `DELETE /api/v1/areas/{id}` — Delete an area
-_operationId_: `deleteArea`
-
-**Responses:**
-- `204` — Deleted
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/areas/{id}/content` — Get area rich content
-_operationId_: `getAreaContent`
-
-Returns the EditorJS rich content blocks for an area. Supports all block types: header, paragraph, list, table, image, quote, delimiter, warning, embed, code, safety_notice, hp_statement.
-
-**Query parameters:**
-- `language` (string) — Language code (e.g. 'DE', 'EN')
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PUT /api/v1/areas/{id}/content` — Update area rich content
-_operationId_: `updateAreaContent`
-
-Create or replace rich content (EditorJS blocks) for an area. Image blocks should reference URLs obtained from the content image upload endpoint.
-
-**Request body:**
-- `application/json` **required** — schema: `AreaContentUpdateRequest`
-  - `blocks` (array<object>) **required** — Array of EditorJS block objects. Each must have a 'type' and 'data' key.
-  - `enabled` (boolean) — Whether this content is shown in the configurator
-  - `language` (string) — Language code (e.g. 'DE', 'EN')
-
-**Responses:**
-- `200` — Success
-- `201` — Created
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `DELETE /api/v1/areas/{id}/content` — Delete area rich content
-_operationId_: `deleteAreaContent`
-
-Delete rich content for an area. Pass `language` query param to delete a specific language; omit to delete all content.
-
-**Query parameters:**
-- `language` (string) — Language code to delete (omit for all)
-
-**Responses:**
-- `204` — Deleted
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `POST /api/v1/areas/{id}/content/images` — Upload content image
-_operationId_: `uploadAreaContentImage`
-
-Upload an image for use in EditorJS content blocks. Accepts multipart/form-data with a 'file' field. Returns the URL to use in an image block's `data.file.url`.
-
-**Responses:**
-- `201` — Image uploaded
-- `400` — Bad Request (`application/json` → `ProblemDetails`)
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `413` — Payload Too Large (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/areas/{id}/groups` — List groups in an area
-_operationId_: `listAreaGroups`
-
-Returns groups linked to this area. Not paginated.
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
 ---
 
 ## Attributes
@@ -1116,7 +1137,7 @@ _operationId_: `createAttribute`
 **Request body:**
 - `application/json` **required** — schema: `AttributeCreateRequest`
   - `attr_type` (string) **required** — Attribute type: number, range, boolean, text
-  - `name` (string) **required**
+  - `name` (string) **required** — Human-readable name.
 
 **Responses:**
 - `201` — Created
@@ -1124,7 +1145,7 @@ _operationId_: `createAttribute`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/attributes/values/{id}` — Update an attribute value
+### `PUT /api/v1/attributes/values/{valueId}` — Update an attribute value
 _operationId_: `updateAttributeValue`
 
 **Request body:**
@@ -1142,7 +1163,7 @@ _operationId_: `updateAttributeValue`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/attributes/values/{id}` — Partially update an attribute value
+### `PATCH /api/v1/attributes/values/{valueId}` — Partially update an attribute value
 _operationId_: `patchAttributeValue`
 
 **Request body:**
@@ -1160,7 +1181,7 @@ _operationId_: `patchAttributeValue`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/attributes/values/{id}` — Delete an attribute value
+### `DELETE /api/v1/attributes/values/{valueId}` — Delete an attribute value
 _operationId_: `deleteAttributeValue`
 
 **Responses:**
@@ -1183,8 +1204,11 @@ _operationId_: `updateAttribute`
 
 **Request body:**
 - `application/json` **required** — schema: `AttributeUpdateRequest`
-  - `attr_type` (object)
-  - `name` (object)
+  - `attr_type` (object) — Attribute value type.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `values` (array<AttributeValueResponse>) — The set of values.
 
 **Responses:**
 - `200` — Success
@@ -1198,8 +1222,11 @@ _operationId_: `patchAttribute`
 
 **Request body:**
 - `application/json` **required** — schema: `AttributeUpdateRequest`
-  - `attr_type` (object)
-  - `name` (object)
+  - `attr_type` (object) — Attribute value type.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `values` (array<AttributeValueResponse>) — The set of values.
 
 **Responses:**
 - `200` — Success
@@ -1273,9 +1300,9 @@ _operationId_: `createBaseline`
 
 **Request body:**
 - `application/json` **required** — schema: `BaselineCreateRequest`
-  - `name` (string) **required**
-  - `note` (object)
-  - `product_id` (integer) **required**
+  - `name` (string) **required** — Human-readable name.
+  - `note` (object) — Free-text note.
+  - `product_id` (integer) **required** — Identifier of the related product.
 
 **Responses:**
 - `201` — Created
@@ -1319,6 +1346,9 @@ Execute up to 100 create/update/delete/upsert operations on areas.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
+
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
   - `operations` (array<BatchOperationRequest>) **required** — List of operations (1–100)
@@ -1339,6 +1369,11 @@ Execute multiple operations across different resource types in a single request.
 **Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
+
+Operation `path`s resolve to top-level collections (`/api/v1/parts`, `/api/v1/parts/{id}`) and, for placements, to both the flat collection (`/api/v1/placements`, `/api/v1/placements/{id}`) and the nested REST shapes (`POST /api/v1/parts/{id}/placements`, `PUT`/`DELETE /api/v1/parts/placements/{id}`). Creating a placement via a flat path requires `part_id` and `area_id` in the body; the nested `/parts/{id}/placements` form takes `part_id` from the URL.
+
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
 
 **Request body:**
 - `application/json` **required** — schema: `UniversalBatchRequest`
@@ -1361,6 +1396,9 @@ Execute up to 100 create/update/delete/upsert operations on bom.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
+
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
   - `operations` (array<BatchOperationRequest>) **required** — List of operations (1–100)
@@ -1381,6 +1419,9 @@ Execute up to 100 create/update/delete/upsert operations on customers.
 **Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
+
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1403,6 +1444,9 @@ Execute up to 100 create/update/delete/upsert operations on groups.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
+
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
   - `operations` (array<BatchOperationRequest>) **required** — List of operations (1–100)
@@ -1423,6 +1467,9 @@ Execute up to 100 create/update/delete/upsert operations on options.
 **Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
+
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1445,6 +1492,33 @@ Execute up to 100 create/update/delete/upsert operations on parts.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
 
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
+
+**Request body:**
+- `application/json` **required** — schema: `ResourceBatchRequest`
+  - `operations` (array<BatchOperationRequest>) **required** — List of operations (1–100)
+
+**Responses:**
+- `200` — All operations succeeded
+- `207` — Partial success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/placements/batch` — Batch placements operations
+_operationId_: `batchPlacements`
+
+Execute up to 100 create/update/delete/upsert operations on placements. `upsert` matches on `(part_id, area_id, usage_subclauses)`, so an import is safe to retry — an identical placement updates the existing row instead of creating a duplicate. For a full declarative replace of an area's placements, prefer `PUT /areas/{id}/placements`.
+
+**Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
+
+Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
+
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
+
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
   - `operations` (array<BatchOperationRequest>) **required** — List of operations (1–100)
@@ -1465,6 +1539,9 @@ Execute up to 100 create/update/delete/upsert operations on products.
 **Best-effort, not all-or-nothing.** Each operation is isolated in its own database savepoint, so successful items are committed even when others fail. The response body reports `total`, `succeeded`, `failed` and a per-item `results` array (each with its own status and error), so you can retry only the failed items. HTTP `200` means every item succeeded; `207` means at least one failed. A top-level `4xx` (e.g. malformed envelope or more than 100 operations) means nothing was applied.
 
 Send `X-Idempotency-Key` to make a batch safe to retry: a replay with the same key and body returns the original response instead of re-applying it.
+
+**Header parameters:**
+- `X-Idempotency-Key` (string) — Client-generated key (24-hour TTL). A replay with the same key returns the original response instead of re-...
 
 **Request body:**
 - `application/json` **required** — schema: `ResourceBatchRequest`
@@ -1503,7 +1580,7 @@ _operationId_: `createBranch`
 
 **Request body:**
 - `application/json` **required** — schema: `BranchCreateRequest`
-  - `description` (object)
+  - `description` (object) — Free-text description.
   - `name` (string) **required** — Branch name
 
 **Responses:**
@@ -1553,9 +1630,9 @@ Create a new filter dimension. Maximum 5 per company.
 
 **Request body:**
 - `application/json` **required** — schema: `CatalogFilterDimensionCreateRequest`
-  - `display_type` (string)
-  - `is_visible` (boolean)
-  - `label` (string) **required**
+  - `display_type` (string) — How the dimension is rendered.
+  - `is_visible` (boolean) — Whether visible.
+  - `label` (string) **required** — Display label.
   - `multi_select` (boolean)
 
 **Responses:**
@@ -1594,11 +1671,15 @@ _operationId_: `updateCatalogFilter`
 
 **Request body:**
 - `application/json` **required** — schema: `CatalogFilterDimensionUpdateRequest`
-  - `display_type` (object)
-  - `is_visible` (object)
-  - `label` (object)
+  - `display_type` (object) — How the dimension is rendered.
+  - `id` (integer) — Unique identifier.
+  - `is_visible` (object) — Whether visible.
+  - `label` (object) — Display label.
+  - `links` (object) — HATEOAS links to this and related resources.
   - `multi_select` (object)
-  - `order_index` (object)
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `slug` (string) — URL-safe slug.
+  - `values` (array<CatalogFilterValueResponse>) — The set of values.
 
 **Responses:**
 - `200` — Success
@@ -1626,7 +1707,7 @@ Add a new value. Maximum 30 values per dimension.
 **Request body:**
 - `application/json` **required** — schema: `CatalogFilterValueCreateRequest`
   - `color` (object)
-  - `label` (string) **required**
+  - `label` (string) **required** — Display label.
 
 **Responses:**
 - `201` — Created
@@ -1658,8 +1739,10 @@ _operationId_: `updateCatalogFilterValue`
 **Request body:**
 - `application/json` **required** — schema: `CatalogFilterValueUpdateRequest`
   - `color` (object)
-  - `label` (object)
-  - `order_index` (object)
+  - `id` (integer) — Unique identifier.
+  - `label` (object) — Display label.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `slug` (string) — URL-safe slug.
 
 **Responses:**
 - `200` — Success
@@ -1699,8 +1782,13 @@ _operationId_: `updateChangeOrder`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeOrderUpdateRequest`
-  - `note` (object)
-  - `state` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by` (object) — Identifier of the actor that created this record.
+  - `ecr_id` (integer) — Identifier of the related ecr.
+  - `id` (integer) — Unique identifier.
+  - `impact_count` (integer) — Count.
+  - `note` (object) — Free-text note.
+  - `state` (object) — Lifecycle state.
 
 **Responses:**
 - `200` — Success
@@ -1714,8 +1802,13 @@ _operationId_: `patchChangeOrder`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeOrderUpdateRequest`
-  - `note` (object)
-  - `state` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by` (object) — Identifier of the actor that created this record.
+  - `ecr_id` (integer) — Identifier of the related ecr.
+  - `id` (integer) — Unique identifier.
+  - `impact_count` (integer) — Count.
+  - `note` (object) — Free-text note.
+  - `state` (object) — Lifecycle state.
 
 **Responses:**
 - `200` — Success
@@ -1749,8 +1842,8 @@ _operationId_: `createChangeApproval`
 
 **Request body:**
 - `application/json` **required** — schema: `ApprovalCreateRequest`
-  - `approver_id` (object)
-  - `status` (string)
+  - `approver_id` (object) — Identifier of the related approver.
+  - `status` (string) — Lifecycle status.
 
 **Responses:**
 - `201` — Created
@@ -1764,7 +1857,13 @@ _operationId_: `updateChangeApproval`
 
 **Request body:**
 - `application/json` **required** — schema: `ApprovalUpdateRequest`
-  - `status` (string) **required**
+  - `approver_id` (object) — Identifier of the related approver.
+  - `id` (integer) — Unique identifier.
+  - `parent_id` (object) — Identifier of the related parent.
+  - `parent_type` (object) — Type.
+  - `signature` (object)
+  - `signed_at` (object) — Timestamp (ISO 8601).
+  - `status` (string) **required** — Lifecycle status.
 
 **Responses:**
 - `200` — Success
@@ -1778,7 +1877,13 @@ _operationId_: `patchChangeApproval`
 
 **Request body:**
 - `application/json` **required** — schema: `ApprovalUpdateRequest`
-  - `status` (string) **required**
+  - `approver_id` (object) — Identifier of the related approver.
+  - `id` (integer) — Unique identifier.
+  - `parent_id` (object) — Identifier of the related parent.
+  - `parent_type` (object) — Type.
+  - `signature` (object)
+  - `signed_at` (object) — Timestamp (ISO 8601).
+  - `status` (string) **required** — Lifecycle status.
 
 **Responses:**
 - `200` — Success
@@ -1803,9 +1908,9 @@ _operationId_: `createChangeImpact`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeImpactCreateRequest`
-  - `action` (string) **required**
+  - `action` (string) **required** — The batch operation to perform.
   - `hunk_key` (object)
-  - `item_rev_id` (integer) **required**
+  - `item_rev_id` (integer) **required** — Identifier of the related item rev.
   - `payload` (object)
 
 **Responses:**
@@ -1820,8 +1925,14 @@ _operationId_: `updateChangeImpact`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeImpactUpdateRequest`
+  - `action` (object) — The batch operation to perform.
+  - `base_fingerprint` (object)
+  - `eco_id` (integer) — Identifier of the related eco.
+  - `hunk_key` (object)
+  - `id` (integer) — Unique identifier.
+  - `item_rev_id` (object) — Identifier of the related item rev.
   - `payload` (object)
-  - `status` (object)
+  - `status` (object) — Lifecycle status.
 
 **Responses:**
 - `200` — Success
@@ -1835,8 +1946,14 @@ _operationId_: `patchChangeImpact`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeImpactUpdateRequest`
+  - `action` (object) — The batch operation to perform.
+  - `base_fingerprint` (object)
+  - `eco_id` (integer) — Identifier of the related eco.
+  - `hunk_key` (object)
+  - `id` (integer) — Unique identifier.
+  - `item_rev_id` (object) — Identifier of the related item rev.
   - `payload` (object)
-  - `status` (object)
+  - `status` (object) — Lifecycle status.
 
 **Responses:**
 - `200` — Success
@@ -1880,8 +1997,8 @@ _operationId_: `createChangeRequest`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeRequestCreateRequest`
-  - `description` (object)
-  - `title` (string) **required**
+  - `description` (object) — Free-text description.
+  - `title` (string) **required** — Title.
 
 **Responses:**
 - `201` — Created
@@ -1903,9 +2020,13 @@ _operationId_: `updateChangeRequest`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeRequestUpdateRequest`
-  - `description` (object)
-  - `state` (object)
-  - `title` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by` (object) — Identifier of the actor that created this record.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `order_count` (integer) — Count.
+  - `state` (object) — Lifecycle state.
+  - `title` (object) — Title.
 
 **Responses:**
 - `200` — Success
@@ -1919,9 +2040,13 @@ _operationId_: `patchChangeRequest`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeRequestUpdateRequest`
-  - `description` (object)
-  - `state` (object)
-  - `title` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by` (object) — Identifier of the actor that created this record.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `order_count` (integer) — Count.
+  - `state` (object) — Lifecycle state.
+  - `title` (object) — Title.
 
 **Responses:**
 - `200` — Success
@@ -1959,7 +2084,7 @@ _operationId_: `createChangeOrder`
 
 **Request body:**
 - `application/json` **required** — schema: `ChangeOrderCreateRequest`
-  - `note` (object)
+  - `note` (object) — Free-text note.
 
 **Responses:**
 - `201` — Created
@@ -1987,10 +2112,13 @@ _operationId_: `updateCompanySettings`
 
 **Request body:**
 - `application/json` **required** — schema: `CompanySettingsUpdateRequest`
-  - `company_name` (object)
-  - `company_url` (object)
+  - `company_name` (object) — Name.
+  - `company_url` (object) — URL.
   - `config_code_prefix` (object)
+  - `custom_domain` (object)
+  - `custom_domain_verified` (boolean)
   - `default_language` (object)
+  - `id` (integer) — Unique identifier.
 
 **Responses:**
 - `200` — Success
@@ -2003,10 +2131,13 @@ _operationId_: `patchCompanySettings`
 
 **Request body:**
 - `application/json` **required** — schema: `CompanySettingsUpdateRequest`
-  - `company_name` (object)
-  - `company_url` (object)
+  - `company_name` (object) — Name.
+  - `company_url` (object) — URL.
   - `config_code_prefix` (object)
+  - `custom_domain` (object)
+  - `custom_domain_verified` (boolean)
   - `default_language` (object)
+  - `id` (integer) — Unique identifier.
 
 **Responses:**
 - `200` — Success
@@ -2028,7 +2159,20 @@ Retrieve company-level configurator display and behavior settings.
 _operationId_: `updateConfiguratorSettings`
 
 **Request body:**
-- `application/json` **required**
+- `application/json` **required** — schema: `ConfiguratorSettingsUpdateRequest`
+  - `allow_create_new_customer` (boolean) — Allow the configurator to create a new customer record.
+  - `allow_select_existing_customer` (boolean) — Allow selecting an existing customer record.
+  - `company_id` (integer) — Owning company id.
+  - `customer_search_fields` (array<string>) — Fields the configurator searches customers by.
+  - `require_company_contact_person` (boolean) — Require a company contact person (enforced independently of require_customer_info).
+  - `require_customer_address` (boolean) — Require a full address (street, postal code, city, country).
+  - `require_customer_contact_person` (boolean) — Require a customer contact person (gated by require_customer_info).
+  - `require_customer_email` (boolean) — Require an email address.
+  - `require_customer_id` (boolean) — Require the customer's external customer id.
+  - `require_customer_info` (boolean) — Master switch: when false, no per-field customer requirement below is enforced.
+  - `require_customer_organization` (boolean) — Require the customer's organization/company name.
+  - `require_customer_phone` (boolean) — Require a phone number.
+  - _...8 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -2040,7 +2184,20 @@ _operationId_: `updateConfiguratorSettings`
 _operationId_: `patchConfiguratorSettings`
 
 **Request body:**
-- `application/json` **required**
+- `application/json` **required** — schema: `ConfiguratorSettingsUpdateRequest`
+  - `allow_create_new_customer` (boolean) — Allow the configurator to create a new customer record.
+  - `allow_select_existing_customer` (boolean) — Allow selecting an existing customer record.
+  - `company_id` (integer) — Owning company id.
+  - `customer_search_fields` (array<string>) — Fields the configurator searches customers by.
+  - `require_company_contact_person` (boolean) — Require a company contact person (enforced independently of require_customer_info).
+  - `require_customer_address` (boolean) — Require a full address (street, postal code, city, country).
+  - `require_customer_contact_person` (boolean) — Require a customer contact person (gated by require_customer_info).
+  - `require_customer_email` (boolean) — Require an email address.
+  - `require_customer_id` (boolean) — Require the customer's external customer id.
+  - `require_customer_info` (boolean) — Master switch: when false, no per-field customer requirement below is enforced.
+  - `require_customer_organization` (boolean) — Require the customer's organization/company name.
+  - `require_customer_phone` (boolean) — Require a phone number.
+  - _...8 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -2114,7 +2271,7 @@ _operationId_: `createCompanyContact`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/company/contacts/{id}` — Update a company contact
+### `PUT /api/v1/company/contacts/{contactId}` — Update a company contact
 _operationId_: `updateCompanyContact`
 
 **Request body:**
@@ -2137,7 +2294,7 @@ _operationId_: `updateCompanyContact`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/company/contacts/{id}` — Partially update a company contact
+### `PATCH /api/v1/company/contacts/{contactId}` — Partially update a company contact
 _operationId_: `patchCompanyContact`
 
 **Request body:**
@@ -2156,7 +2313,7 @@ _operationId_: `patchCompanyContact`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/company/contacts/{id}` — Delete a company contact
+### `DELETE /api/v1/company/contacts/{contactId}` — Delete a company contact
 _operationId_: `deleteCompanyContact`
 
 **Responses:**
@@ -2184,6 +2341,33 @@ _operationId_: `listConfigurations`
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `POST /api/v1/configurations` — Create a saved configuration
+_operationId_: `createConfiguration`
+
+Persist a selection set against a product as an addressable Configuration. Prices and validates the selection (like /configurations/calculate), stores the immutable configuration state, and returns the Configuration with the `display_code` a quote line item's `configuration_code` refers to — the write path headless quote-to-cash needs.
+
+**Request body:**
+- `application/json` **required** — schema: `ConfigurationCreateRequest`
+  - `customer_id` (object) — Optional customer to attach the configuration to.
+  - `disabled_areas` (array<integer>)
+  - `enabled_areas` (array<integer>)
+  - `finalize` (boolean) — If true, the configuration is created already finalized (locked).
+  - `offer_language` (object)
+  - `opportunity_id` (object) — Optional opportunity to attach the configuration to.
+  - `option_amounts` (object) — Map of numbered-option id (string) → selected amount.
+  - `price_list_id` (object) — Identifier of the related price list.
+  - `product_id` (integer) **required** — Identifier of the related product.
+  - `selected_options` (object) — Map of group id (string) → selected option ids.
+  - `validate_config` (boolean)
+  - `wishlist_options` (array<integer>)
+
+**Responses:**
+- `201` — Configuration created
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `POST /api/v1/configurations/calculate` — Calculate a configuration
 _operationId_: `calculateConfiguration`
 
@@ -2194,8 +2378,8 @@ Resolve constraints, compute pricing, and return a configuration state.
   - `disabled_areas` (array<integer>)
   - `enabled_areas` (array<integer>)
   - `option_amounts` (object)
-  - `price_list_id` (object)
-  - `product_id` (integer) **required**
+  - `price_list_id` (object) — Identifier of the related price list.
+  - `product_id` (integer) **required** — Identifier of the related product.
   - `selected_options` (object)
   - `validate_config` (boolean)
   - `wishlist_options` (array<integer>)
@@ -2210,10 +2394,14 @@ Resolve constraints, compute pricing, and return a configuration state.
 ### `GET /api/v1/configurations/states/by-code/{code}` — Get configuration state by code
 _operationId_: `getConfigurationStateByCode`
 
-Supports ETag/If-None-Match conditional caching. States are immutable.
+Supports ETag/If-None-Match conditional caching. States are immutable, so a matching `If-None-Match` returns 304 with no body.
+
+**Header parameters:**
+- `If-None-Match` (string) — ETag from a prior response. Returns 304 if the state is unchanged.
 
 **Responses:**
 - `200` — Success
+- `304` — Not Modified — the ETag matched.
 - `400` — Bad Request (`application/json` → `ProblemDetails`)
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
@@ -2298,9 +2486,9 @@ _operationId_: `createConnector`
 
 **Request body:**
 - `application/json` **required** — schema: `ConnectorCreateRequest`
-  - `base_url` (object)
-  - `connector_type` (string)
-  - `name` (string) **required**
+  - `base_url` (object) — URL.
+  - `connector_type` (string) — Connector vendor type.
+  - `name` (string) **required** — Human-readable name.
   - `settings` (object)
   - `verify_tls` (boolean)
 
@@ -2332,22 +2520,11 @@ _operationId_: `listConnectorJobs`
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/connectors/jobs/{id}` — Get a connector job
+### `GET /api/v1/connectors/jobs/{jobId}` — Get a connector job
 _operationId_: `getConnectorJob`
 
 **Responses:**
 - `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `POST /api/v1/connectors/jobs/{id}/replay` — Replay a connector job
-_operationId_: `replayConnectorJob`
-
-Re-execute a completed or failed job using its original input context.
-
-**Responses:**
-- `202` — Accepted
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -2363,6 +2540,17 @@ List execution log entries for a connector job.
 
 **Responses:**
 - `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/connectors/jobs/{jobId}/replay` — Replay a connector job
+_operationId_: `replayConnectorJob`
+
+Re-execute a completed or failed job using its original input context.
+
+**Responses:**
+- `202` — Accepted
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -2429,7 +2617,7 @@ _operationId_: `createConnectorTrigger`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/connectors/triggers/{id}` — Update a connector trigger
+### `PUT /api/v1/connectors/triggers/{triggerId}` — Update a connector trigger
 _operationId_: `updateConnectorTrigger`
 
 **Request body:**
@@ -2448,7 +2636,7 @@ _operationId_: `updateConnectorTrigger`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/connectors/triggers/{id}` — Delete a connector trigger
+### `DELETE /api/v1/connectors/triggers/{triggerId}` — Delete a connector trigger
 _operationId_: `deleteConnectorTrigger`
 
 **Responses:**
@@ -2471,10 +2659,16 @@ _operationId_: `updateConnector`
 
 **Request body:**
 - `application/json` **required** — schema: `ConnectorUpdateRequest`
-  - `base_url` (object)
-  - `connector_type` (object)
-  - `name` (object)
+  - `auth_type` (object) — Authentication scheme.
+  - `base_url` (object) — URL.
+  - `connector_type` (object) — Connector vendor type.
+  - `endpoint_count` (integer) — Count.
+  - `has_secret` (boolean) — Whether secret.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
   - `settings` (object)
+  - `task_count` (integer) — Count.
   - `verify_tls` (object)
 
 **Responses:**
@@ -2489,10 +2683,16 @@ _operationId_: `patchConnector`
 
 **Request body:**
 - `application/json` **required** — schema: `ConnectorUpdateRequest`
-  - `base_url` (object)
-  - `connector_type` (object)
-  - `name` (object)
+  - `auth_type` (object) — Authentication scheme.
+  - `base_url` (object) — URL.
+  - `connector_type` (object) — Connector vendor type.
+  - `endpoint_count` (integer) — Count.
+  - `has_secret` (boolean) — Whether secret.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
   - `settings` (object)
+  - `task_count` (integer) — Count.
   - `verify_tls` (object)
 
 **Responses:**
@@ -2526,12 +2726,12 @@ _operationId_: `createConnectorEndpoint`
 **Request body:**
 - `application/json` **required** — schema: `EndpointCreateRequest`
   - `body_template` (object)
-  - `enabled` (boolean)
+  - `enabled` (boolean) — Whether this is enabled.
   - `headers_template` (object)
-  - `key` (string) **required**
-  - `method` (string)
+  - `key` (string) **required** — Stable identifier key.
+  - `method` (string) — HTTP method.
   - `on_success` (array<?>)
-  - `order_index` (integer)
+  - `order_index` (integer) — Sort order within its collection (ascending).
   - `query_template` (object)
   - `response_extract` (object)
   - `timeout_sec` (integer)
@@ -2560,9 +2760,9 @@ _operationId_: `createConnectorTask`
 **Request body:**
 - `application/json` **required** — schema: `TaskCreateRequest`
   - `default_context` (object)
-  - `enabled` (boolean)
-  - `execution_mode` (string)
-  - `name` (string) **required**
+  - `enabled` (boolean) — Whether this is enabled.
+  - `execution_mode` (string) — Mode.
+  - `name` (string) **required** — Human-readable name.
   - `steps` (array<object>)
 
 **Responses:**
@@ -2595,7 +2795,10 @@ Returns all pair-level forbidden combinations for a product. These prevent two s
 ### `POST /api/v1/constraints` — Replace option-level forbidden combinations
 _operationId_: `replaceConstraints`
 
-Atomically replaces all option-level forbidden combinations for a product. Include the `X-Constraints-Version` header for optimistic concurrency control.
+Atomically replaces all option-level forbidden combinations for a product. Read `constraints_version` from `GET /products/{id}` (also returned as the `X-Constraints-Version` response header and in `meta.constraints_version`) and send it back in the `X-Constraints-Version` request header for optimistic concurrency control. A stale value returns 409 without modifying anything.
+
+**Header parameters:**
+- `X-Constraints-Version` (integer) — Optimistic-concurrency token. A stale value returns 409.
 
 **Request body:**
 - `application/json` **required**
@@ -2605,6 +2808,7 @@ Atomically replaces all option-level forbidden combinations for a product. Inclu
 **Responses:**
 - `200` — Replaced
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
@@ -2622,6 +2826,11 @@ _operationId_: `listAreaConstraints`
 ### `POST /api/v1/constraints/area` — Replace area-level forbidden combinations
 _operationId_: `replaceAreaConstraints`
 
+Atomically replaces all area-level forbidden combinations for a product. Send the current `X-Constraints-Version` header for optimistic concurrency; a stale value returns 409 without modifying anything.
+
+**Header parameters:**
+- `X-Constraints-Version` (integer) — Optimistic-concurrency token. A stale value returns 409.
+
 **Request body:**
 - `application/json` **required**
   - `forbidden` (array<object>) **required**
@@ -2630,6 +2839,7 @@ _operationId_: `replaceAreaConstraints`
 **Responses:**
 - `200` — Replaced
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
@@ -2640,7 +2850,7 @@ _operationId_: `checkConstraint`
 - `application/json` **required** — schema: `ConstraintCheckRequest`
   - `option_id1` (integer) **required**
   - `option_id2` (integer) **required**
-  - `product_id` (integer) **required**
+  - `product_id` (integer) **required** — Identifier of the related product.
 
 **Responses:**
 - `200` — Check result
@@ -2671,18 +2881,18 @@ Combination rules express how options and areas relate beyond simple forbidden p
 
 **Request body:**
 - `application/json` **required** — schema: `CombinationRuleCreateRequest`
-  - `area_id` (object)
+  - `area_id` (object) — Identifier of the related area.
   - `condition` (object)
   - `direction` (string)
-  - `message` (string)
-  - `product_id` (integer) **required**
+  - `message` (string) — Human-readable message.
+  - `product_id` (integer) **required** — Identifier of the related product.
   - `quantity_editable` (object)
   - `quantity_factor` (object)
   - `quantity_offset` (object)
   - `quantity_rounding` (object)
-  - `rule_type` (string) **required**
-  - `source_area_id` (object)
-  - `source_option_id` (object)
+  - `rule_type` (string) **required** — Rule type.
+  - `source_area_id` (object) — Identifier of the related source area.
+  - `source_option_id` (object) — Identifier of the related source option.
   - _...4 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
@@ -2710,19 +2920,19 @@ Combination rules express how options and areas relate beyond simple forbidden p
 
 **Request body:**
 - `application/json` **required** — schema: `CombinationRuleUpdateRequest`
-  - `area_id` (object)
+  - `area_id` (object) — Identifier of the related area.
   - `condition` (object)
   - `direction` (object)
-  - `message` (object)
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `message` (object) — Human-readable message.
+  - `product_id` (integer) — Identifier of the related product.
   - `quantity_editable` (object)
   - `quantity_factor` (object)
   - `quantity_offset` (object)
   - `quantity_rounding` (object)
-  - `rule_type` (object)
-  - `source_area_id` (object)
-  - `source_option_id` (object)
-  - `source_type` (object)
-  - _...3 more — see `components.schemas` in `openapi.json`_
+  - `rule_type` (object) — Rule type.
+  - _...6 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -2768,10 +2978,10 @@ Both shapes accept an optional `"requires"` list of condition clauses (`anyOf` /
 
 **Request body:**
 - `application/json` **required** — schema: `ForbiddenRuleCreateRequest`
-  - `area_id` (object)
-  - `description` (string)
-  - `product_id` (integer) **required**
-  - `rule_json` (object)
+  - `area_id` (object) — Identifier of the related area.
+  - `description` (string) — Free-text description.
+  - `product_id` (integer) **required** — Identifier of the related product.
+  - `rule_json` (ForbiddenRuleJson) — The constraint rule. See ForbiddenRuleJson: a forbidden-pair rule (`invalid`) or an at-most-N rule (`type: ...
 
 **Responses:**
 - `201` — Created
@@ -2793,9 +3003,12 @@ _operationId_: `updateConstraintRule`
 
 **Request body:**
 - `application/json` **required** — schema: `ForbiddenRuleUpdateRequest`
-  - `area_id` (object)
-  - `description` (object)
-  - `rule_json` (object)
+  - `area_id` (object) — Identifier of the related area.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `product_id` (integer) — Identifier of the related product.
+  - `rule_json` (object) — The constraint rule. See ForbiddenRuleJson: a forbidden-pair rule (`invalid`) or an at-most-N rule (`type: ...
 
 **Responses:**
 - `200` — Success
@@ -2809,9 +3022,12 @@ _operationId_: `patchConstraintRule`
 
 **Request body:**
 - `application/json` **required** — schema: `ForbiddenRuleUpdateRequest`
-  - `area_id` (object)
-  - `description` (object)
-  - `rule_json` (object)
+  - `area_id` (object) — Identifier of the related area.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `product_id` (integer) — Identifier of the related product.
+  - `rule_json` (object) — The constraint rule. See ForbiddenRuleJson: a forbidden-pair rule (`invalid`) or an at-most-N rule (`type: ...
 
 **Responses:**
 - `200` — Success
@@ -2950,11 +3166,11 @@ _operationId_: `createCustomer`
   - `address_country` (object)
   - `address_street` (object)
   - `address_zip` (object)
-  - `customer_id` (object)
-  - `email` (object)
-  - `integration_metadata` (object)
+  - `customer_id` (object) — Identifier of the related customer.
+  - `email` (object) — Email address.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
   - `organization` (object)
-  - `phone` (object)
+  - `phone` (object) — Phone number.
 
 **Responses:**
 - `201` — Created
@@ -2976,6 +3192,76 @@ Quick search across organization, email, and customer ID. Returns up to 50 resul
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `GET /api/v1/customers/{customerId}` — Get a customer
+_operationId_: `getCustomer`
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/customers/{customerId}` — Update a customer
+_operationId_: `updateCustomer`
+
+**Request body:**
+- `application/json` **required** — schema: `CustomerUpdateRequest`
+  - `address_city` (object)
+  - `address_country` (object)
+  - `address_street` (object)
+  - `address_zip` (object)
+  - `contacts` (array<ContactPersonResponse>)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `customer_id` (object) — Identifier of the related customer.
+  - `email` (object) — Email address.
+  - `id` (integer) — Unique identifier.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `organization` (object)
+  - _...2 more — see `components.schemas` in `openapi.json`_
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PATCH /api/v1/customers/{customerId}` — Partially update a customer
+_operationId_: `patchCustomer`
+
+**Request body:**
+- `application/json` **required** — schema: `CustomerUpdateRequest`
+  - `address_city` (object)
+  - `address_country` (object)
+  - `address_street` (object)
+  - `address_zip` (object)
+  - `contacts` (array<ContactPersonResponse>)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `customer_id` (object) — Identifier of the related customer.
+  - `email` (object) — Email address.
+  - `id` (integer) — Unique identifier.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `organization` (object)
+  - _...2 more — see `components.schemas` in `openapi.json`_
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/customers/{customerId}` — Delete a customer
+_operationId_: `deleteCustomer`
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `GET /api/v1/customers/{customerId}/configurations` — List customer configurations
 _operationId_: `listCustomerConfigurations`
 
@@ -2987,6 +3273,62 @@ List all configurations for a customer.
 
 **Responses:**
 - `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/customers/{customerId}/contacts` — List contacts for a customer
+_operationId_: `listContacts`
+
+Returns all contact persons for this customer. Not paginated.
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/customers/{customerId}/contacts` — Add a contact to a customer
+_operationId_: `createContact`
+
+**Request body:**
+- `application/json` **required** — schema: `ContactCreateRequest`
+  - `email` (object) — Email address.
+  - `first_name` (string) — First name.
+  - `last_name` (string) — Last name.
+  - `phone` (object) — Phone number.
+  - `position` (object) — Position within its collection (0-based).
+
+**Responses:**
+- `201` — Created
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/customers/{customerId}/contacts/{contactId}` — Update a contact
+_operationId_: `updateContact`
+
+**Request body:**
+- `application/json` **required** — schema: `ContactUpdateRequest`
+  - `email` (object) — Email address.
+  - `first_name` (object) — First name.
+  - `last_name` (object) — Last name.
+  - `phone` (object) — Phone number.
+  - `position` (object) — Position within its collection (0-based).
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/customers/{customerId}/contacts/{contactId}` — Remove a contact
+_operationId_: `deleteContact`
+
+**Responses:**
+- `204` — Deleted
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -3017,124 +3359,6 @@ List all quotes associated with a customer (via opportunities).
 
 **Responses:**
 - `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/customers/{id}` — Get a customer
-_operationId_: `getCustomer`
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PUT /api/v1/customers/{id}` — Update a customer
-_operationId_: `updateCustomer`
-
-**Request body:**
-- `application/json` **required** — schema: `CustomerUpdateRequest`
-  - `address_city` (object)
-  - `address_country` (object)
-  - `address_street` (object)
-  - `address_zip` (object)
-  - `customer_id` (object)
-  - `email` (object)
-  - `integration_metadata` (object)
-  - `organization` (object)
-  - `phone` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PATCH /api/v1/customers/{id}` — Partially update a customer
-_operationId_: `patchCustomer`
-
-**Request body:**
-- `application/json` **required** — schema: `CustomerUpdateRequest`
-  - `address_city` (object)
-  - `address_country` (object)
-  - `address_street` (object)
-  - `address_zip` (object)
-  - `customer_id` (object)
-  - `email` (object)
-  - `integration_metadata` (object)
-  - `organization` (object)
-  - `phone` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `DELETE /api/v1/customers/{id}` — Delete a customer
-_operationId_: `deleteCustomer`
-
-**Responses:**
-- `204` — Deleted
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/customers/{id}/contacts` — List contacts for a customer
-_operationId_: `listContacts`
-
-Returns all contact persons for this customer. Not paginated.
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `POST /api/v1/customers/{id}/contacts` — Add a contact to a customer
-_operationId_: `createContact`
-
-**Request body:**
-- `application/json` **required** — schema: `ContactCreateRequest`
-  - `email` (object)
-  - `first_name` (string)
-  - `last_name` (string)
-  - `phone` (object)
-  - `position` (object)
-
-**Responses:**
-- `201` — Created
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PUT /api/v1/customers/{id}/contacts/{contact_id}` — Update a contact
-_operationId_: `updateContact`
-
-**Request body:**
-- `application/json` **required** — schema: `ContactUpdateRequest`
-  - `email` (object)
-  - `first_name` (object)
-  - `last_name` (object)
-  - `phone` (object)
-  - `position` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `DELETE /api/v1/customers/{id}/contacts/{contact_id}` — Remove a contact
-_operationId_: `deleteContact`
-
-**Responses:**
-- `204` — Deleted
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -3191,15 +3415,15 @@ Create a reusable content block. Optionally include an initial locale with Edito
 **Request body:**
 - `application/json` **required** — schema: `ContentBlockCreateRequest`
   - `conditions` (array<object>)
-  - `description` (string)
-  - `directory_id` (object)
-  - `is_active` (boolean)
+  - `description` (string) — Free-text description.
+  - `directory_id` (object) — Identifier of the related directory.
+  - `is_active` (boolean) — Whether active.
   - `key` (object) — Unique key (auto-generated if omitted)
   - `locale` (object) — Initial locale to create with block
-  - `order_index` (object)
-  - `product_id` (object)
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `product_id` (object) — Identifier of the related product.
   - `tags` (array<string>)
-  - `title` (string) **required**
+  - `title` (string) **required** — Title.
 
 **Responses:**
 - `201` — Created
@@ -3238,9 +3462,10 @@ Upload an image for use in EditorJS content blocks. Send as multipart/form-data 
 ### `DELETE /api/v1/documents/content-blocks/images` — Delete EditorJS image by URL
 _operationId_: `deleteEditorJsImage`
 
-**Request body:**
-- `application/json` **required**
-  - `url` (string) **required**
+Delete an EditorJS image by its URL, supplied as a query parameter (bodies on DELETE are stripped by many proxies).
+
+**Query parameters:**
+- `url` (string) **required** — URL of the image to delete (as returned by the upload).
 
 **Responses:**
 - `204` — Deleted
@@ -3267,14 +3492,18 @@ Update content block metadata. Dynamic/system blocks only allow `directory_id` a
 **Request body:**
 - `application/json` **required** — schema: `ContentBlockUpdateRequest`
   - `conditions` (object)
-  - `description` (object)
-  - `directory_id` (object)
-  - `is_active` (object)
-  - `key` (object)
-  - `order_index` (object)
-  - `product_id` (object)
-  - `tags` (object)
-  - `title` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `current_version` (integer) — Server-managed version counter for optimistic concurrency.
+  - `description` (object) — Free-text description.
+  - `directory_id` (object) — Identifier of the related directory.
+  - `id` (integer) — Unique identifier.
+  - `is_active` (object) — Whether active.
+  - `is_dynamic` (boolean) — Whether dynamic.
+  - `key` (object) — Stable identifier key.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `locales` (array<object>)
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - _...4 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -3316,10 +3545,10 @@ Create a locale for a content block. If a locale with the same language and vers
 **Request body:**
 - `application/json` **required** — schema: `ContentBlockLocaleCreateRequest`
   - `blocks` (object) — EditorJS block array
-  - `is_active` (boolean)
-  - `language` (string) **required**
+  - `is_active` (boolean) — Whether active.
+  - `language` (string) **required** — Language code (e.g. `EN`, `DE`).
   - `template_name` (object) — Dynamic template name (exclusive with blocks)
-  - `version` (integer)
+  - `version` (integer) — Version number.
 
 **Responses:**
 - `201` — Created
@@ -3328,7 +3557,7 @@ Create a locale for a content block. If a locale with the same language and vers
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/documents/content-blocks/{id}/locales/{locale_id}` — Get a content block locale
+### `GET /api/v1/documents/content-blocks/{id}/locales/{localeId}` — Get a content block locale
 _operationId_: `getContentBlockLocale`
 
 **Responses:**
@@ -3337,16 +3566,23 @@ _operationId_: `getContentBlockLocale`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/documents/content-blocks/{id}/locales/{locale_id}` — Update a content block locale
+### `PUT /api/v1/documents/content-blocks/{id}/locales/{localeId}` — Update a content block locale
 _operationId_: `updateContentBlockLocale`
 
 **Request body:**
 - `application/json` **required** — schema: `ContentBlockLocaleUpdateRequest`
+  - `block_id` (integer) — Identifier of the related block.
   - `blocks` (object)
-  - `is_active` (object)
-  - `language` (object)
-  - `template_name` (object)
-  - `version` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `id` (integer) — Unique identifier.
+  - `is_active` (object) — Whether active.
+  - `is_stale` (boolean) — Whether stale.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `source_content_hash` (object) — Content hash.
+  - `template_name` (object) — Name.
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `version` (object) — Version number.
 
 **Responses:**
 - `200` — Success
@@ -3355,7 +3591,7 @@ _operationId_: `updateContentBlockLocale`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/documents/content-blocks/{id}/locales/{locale_id}` — Delete a content block locale
+### `DELETE /api/v1/documents/content-blocks/{id}/locales/{localeId}` — Delete a content block locale
 _operationId_: `deleteContentBlockLocale`
 
 **Responses:**
@@ -3364,7 +3600,7 @@ _operationId_: `deleteContentBlockLocale`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/documents/content-blocks/{id}/locales/{locale_id}/translate` — Translate locale to target language
+### `POST /api/v1/documents/content-blocks/{id}/locales/{localeId}/translate` — Translate locale to target language
 _operationId_: `translateContentBlockLocale`
 
 Translate the source locale's EditorJS content to the target language via DeepL. Creates or updates the target locale and sets `source_content_hash` for staleness detection. The `is_stale` flag on the target locale will be `true` if the source content changes after translation.
@@ -3413,9 +3649,9 @@ _operationId_: `createContentDirectory`
 
 **Request body:**
 - `application/json` **required** — schema: `ContentDirectoryCreateRequest`
-  - `name` (string) **required**
-  - `order_index` (object)
-  - `parent_id` (object)
+  - `name` (string) **required** — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `parent_id` (object) — Identifier of the related parent.
 
 **Responses:**
 - `201` — Created
@@ -3438,9 +3674,9 @@ _operationId_: `updateContentDirectory`
 
 **Request body:**
 - `application/json` **required** — schema: `ContentDirectoryUpdateRequest`
-  - `name` (object)
-  - `order_index` (object)
-  - `parent_id` (object)
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `parent_id` (object) — Identifier of the related parent.
 
 **Responses:**
 - `200` — Success
@@ -3492,12 +3728,12 @@ Create a document instance from a template for a specific context (quote, config
 
 **Request body:**
 - `application/json` **required** — schema: `InstanceCreateRequest`
-  - `context_id` (object)
-  - `context_type` (string)
+  - `context_id` (object) — Identifier of the related context.
+  - `context_type` (string) — The kind of context this instance renders.
   - `lang` (object)
   - `metadata` (object)
-  - `quote_id` (object)
-  - `template_id` (integer) **required**
+  - `quote_id` (object) — Identifier of the related quote.
+  - `template_id` (integer) **required** — Identifier of the related template.
 
 **Responses:**
 - `201` — Created
@@ -3541,12 +3777,12 @@ _operationId_: `createInstanceAttachment`
 
 **Request body:**
 - `application/json` **required** — schema: `InstanceAttachmentCreateRequest`
-  - `block_id` (integer) **required**
-  - `content_block_id` (integer) **required**
+  - `block_id` (integer) **required** — Identifier of the related block.
+  - `content_block_id` (integer) **required** — Identifier of the related content block.
   - `content_snapshot` (object)
-  - `is_active` (boolean)
-  - `is_required` (boolean)
-  - `order_index` (object)
+  - `is_active` (boolean) — Whether active.
+  - `is_required` (boolean) — Whether required.
+  - `order_index` (object) — Sort order within its collection (ascending).
 
 **Responses:**
 - `201` — Created
@@ -3569,10 +3805,14 @@ _operationId_: `updateInstanceAttachment`
 
 **Request body:**
 - `application/json` **required** — schema: `InstanceAttachmentUpdateRequest`
+  - `block_id` (integer) — Identifier of the related block.
+  - `content_block_id` (integer) — Identifier of the related content block.
   - `content_snapshot` (object)
-  - `is_active` (object)
-  - `is_required` (object)
-  - `order_index` (object)
+  - `id` (integer) — Unique identifier.
+  - `is_active` (object) — Whether active.
+  - `is_required` (object) — Whether required.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `order_index` (object) — Sort order within its collection (ascending).
 
 **Responses:**
 - `200` — Success
@@ -3609,13 +3849,13 @@ Add a new block (chapter / section / container) to a document instance.
 
 **Request body:**
 - `application/json` **required** — schema: `InstanceBlockCreateRequest`
-  - `is_active` (boolean)
-  - `node_type` (string) **required**
-  - `order_index` (integer)
-  - `parent_id` (object)
+  - `is_active` (boolean) — Whether active.
+  - `node_type` (string) **required** — Structure node type.
+  - `order_index` (integer) — Sort order within its collection (ascending).
+  - `parent_id` (object) — Identifier of the related parent.
   - `repeat_for` (object)
-  - `slug` (object)
-  - `title` (object)
+  - `slug` (object) — URL-safe slug.
+  - `title` (object) — Title.
   - `visibility` (object)
 
 **Responses:**
@@ -3639,9 +3879,9 @@ _operationId_: `updateInstanceBlock`
 
 **Request body:**
 - `application/json` **required** — schema: `InstanceBlockUpdateRequest`
-  - `is_active` (object)
-  - `order_index` (object)
-  - `title` (object)
+  - `is_active` (object) — Whether active.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `title` (object) — Title.
 
 **Responses:**
 - `200` — Success
@@ -3695,8 +3935,8 @@ Render the instance as HTML, PDF, or Markdown. Optionally create a public link.
 - `application/json` **required** — schema: `PublishRequest`
   - `create_public_link` (boolean) — Create a shareable public link
   - `format` (string) — Output format: html, pdf, markdown, docx
-  - `language` (object)
-  - `title` (object)
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `title` (object) — Title.
 
 **Responses:**
 - `200` — Success
@@ -3817,11 +4057,11 @@ _operationId_: `createDocumentTemplate`
 
 **Request body:**
 - `application/json` **required** — schema: `DocumentTemplateCreateRequest`
-  - `doc_type` (string) **required**
-  - `inheritance_mode` (string)
-  - `name` (string) **required**
-  - `origin_template_id` (object)
-  - `product_id` (object)
+  - `doc_type` (string) **required** — Document type.
+  - `inheritance_mode` (string) — Mode.
+  - `name` (string) **required** — Human-readable name.
+  - `origin_template_id` (object) — Identifier of the related origin template.
+  - `product_id` (object) — Identifier of the related product.
 
 **Responses:**
 - `201` — Created
@@ -3860,9 +4100,18 @@ _operationId_: `updateDocumentTemplate`
 
 **Request body:**
 - `application/json` **required** — schema: `DocumentTemplateUpdateRequest`
-  - `is_published` (object)
-  - `name` (object)
-  - `status` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `doc_type` (string) — Document type.
+  - `id` (integer) — Unique identifier.
+  - `inheritance_mode` (string) — Mode.
+  - `is_published` (object) — Whether published.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `origin_template_id` (object) — Identifier of the related origin template.
+  - `product_id` (object) — Identifier of the related product.
+  - `status` (object) — Lifecycle status.
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `version` (integer) — Version number.
 
 **Responses:**
 - `200` — Success
@@ -3876,9 +4125,18 @@ _operationId_: `patchDocumentTemplate`
 
 **Request body:**
 - `application/json` **required** — schema: `DocumentTemplateUpdateRequest`
-  - `is_published` (object)
-  - `name` (object)
-  - `status` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `doc_type` (string) — Document type.
+  - `id` (integer) — Unique identifier.
+  - `inheritance_mode` (string) — Mode.
+  - `is_published` (object) — Whether published.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `origin_template_id` (object) — Identifier of the related origin template.
+  - `product_id` (object) — Identifier of the related product.
+  - `status` (object) — Lifecycle status.
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `version` (integer) — Version number.
 
 **Responses:**
 - `200` — Success
@@ -3920,9 +4178,9 @@ Create a full deep copy of a template including all structure blocks, locale tit
 
 **Request body:**
 - `application/json` **required** — schema: `CloneRequest`
-  - `doc_type` (object)
+  - `doc_type` (object) — Document type.
   - `name` (object) — Name for clone (defaults to original + ' (Copy)')
-  - `product_id` (object)
+  - `product_id` (object) — Identifier of the related product.
 
 **Responses:**
 - `201` — Created
@@ -3994,13 +4252,13 @@ Add a chapter, section, container, repeater, or placeholder block to the templat
 **Request body:**
 - `application/json` **required** — schema: `StructureBlockCreateRequest`
   - `conditions` (array<object>)
-  - `is_active` (boolean)
-  - `node_type` (string)
-  - `order_index` (object)
-  - `parent_id` (object)
+  - `is_active` (boolean) — Whether active.
+  - `node_type` (string) — Structure node type.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `parent_id` (object) — Identifier of the related parent.
   - `repeat_for` (object)
-  - `slug` (object)
-  - `title` (object)
+  - `slug` (object) — URL-safe slug.
+  - `title` (object) — Title.
   - `visibility` (object)
 
 **Responses:**
@@ -4027,13 +4285,13 @@ _operationId_: `updateStructureBlock`
 **Request body:**
 - `application/json` **required** — schema: `StructureBlockUpdateRequest`
   - `conditions` (object)
-  - `is_active` (object)
-  - `node_type` (object)
-  - `order_index` (object)
-  - `parent_id` (object)
+  - `is_active` (object) — Whether active.
+  - `node_type` (object) — Structure node type.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `parent_id` (object) — Identifier of the related parent.
   - `repeat_for` (object)
-  - `slug` (object)
-  - `title` (object)
+  - `slug` (object) — URL-safe slug.
+  - `title` (object) — Title.
   - `visibility` (object)
 
 **Responses:**
@@ -4074,10 +4332,10 @@ Attach a reusable content block to a structure block. The content block's locale
 **Request body:**
 - `application/json` **required** — schema: `AttachmentCreateRequest`
   - `conditions` (array<object>)
-  - `content_block_id` (integer) **required**
-  - `is_active` (boolean)
-  - `is_required` (boolean)
-  - `order_index` (object)
+  - `content_block_id` (integer) **required** — Identifier of the related content block.
+  - `is_active` (boolean) — Whether active.
+  - `is_required` (boolean) — Whether required.
+  - `order_index` (object) — Sort order within its collection (ascending).
 
 **Responses:**
 - `201` — Created
@@ -4117,9 +4375,15 @@ _operationId_: `updateStructureAttachment`
 **Request body:**
 - `application/json` **required** — schema: `AttachmentUpdateRequest`
   - `conditions` (object)
-  - `is_active` (object)
-  - `is_required` (object)
-  - `order_index` (object)
+  - `content_block_id` (integer) — Identifier of the related content block.
+  - `content_block_key` (object)
+  - `content_block_title` (object)
+  - `id` (integer) — Unique identifier.
+  - `is_active` (object) — Whether active.
+  - `is_required` (object) — Whether required.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `structure_id` (integer) — Identifier of the related structure.
 
 **Responses:**
 - `200` — Success
@@ -4148,14 +4412,14 @@ _operationId_: `listStructureBlockLocales`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{lang}` — Upsert structure block locale title
+### `PUT /api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{localeId}` — Upsert structure block locale title
 _operationId_: `upsertStructureBlockLocale`
 
 Set the translated title for a structure block in a specific language. Creates the locale if it doesn't exist, updates it if it does.
 
 **Request body:**
 - `application/json` **required** — schema: `StructureBlockLocaleUpsertRequest`
-  - `title` (string) **required**
+  - `title` (string) **required** — Title.
 
 **Responses:**
 - `200` — Success
@@ -4165,7 +4429,7 @@ Set the translated title for a structure block in a specific language. Creates t
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{lang}` — Delete structure block locale
+### `DELETE /api/v1/documents/templates/{id}/structure/blocks/{block_id}/locales/{localeId}` — Delete structure block locale
 _operationId_: `deleteStructureBlockLocale`
 
 **Responses:**
@@ -4180,7 +4444,7 @@ _operationId_: `moveStructureBlock`
 
 **Request body:**
 - `application/json` **required** — schema: `MoveRequest`
-  - `order_index` (object)
+  - `order_index` (object) — Sort order within its collection (ascending).
   - `parent_id` (object) — New parent block ID, null for root
 
 **Responses:**
@@ -4254,8 +4518,8 @@ Create a derived template linked to this template as its origin. **link**: read-
 **Request body:**
 - `application/json` **required** — schema: `VariantCreateRequest`
   - `inheritance_mode` (string) — link, extend, or fork
-  - `name` (string) **required**
-  - `product_id` (object)
+  - `name` (string) **required** — Human-readable name.
+  - `product_id` (object) — Identifier of the related product.
 
 **Responses:**
 - `201` — Created
@@ -4337,12 +4601,12 @@ _operationId_: `createGroup`
 **Request body:**
 - `application/json` **required** — schema: `GroupCreateRequest`
   - `area_id` (object) — Area to assign this group to
-  - `description` (string)
-  - `is_multi` (boolean)
+  - `description` (string) — Free-text description.
+  - `is_multi` (boolean) — Whether multi.
   - `is_required` (boolean) — Require at least one selection in this group
-  - `key` (string)
-  - `language` (string)
-  - `name` (string) **required**
+  - `key` (string) — Stable identifier key.
+  - `language` (string) — Language code (e.g. `EN`, `DE`).
+  - `name` (string) **required** — Human-readable name.
   - `order_index` (object) — Position in group list (auto-assigned if omitted)
   - `selection_max` (object) — Maximum number of selections allowed (multi-select groups)
   - `selection_min` (object) — Minimum number of selections required (multi-select groups)
@@ -4353,7 +4617,7 @@ _operationId_: `createGroup`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/groups/{id}` — Get a group
+### `GET /api/v1/groups/{groupId}` — Get a group
 _operationId_: `getGroup`
 
 **Responses:**
@@ -4362,18 +4626,21 @@ _operationId_: `getGroup`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/groups/{id}` — Update a group
+### `PUT /api/v1/groups/{groupId}` — Update a group
 _operationId_: `updateGroup`
 
 **Request body:**
 - `application/json` **required** — schema: `GroupUpdateRequest`
-  - `description` (object)
-  - `is_multi` (object)
-  - `is_required` (object)
-  - `key` (object)
-  - `language` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `area_ids` (array<integer>)
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `is_multi` (object) — Whether multi.
+  - `is_required` (object) — Whether required.
+  - `key` (object) — Stable identifier key.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
   - `selection_max` (object)
   - `selection_min` (object)
 
@@ -4384,18 +4651,21 @@ _operationId_: `updateGroup`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/groups/{id}` — Partially update a group
+### `PATCH /api/v1/groups/{groupId}` — Partially update a group
 _operationId_: `patchGroup`
 
 **Request body:**
 - `application/json` **required** — schema: `GroupUpdateRequest`
-  - `description` (object)
-  - `is_multi` (object)
-  - `is_required` (object)
-  - `key` (object)
-  - `language` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `area_ids` (array<integer>)
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `is_multi` (object) — Whether multi.
+  - `is_required` (object) — Whether required.
+  - `key` (object) — Stable identifier key.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
   - `selection_max` (object)
   - `selection_min` (object)
 
@@ -4406,7 +4676,7 @@ _operationId_: `patchGroup`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/groups/{id}` — Delete a group
+### `DELETE /api/v1/groups/{groupId}` — Delete a group
 _operationId_: `deleteGroup`
 
 **Responses:**
@@ -4415,7 +4685,7 @@ _operationId_: `deleteGroup`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/groups/{id}/areas` — List areas linked to a group
+### `GET /api/v1/groups/{groupId}/areas` — List areas linked to a group
 _operationId_: `listGroupAreas`
 
 Returns all areas the group is currently linked to. Not paginated.
@@ -4426,7 +4696,7 @@ Returns all areas the group is currently linked to. Not paginated.
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/groups/{id}/areas` — Link a group to areas
+### `POST /api/v1/groups/{groupId}/areas` — Link a group to areas
 _operationId_: `linkGroupAreas`
 
 Link a group to one or more areas. Already-linked areas are silently skipped (idempotent).
@@ -4442,7 +4712,7 @@ Link a group to one or more areas. Already-linked areas are silently skipped (id
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/groups/{id}/areas/{area_id}` — Unlink a group from an area
+### `DELETE /api/v1/groups/{groupId}/areas/{areaId}` — Unlink a group from an area
 _operationId_: `unlinkGroupArea`
 
 Remove the group-area association and clean up area-specific data (OptionAreaConfig, OptionPriceOverride, OptionAdvancedPrice rows).
@@ -4453,7 +4723,7 @@ Remove the group-area association and clean up area-specific data (OptionAreaCon
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/groups/{id}/duplicate` — Duplicate a group
+### `POST /api/v1/groups/{groupId}/duplicate` — Duplicate a group
 _operationId_: `duplicateGroup`
 
 Deep-copy the group including all options.
@@ -4464,7 +4734,7 @@ Deep-copy the group including all options.
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/groups/{id}/options` — List options in a group
+### `GET /api/v1/groups/{groupId}/options` — List options in a group
 _operationId_: `listGroupOptions`
 
 Returns options belonging to this group. Not paginated.
@@ -4550,6 +4820,32 @@ Upload or replace an area-specific image override for the option.
 
 ### `DELETE /api/v1/options/{optionId}/image/areas/{areaId}` — Delete option area override image
 _operationId_: `deleteOptionAreaImage`
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/parts/{partId}/image` — Upload part image
+_operationId_: `uploadPartImage`
+
+Upload or replace the part's image (e.g. for spare-parts catalogues and exploded-view BOMs). Resolved to `image_url` on PartResponse. Scope: `parts:write`.
+
+**Request body:**
+- `multipart/form-data` **required**
+  - `file` (string(binary)) **required** — Image file (JPEG, PNG, WebP, GIF)
+
+**Responses:**
+- `201` — Image uploaded
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `413` — Payload Too Large (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/parts/{partId}/image` — Delete part image
+_operationId_: `deletePartImage`
 
 **Responses:**
 - `204` — Deleted
@@ -4809,7 +5105,7 @@ Create or update part placements for a product/area.
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/inbound/triggers/{suffix}` — Fire a webhook trigger by path
+### `POST /api/v1/inbound/triggers/{triggerId}` — Fire a webhook trigger by path
 _operationId_: `fireWebhookTrigger`
 
 Fire a webhook-type trigger by its configured path suffix. External systems POST to this endpoint to trigger a connector task.
@@ -4843,9 +5139,9 @@ _operationId_: `createItemRevision`
 
 **Request body:**
 - `application/json` **required** — schema: `ItemRevisionCreateRequest`
-  - `code` (string) **required**
-  - `lifecycle_state` (string)
-  - `note` (object)
+  - `code` (string) **required** — Short code.
+  - `lifecycle_state` (string) — Lifecycle state.
+  - `note` (object) — Free-text note.
 
 **Responses:**
 - `201` — Created
@@ -4870,8 +5166,14 @@ Only Draft or Review revisions can be updated.
 
 **Request body:**
 - `application/json` **required** — schema: `ItemRevisionUpdateRequest`
-  - `code` (object)
-  - `note` (object)
+  - `code` (object) — Short code.
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `id` (integer) — Unique identifier.
+  - `lifecycle_state` (string) — Lifecycle state.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `note` (object) — Free-text note.
+  - `part_id` (integer) — Identifier of the related part.
+  - `released_at` (object) — Timestamp (ISO 8601).
 
 **Responses:**
 - `200` — Success
@@ -4936,9 +5238,9 @@ _operationId_: `createLanguage`
 
 **Request body:**
 - `application/json` **required** — schema: `LanguageCreateRequest`
-  - `code` (string) **required**
-  - `is_base` (boolean)
-  - `name` (string) **required**
+  - `code` (string) **required** — Short code.
+  - `is_base` (boolean) — Whether base.
+  - `name` (string) **required** — Human-readable name.
 
 **Responses:**
 - `201` — Created
@@ -4973,10 +5275,12 @@ _operationId_: `updateLanguage`
 
 **Request body:**
 - `application/json` **required** — schema: `LanguageUpdateRequest`
-  - `code` (object)
-  - `is_base` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `code` (object) — Short code.
+  - `id` (integer) — Unique identifier.
+  - `is_base` (object) — Whether base.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
 
 **Responses:**
 - `200` — Success
@@ -4990,10 +5294,12 @@ _operationId_: `patchLanguage`
 
 **Request body:**
 - `application/json` **required** — schema: `LanguageUpdateRequest`
-  - `code` (object)
-  - `is_base` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `code` (object) — Short code.
+  - `id` (integer) — Unique identifier.
+  - `is_base` (object) — Whether base.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
 
 **Responses:**
 - `200` — Success
@@ -5037,15 +5343,15 @@ _operationId_: `createOpportunity`
 
 **Request body:**
 - `application/json` **required** — schema: `OpportunityCreateRequest`
-  - `customer_id` (integer) **required**
-  - `description` (object)
-  - `expected_amount` (object)
+  - `customer_id` (integer) **required** — Identifier of the related customer.
+  - `description` (object) — Free-text description.
+  - `expected_amount` (object) — Amount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sep...
   - `expected_close_date` (object)
-  - `integration_metadata` (object)
-  - `name` (string) **required**
-  - `owner_contact_id` (object)
-  - `probability` (integer)
-  - `stage` (string)
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `name` (string) **required** — Human-readable name.
+  - `owner_contact_id` (object) — Identifier of the related owner contact.
+  - `probability` (integer) — Win probability, as a percentage (0–100).
+  - `stage` (string) — Sales pipeline stage.
 
 **Responses:**
 - `201` — Created
@@ -5068,15 +5374,19 @@ _operationId_: `updateOpportunity`
 
 **Request body:**
 - `application/json` **required** — schema: `OpportunityUpdateRequest`
-  - `description` (object)
-  - `expected_amount` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `customer_id` (integer) — Identifier of the related customer.
+  - `customer_name` (object) — Customer name.
+  - `description` (object) — Free-text description.
+  - `expected_amount` (object) — Amount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sep...
   - `expected_close_date` (object)
-  - `integration_metadata` (object)
-  - `name` (object)
-  - `owner_contact_id` (object)
-  - `primary_quote_id` (object)
-  - `probability` (object)
-  - `stage` (object)
+  - `id` (integer) — Unique identifier.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `opportunity_number` (object) — Number.
+  - `owner_contact_id` (object) — Identifier of the related owner contact.
+  - _...6 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5090,15 +5400,19 @@ _operationId_: `patchOpportunity`
 
 **Request body:**
 - `application/json` **required** — schema: `OpportunityUpdateRequest`
-  - `description` (object)
-  - `expected_amount` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `customer_id` (integer) — Identifier of the related customer.
+  - `customer_name` (object) — Customer name.
+  - `description` (object) — Free-text description.
+  - `expected_amount` (object) — Amount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sep...
   - `expected_close_date` (object)
-  - `integration_metadata` (object)
-  - `name` (object)
-  - `owner_contact_id` (object)
-  - `primary_quote_id` (object)
-  - `probability` (object)
-  - `stage` (object)
+  - `id` (integer) — Unique identifier.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `opportunity_number` (object) — Number.
+  - `owner_contact_id` (object) — Identifier of the related owner contact.
+  - _...6 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5152,18 +5466,18 @@ _operationId_: `createOption`
 
 **Request body:**
 - `application/json` **required** — schema: `OptionCreateRequest`
-  - `description` (string)
+  - `description` (string) — Free-text description.
   - `group_id` (integer) **required** — Group this option belongs to
-  - `is_numbered` (boolean)
-  - `key` (string)
-  - `language` (string)
-  - `name` (string) **required**
-  - `number_max` (object)
-  - `number_min` (object)
-  - `number_step` (object)
+  - `is_numbered` (boolean) — Whether numbered.
+  - `key` (string) — Stable identifier key.
+  - `language` (string) — Language code (e.g. `EN`, `DE`).
+  - `name` (string) **required** — Human-readable name.
+  - `number_max` (object) — Maximum selectable amount for a numbered option. Supports fractional values.
+  - `number_min` (object) — Minimum selectable amount for a numbered option. Supports fractional values (e.g. 0.5).
+  - `number_step` (object) — Step between selectable amounts (e.g. 0.25). Amounts must satisfy (amount − number_min) being a whole multi...
   - `number_unit` (string)
   - `order_index` (object) — Position in option list (auto-assigned if omitted)
-  - `price` (string)
+  - `price` (string) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
   - _...2 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
@@ -5173,7 +5487,7 @@ _operationId_: `createOption`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/options/{id}` — Get an option
+### `GET /api/v1/options/{optionId}` — Get an option
 _operationId_: `getOption`
 
 **Responses:**
@@ -5182,24 +5496,24 @@ _operationId_: `getOption`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/options/{id}` — Update an option
+### `PUT /api/v1/options/{optionId}` — Update an option
 _operationId_: `updateOption`
 
 **Request body:**
 - `application/json` **required** — schema: `OptionUpdateRequest`
-  - `description` (object)
-  - `is_numbered` (object)
-  - `key` (object)
-  - `language` (object)
-  - `name` (object)
-  - `number_max` (object)
-  - `number_min` (object)
-  - `number_step` (object)
-  - `number_unit` (object)
-  - `order_index` (object)
-  - `price` (object)
-  - `price_scalings` (object)
-  - _...1 more — see `components.schemas` in `openapi.json`_
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `description` (object) — Free-text description.
+  - `group_id` (integer) — Identifier of the related group.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `is_numbered` (object) — Whether numbered.
+  - `key` (object) — Stable identifier key.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `number_max` (object) — Maximum selectable amount for a numbered option. Supports fractional values.
+  - `number_min` (object) — Minimum selectable amount for a numbered option. Supports fractional values (e.g. 0.5).
+  - _...7 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5208,24 +5522,24 @@ _operationId_: `updateOption`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/options/{id}` — Partially update an option
+### `PATCH /api/v1/options/{optionId}` — Partially update an option
 _operationId_: `patchOption`
 
 **Request body:**
 - `application/json` **required** — schema: `OptionUpdateRequest`
-  - `description` (object)
-  - `is_numbered` (object)
-  - `key` (object)
-  - `language` (object)
-  - `name` (object)
-  - `number_max` (object)
-  - `number_min` (object)
-  - `number_step` (object)
-  - `number_unit` (object)
-  - `order_index` (object)
-  - `price` (object)
-  - `price_scalings` (object)
-  - _...1 more — see `components.schemas` in `openapi.json`_
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `description` (object) — Free-text description.
+  - `group_id` (integer) — Identifier of the related group.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `is_numbered` (object) — Whether numbered.
+  - `key` (object) — Stable identifier key.
+  - `language` (object) — Language code (e.g. `EN`, `DE`).
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `number_max` (object) — Maximum selectable amount for a numbered option. Supports fractional values.
+  - `number_min` (object) — Minimum selectable amount for a numbered option. Supports fractional values (e.g. 0.5).
+  - _...7 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5234,7 +5548,7 @@ _operationId_: `patchOption`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/options/{id}` — Delete an option
+### `DELETE /api/v1/options/{optionId}` — Delete an option
 _operationId_: `deleteOption`
 
 **Responses:**
@@ -5243,25 +5557,10 @@ _operationId_: `deleteOption`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/options/{id}/effective` — Get effective price for an option
-_operationId_: `getEffectivePrice`
-
-Returns the effective price considering overrides.
-
-**Query parameters:**
-- `price_list_id` (integer) — Price list ID
-- `area_id` (integer) — Area ID
-
-**Responses:**
-- `200` — Effective price
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
 ### `GET /api/v1/options/{optionId}/advanced-prices` — List advanced prices
 _operationId_: `listAdvancedPrices`
 
-List condition-based price overrides for an option. Not paginated.
+List cross-option conditional prices for an option. Cross-option conditional pricing: set what this option costs **when** another option (`condition_option_id`) is also selected, optionally scoped to an area and/or price list. An advanced price outranks an option price-override during pricing resolution. Not paginated.
 
 **Responses:**
 - `200` — Success
@@ -5272,12 +5571,14 @@ List condition-based price overrides for an option. Not paginated.
 ### `POST /api/v1/options/{optionId}/advanced-prices` — Create an advanced price
 _operationId_: `createAdvancedPrice`
 
+Cross-option conditional pricing: set what this option costs **when** another option (`condition_option_id`) is also selected, optionally scoped to an area and/or price list. An advanced price outranks an option price-override during pricing resolution.
+
 **Request body:**
-- `application/json` **required**
-  - `advanced_price` (string) **required**
-  - `area_id` (integer)
-  - `condition_option_id` (integer) **required**
-  - `price_list_id` (integer)
+- `application/json` **required** — schema: `AdvancedPriceCreateRequest`
+  - `advanced_price` (string) **required** — Decimal-string price applied when the condition holds.
+  - `area_id` (integer) — Restrict to one area (omit for all areas).
+  - `condition_option_id` (integer) **required** — The option whose selection triggers this price.
+  - `price_list_id` (integer) — Restrict to one price list (omit for all).
 
 **Responses:**
 - `201` — Created
@@ -5289,23 +5590,16 @@ _operationId_: `createAdvancedPrice`
 ### `PUT /api/v1/options/{optionId}/advanced-prices/{priceId}` — Update an advanced price
 _operationId_: `updateAdvancedPrice`
 
-**Request body:**
-- `application/json` **required**
-  - `advanced_price` (string) **required**
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PATCH /api/v1/options/{optionId}/advanced-prices/{priceId}` — Partially update an advanced price
-_operationId_: `patchAdvancedPrice`
+Cross-option conditional pricing: set what this option costs **when** another option (`condition_option_id`) is also selected, optionally scoped to an area and/or price list. An advanced price outranks an option price-override during pricing resolution.
 
 **Request body:**
-- `application/json` **required**
-  - `advanced_price` (string)
+- `application/json` **required** — schema: `AdvancedPriceUpdateRequest`
+  - `advanced_price` (string) **required** — New decimal-string price.
+  - `area_id` (integer|null) — Restrict to one area, or null for all.
+  - `condition_option_id` (integer) — The option whose selection triggers this price.
+  - `id` (integer) — Unique identifier.
+  - `option_id` (integer) — The option this price applies to (from the URL).
+  - `price_list_id` (integer|null) — Restrict to one price list, or null for all.
 
 **Responses:**
 - `200` — Success
@@ -5377,6 +5671,21 @@ Clear an option's area-specific override(s). Pass `field` to clear a single over
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `GET /api/v1/options/{optionId}/effective` — Get effective price for an option
+_operationId_: `getEffectivePrice`
+
+Returns the effective price considering overrides.
+
+**Query parameters:**
+- `price_list_id` (integer) — Price list ID
+- `area_id` (integer) — Area ID
+
+**Responses:**
+- `200` — Effective price
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ---
 
 ## Part Documents
@@ -5403,9 +5712,9 @@ _operationId_: `createPartDocument`
 
 **Request body:**
 - `application/json` **required** — schema: `PartDocumentCreateRequest`
-  - `doc_type` (string)
-  - `lifecycle_state` (string)
-  - `note` (object)
+  - `doc_type` (string) — Document type.
+  - `lifecycle_state` (string) — Lifecycle state.
+  - `note` (object) — Free-text note.
   - `number` (string) **required**
   - `source_system` (object)
 
@@ -5429,9 +5738,13 @@ _operationId_: `updatePartDocument`
 
 **Request body:**
 - `application/json` **required** — schema: `PartDocumentUpdateRequest`
-  - `doc_type` (object)
-  - `lifecycle_state` (object)
-  - `note` (object)
+  - `cad_files` (array<CadFileResponse>)
+  - `derivatives` (array<DerivativeResponse>)
+  - `doc_type` (object) — Document type.
+  - `id` (integer) — Unique identifier.
+  - `lifecycle_state` (object) — Lifecycle state.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `note` (object) — Free-text note.
   - `number` (object)
   - `source_system` (object)
 
@@ -5447,9 +5760,13 @@ _operationId_: `patchPartDocument`
 
 **Request body:**
 - `application/json` **required** — schema: `PartDocumentUpdateRequest`
-  - `doc_type` (object)
-  - `lifecycle_state` (object)
-  - `note` (object)
+  - `cad_files` (array<CadFileResponse>)
+  - `derivatives` (array<DerivativeResponse>)
+  - `doc_type` (object) — Document type.
+  - `id` (integer) — Unique identifier.
+  - `lifecycle_state` (object) — Lifecycle state.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `note` (object) — Free-text note.
   - `number` (object)
   - `source_system` (object)
 
@@ -5483,8 +5800,8 @@ _operationId_: `createPartDocumentLink`
 
 **Request body:**
 - `application/json` **required** — schema: `PartDocumentLinkCreateRequest`
-  - `document_id` (integer) **required**
-  - `role` (object)
+  - `document_id` (integer) **required** — Identifier of the related document.
+  - `role` (object) — Role.
 
 **Responses:**
 - `201` — Created
@@ -5516,8 +5833,8 @@ _operationId_: `createRevisionDocumentLink`
 
 **Request body:**
 - `application/json` **required** — schema: `PartDocumentLinkCreateRequest`
-  - `document_id` (integer) **required**
-  - `role` (object)
+  - `document_id` (integer) **required** — Identifier of the related document.
+  - `role` (object) — Role.
 
 **Responses:**
 - `201` — Created
@@ -5532,7 +5849,7 @@ _operationId_: `createRevisionDocumentLink`
 
 PLM (Product Lifecycle Management) parts catalog. Parts have placements on areas and Bill of Materials (BOM) hierarchies for manufacturing. Scope: `parts:read`, `parts:write`.
 
-### `GET /api/v1/areas/{id}/placements` — List placements on an area
+### `GET /api/v1/areas/{areaId}/placements` — List placements on an area
 _operationId_: `listAreaPlacements`
 
 The bulk read path for a configurable BOM: returns **every** part placement on the area, cursor-paginated (`limit` up to 100, default 100). Each item is a full placement — `part_id`, `area_id`, `usage_subclauses`, `option_scalings` — so you can reconstruct the area's conditional BOM in a handful of requests instead of one per part. Unknown query parameters are rejected with `400`.
@@ -5544,6 +5861,40 @@ The bulk read path for a configurable BOM: returns **every** part placement on t
 **Responses:**
 - `200` — Success
 - `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/areas/{areaId}/placements` — Replace an area's placements (bulk, declarative)
+_operationId_: `syncAreaPlacements`
+
+The bulk **write** counterpart to the GET: send the desired set of placements and the server diffs it against the current state, then creates, updates and (with `prune`, the default) deletes to match. This is the recommended way to import or re-apply a configurable BOM in **one** request instead of one `POST /parts/{id}/placements` per line.
+
+- **Idempotent** — re-sending an identical body is a no-op, so a partially-completed import is safe to retry without duplicating rows.
+- **`prune: true`** (default) is a full replace: placements not in the body are deleted, so a revised Stückliste re-applies cleanly and a bad import rolls back cheaply. **`prune: false`** upserts without deleting.
+- **Atomic** — on any validation error nothing is written.
+- A desired line matches an existing placement on `(part_id, usage_subclauses)`; two lines may share a `part_id` only if their conditions differ. The response returns the full resulting set so the import can be verified without a follow-up read.
+
+**Request body:**
+- `application/json` **required** — schema: `AreaPlacementSyncRequest`
+  - `placements` (array<AreaPlacementSyncItem>) **required** — The complete desired set of placements on the area (0–2000). An empty list with prune=true clears the area.
+  - `prune` (boolean) — When true (default), delete existing placements not in the list (full declarative replace). When false, onl...
+
+**Responses:**
+- `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/areas/{areaId}/placements` — Clear an area's placements (bulk)
+_operationId_: `clearAreaPlacements`
+
+Delete **every** placement on the area in one request — the bulk counterpart to per-placement `DELETE`, for clearing or rolling back a configurable BOM. Returns the number of placements removed.
+
+**Responses:**
+- `200` — Cleared
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -5575,16 +5926,16 @@ _operationId_: `createPart`
 - `application/json` **required** — schema: `PartCreateRequest`
   - `bom_structure` (string) — 'normal' — an ordinary part/assembly. 'ghost' — a phantom assembly: a structural container that groups BOM ...
   - `commodity_code` (object)
-  - `custom_fields` (object)
-  - `integration_metadata` (object)
+  - `custom_fields` (object) — Arbitrary user-defined fields.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
   - `make_or_buy` (object)
-  - `part_cost` (integer)
+  - `part_cost` (string) — Part cost as a decimal string (e.g. '12.50').
   - `part_description` (object)
-  - `part_name` (string) **required**
-  - `part_number` (string) **required**
-  - `part_type` (object)
+  - `part_name` (string) **required** — Part name.
+  - `part_number` (string) **required** — Part number.
+  - `part_type` (object) — Type.
   - `phantom_resolve_mode` (string) — For ghost (phantom) parts, controls how the phantom is resolved when materialised: 'dissolve' inlines the c...
-  - `status` (string)
+  - `status` (string) — Lifecycle status.
   - _...2 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
@@ -5594,23 +5945,35 @@ _operationId_: `createPart`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `GET /api/v1/parts/bom/{id}` — Get a BOM item
+_operationId_: `getBomItem`
+
+Read a single BOM item (child edge) by its id.
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `PUT /api/v1/parts/bom/{id}` — Update a BOM item
 _operationId_: `updateBomItem`
 
 **Request body:**
 - `application/json` **required** — schema: `BomItemUpdateRequest`
   - `alt_group` (object)
+  - `child_part_id` (integer) — Identifier of the related child part.
+  - `child_part_name` (object) — Name.
+  - `child_part_number` (object) — Number.
   - `effective_from` (object)
   - `effective_to` (object)
   - `ghost_part` (object)
-  - `note` (object)
+  - `id` (integer) — Unique identifier.
+  - `note` (object) — Free-text note.
   - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
-  - `order_index` (object)
-  - `priority` (object)
-  - `quantity` (object)
-  - `scrap_percent` (object)
-  - `uom` (object)
-  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `parent_part_id` (integer) — Identifier of the related parent part.
+  - _...6 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5625,17 +5988,18 @@ _operationId_: `patchBomItem`
 **Request body:**
 - `application/json` **required** — schema: `BomItemUpdateRequest`
   - `alt_group` (object)
+  - `child_part_id` (integer) — Identifier of the related child part.
+  - `child_part_name` (object) — Name.
+  - `child_part_number` (object) — Number.
   - `effective_from` (object)
   - `effective_to` (object)
   - `ghost_part` (object)
-  - `note` (object)
+  - `id` (integer) — Unique identifier.
+  - `note` (object) — Free-text note.
   - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
-  - `order_index` (object)
-  - `priority` (object)
-  - `quantity` (object)
-  - `scrap_percent` (object)
-  - `uom` (object)
-  - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `parent_part_id` (integer) — Identifier of the related parent part.
+  - _...6 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5689,8 +6053,8 @@ _operationId_: `createPartGroup`
 
 **Request body:**
 - `application/json` **required** — schema: `PartGroupCreateRequest`
-  - `description` (string)
-  - `name` (string) **required**
+  - `description` (string) — Free-text description.
+  - `name` (string) **required** — Human-readable name.
 
 **Responses:**
 - `201` — Created
@@ -5712,8 +6076,12 @@ _operationId_: `updatePartGroup`
 
 **Request body:**
 - `application/json` **required** — schema: `PartGroupUpdateRequest`
-  - `description` (string)
-  - `name` (string)
+  - `company_id` (integer) — Identifier of the related company.
+  - `created_at` (string(date-time)) — Timestamp (ISO 8601).
+  - `description` (string) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `name` (string) — Human-readable name.
+  - `updated_at` (string(date-time)) — Timestamp (ISO 8601).
 
 **Responses:**
 - `200` — Success
@@ -5727,8 +6095,12 @@ _operationId_: `patchPartGroup`
 
 **Request body:**
 - `application/json` **required** — schema: `PartGroupUpdateRequest`
-  - `description` (string)
-  - `name` (string)
+  - `company_id` (integer) — Identifier of the related company.
+  - `created_at` (string(date-time)) — Timestamp (ISO 8601).
+  - `description` (string) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `name` (string) — Human-readable name.
+  - `updated_at` (string(date-time)) — Timestamp (ISO 8601).
 
 **Responses:**
 - `200` — Success
@@ -5746,17 +6118,30 @@ _operationId_: `deletePartGroup`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
+### `GET /api/v1/parts/placements/{id}` — Get a part placement
+_operationId_: `getPartPlacement`
+
+Read a single placement by its id.
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
 ### `PUT /api/v1/parts/placements/{id}` — Update a part placement
 _operationId_: `updatePartPlacement`
 
 **Request body:**
 - `application/json` **required** — schema: `PartPlacementUpdateRequest`
-  - `area_id` (object)
+  - `area_id` (object) — Identifier of the related area.
   - `ghost_part` (object)
+  - `id` (integer) — Unique identifier.
   - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
-  - `order_index` (object)
-  - `quantity` (object)
-  - `uom` (object)
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `part_id` (integer) — Identifier of the related part.
+  - `quantity` (object) — Quantity.
+  - `uom` (object) — Unit of measure.
   - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
@@ -5771,12 +6156,14 @@ _operationId_: `patchPartPlacement`
 
 **Request body:**
 - `application/json` **required** — schema: `PartPlacementUpdateRequest`
-  - `area_id` (object)
+  - `area_id` (object) — Identifier of the related area.
   - `ghost_part` (object)
+  - `id` (integer) — Unique identifier.
   - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
-  - `order_index` (object)
-  - `quantity` (object)
-  - `uom` (object)
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `part_id` (integer) — Identifier of the related part.
+  - `quantity` (object) — Quantity.
+  - `uom` (object) — Unit of measure.
   - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
@@ -5795,7 +6182,7 @@ _operationId_: `deletePartPlacement`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}` — Get a part
+### `GET /api/v1/parts/{partId}` — Get a part
 _operationId_: `getPart`
 
 **Responses:**
@@ -5804,24 +6191,24 @@ _operationId_: `getPart`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/parts/{id}` — Update a part
+### `PUT /api/v1/parts/{partId}` — Update a part
 _operationId_: `updatePart`
 
 **Request body:**
 - `application/json` **required** — schema: `PartUpdateRequest`
   - `bom_structure` (object)
   - `commodity_code` (object)
-  - `custom_fields` (object)
-  - `integration_metadata` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `custom_fields` (object) — Arbitrary user-defined fields.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `links` (object) — HATEOAS links to this and related resources.
   - `make_or_buy` (object)
-  - `part_cost` (object)
+  - `part_cost` (object) — Part cost as a decimal string (e.g. '12.50').
   - `part_description` (object)
-  - `part_name` (object)
-  - `part_number` (object)
-  - `part_type` (object)
-  - `phantom_resolve_mode` (object)
-  - `status` (object)
-  - _...2 more — see `components.schemas` in `openapi.json`_
+  - `part_name` (object) — Part name.
+  - _...7 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5831,24 +6218,24 @@ _operationId_: `updatePart`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/parts/{id}` — Partially update a part
+### `PATCH /api/v1/parts/{partId}` — Partially update a part
 _operationId_: `patchPart`
 
 **Request body:**
 - `application/json` **required** — schema: `PartUpdateRequest`
   - `bom_structure` (object)
   - `commodity_code` (object)
-  - `custom_fields` (object)
-  - `integration_metadata` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `custom_fields` (object) — Arbitrary user-defined fields.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `links` (object) — HATEOAS links to this and related resources.
   - `make_or_buy` (object)
-  - `part_cost` (object)
+  - `part_cost` (object) — Part cost as a decimal string (e.g. '12.50').
   - `part_description` (object)
-  - `part_name` (object)
-  - `part_number` (object)
-  - `part_type` (object)
-  - `phantom_resolve_mode` (object)
-  - `status` (object)
-  - _...2 more — see `components.schemas` in `openapi.json`_
+  - `part_name` (object) — Part name.
+  - _...7 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -5858,7 +6245,7 @@ _operationId_: `patchPart`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/parts/{id}` — Delete a part
+### `DELETE /api/v1/parts/{partId}` — Delete a part
 _operationId_: `deletePart`
 
 **Responses:**
@@ -5867,8 +6254,10 @@ _operationId_: `deletePart`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}/bom` — List BOM children
+### `GET /api/v1/parts/{partId}/bom` — List BOM children
 _operationId_: `listBomChildren`
+
+Returns the part's direct BOM children in a single `{"data": [...]}` response (not paginated). Use `/parts/{id}/bom/tree` or `/bom/flat` for multi-level.
 
 **Responses:**
 - `200` — Success
@@ -5876,23 +6265,23 @@ _operationId_: `listBomChildren`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/parts/{id}/bom` — Add a BOM child
+### `POST /api/v1/parts/{partId}/bom` — Add a BOM child
 _operationId_: `createBomItem`
 
 **Request body:**
 - `application/json` **required** — schema: `BomItemCreateRequest`
   - `alt_group` (object)
-  - `child_part_id` (integer) **required**
+  - `child_part_id` (integer) **required** — Identifier of the related child part.
   - `effective_from` (object)
   - `effective_to` (object)
   - `ghost_part` (object)
-  - `note` (object)
+  - `note` (object) — Free-text note.
   - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
-  - `order_index` (integer)
-  - `parent_part_id` (integer) **required**
-  - `priority` (integer)
-  - `quantity` (number)
-  - `scrap_percent` (number)
+  - `order_index` (integer) — Sort order within its collection (ascending).
+  - `parent_part_id` (integer) **required** — Identifier of the related parent part.
+  - `priority` (integer) — Priority (higher runs/sorts first).
+  - `quantity` (number) — Quantity.
+  - `scrap_percent` (number) — Percentage (0–100).
   - _...2 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
@@ -5902,7 +6291,42 @@ _operationId_: `createBomItem`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/parts/{id}/bom/explode` — Explode a BOM tree
+### `PUT /api/v1/parts/{partId}/bom` — Replace a part's BOM children (bulk, declarative)
+_operationId_: `syncPartBom`
+
+The bulk **write** counterpart to the GET: send the desired set of direct BOM children and the server diffs it against the current state, then creates, updates and (with `prune`, the default) deletes to match. This imports or re-applies an assembly's bill of materials in **one** request instead of one `POST /parts/{id}/bom` per line.
+
+- **Idempotent** — re-sending an identical body is a no-op, so a partially-completed import is safe to retry without duplicating edges.
+- **`prune: true`** (default) is a full replace: children not in the body are deleted, so a revised assembly re-applies cleanly. **`prune: false`** upserts without deleting.
+- **Atomic** — on any validation error (unknown child, self-reference, cycle, locked conditions, bad option ref) nothing is written.
+- A desired line matches an existing child edge on `child_part_id`; a child part may appear at most once. Conditioned children require the parent to be a ghost assembly. The response returns the full resulting child set so the import can be verified without a follow-up read.
+
+**Request body:**
+- `application/json` **required** — schema: `BomSyncRequest`
+  - `bom_items` (array<BomChildSyncItem>) **required** — The complete desired set of direct BOM children for the part (0–2000). An empty list with prune=true clears...
+  - `prune` (boolean) — When true (default), delete existing children not in the list (full declarative replace). When false, only ...
+
+**Responses:**
+- `200` — Success
+- `400` — Bad Request (`application/json` → `ProblemDetails`)
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/parts/{partId}/bom` — Clear a part's BOM children (bulk)
+_operationId_: `clearPartBom`
+
+Delete **every** direct BOM child of the part in one request — the bulk counterpart to per-item `DELETE`, for clearing or rolling back an assembly. Returns the number of children removed.
+
+**Responses:**
+- `200` — Cleared
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/parts/{partId}/bom/explode` — Explode a BOM tree
 _operationId_: `explodeBom`
 
 Explode a part's BOM with ghost resolution, effectivity (`as_of`), alternate handling, and product-option scaling. Scope: `parts:read`.
@@ -5924,7 +6348,7 @@ Explode a part's BOM with ghost resolution, effectivity (`as_of`), alternate han
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}/bom/flat` — Get flattened BOM
+### `GET /api/v1/parts/{partId}/bom/flat` — Get flattened BOM
 _operationId_: `getBomFlat`
 
 Returns a flat list of all BOM items with level indicators.
@@ -5938,7 +6362,7 @@ Returns a flat list of all BOM items with level indicators.
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}/bom/tree` — Get multi-level BOM tree
+### `GET /api/v1/parts/{partId}/bom/tree` — Get multi-level BOM tree
 _operationId_: `getBomTree`
 
 Returns a recursive tree of BOM items with cycle detection.
@@ -5953,7 +6377,7 @@ Returns a recursive tree of BOM items with cycle detection.
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/parts/{id}/bom/validate` — Validate BOM integrity
+### `POST /api/v1/parts/{partId}/bom/validate` — Validate BOM integrity
 _operationId_: `validateBom`
 
 Check for cycles, missing children, duplicates, and self-references.
@@ -5964,7 +6388,22 @@ Check for cycles, missing children, duplicates, and self-references.
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/parts/{id}/ghost/materialize` — Materialize a ghost assembly
+### `GET /api/v1/parts/{partId}/changelog` — List part changelog
+_operationId_: `listPartChangelog`
+
+List change history entries for a part.
+
+**Query parameters:**
+- `cursor` (string) — Opaque cursor for the next page
+- `limit` (integer) — Items per page (server enforces configured maximum)
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/parts/{partId}/ghost/materialize` — Materialize a ghost assembly
 _operationId_: `materializeGhostAssembly`
 
 Materialize a ghost (phantom) part's resolved BOM into a concrete assembly, or dissolve it. Returns 201 when a new part is created, 200 when an existing part is reused or the ghost is dissolved. Scope: `parts:write`.
@@ -5987,7 +6426,7 @@ Materialize a ghost (phantom) part's resolved BOM into a concrete assembly, or d
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/parts/{id}/ghost/resolve` — Resolve a ghost assembly
+### `POST /api/v1/parts/{partId}/ghost/resolve` — Resolve a ghost assembly
 _operationId_: `resolveGhostAssembly`
 
 Resolve a ghost (phantom) assembly into its configured 100% BOM. Scope: `parts:read`.
@@ -6004,7 +6443,7 @@ Resolve a ghost (phantom) assembly into its configured 100% BOM. Scope: `parts:r
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}/ghost/status` — Get ghost status for a part
+### `GET /api/v1/parts/{partId}/ghost/status` — Get ghost status for a part
 _operationId_: `getGhostStatus`
 
 Check ghost (phantom assembly) status and ghost-toggle eligibility for a part. Scope: `parts:read`.
@@ -6015,7 +6454,7 @@ Check ghost (phantom assembly) status and ghost-toggle eligibility for a part. S
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}/placements` — List part placements
+### `GET /api/v1/parts/{partId}/placements` — List part placements
 _operationId_: `listPartPlacements`
 
 Returns **all** placements for this part in a single `{"data": [...]}` response — this endpoint is not paginated and takes no `cursor`/`limit`. To read a whole configurable BOM without one request per part, use `GET /areas/{id}/placements`, which is cursor-paginated.
@@ -6026,18 +6465,18 @@ Returns **all** placements for this part in a single `{"data": [...]}` response 
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `POST /api/v1/parts/{id}/placements` — Create a part placement
+### `POST /api/v1/parts/{partId}/placements` — Create a part placement
 _operationId_: `createPartPlacement`
 
 **Request body:**
 - `application/json` **required** — schema: `PartPlacementCreateRequest`
-  - `area_id` (integer) **required**
+  - `area_id` (integer) **required** — Identifier of the related area.
   - `ghost_part` (boolean)
   - `option_scalings` (object) — Quantity scaling for numbered options: {option_id (string): multiplier}. ADDS to the line's base quantity i...
-  - `order_index` (integer)
-  - `part_id` (integer) **required**
-  - `quantity` (number)
-  - `uom` (string)
+  - `order_index` (integer) — Sort order within its collection (ascending).
+  - `part_id` (integer) **required** — Identifier of the related part.
+  - `quantity` (number) — Quantity.
+  - `uom` (string) — Unit of measure.
   - `usage_subclauses` (object) — Conditions that make this line configurable. The subclauses are evaluated left-to-right — each joins the ru...
 
 **Responses:**
@@ -6047,28 +6486,13 @@ _operationId_: `createPartPlacement`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/parts/{id}/where-used` — Find where a part is used
+### `GET /api/v1/parts/{partId}/where-used` — Find where a part is used
 _operationId_: `getWhereUsed`
 
 Reverse BOM lookup: find all parent assemblies that reference this part.
 
 **Responses:**
 - `200` — Where-used list
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/parts/{partId}/changelog` — List part changelog
-_operationId_: `listPartChangelog`
-
-List change history entries for a part.
-
-**Query parameters:**
-- `cursor` (string) — Opaque cursor for the next page
-- `limit` (integer) — Items per page (server enforces configured maximum)
-
-**Responses:**
-- `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
@@ -6090,21 +6514,28 @@ _operationId_: `listPriceLists`
 ### `POST /api/v1/price-lists` — Create a price list
 _operationId_: `createPriceList`
 
+**Header parameters:**
+- `X-Price-Lists-Version` (integer) — Optional optimistic-concurrency token. Read `version` from any PriceListResponse (or the `X-Price-Lists-Ver...
+
 **Request body:**
 - `application/json` **required** — schema: `PriceListCreateRequest`
-  - `currency` (string)
-  - `description` (string)
-  - `is_base` (boolean)
-  - `name` (string) **required**
+  - `currency` (string) — ISO 4217 currency code.
+  - `description` (string) — Free-text description.
+  - `is_base` (boolean) — Whether base.
+  - `name` (string) **required** — Human-readable name.
 
 **Responses:**
 - `201` — Created
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ### `POST /api/v1/price-lists/reorder` — Reorder price lists
 _operationId_: `reorderPriceLists`
+
+**Header parameters:**
+- `X-Price-Lists-Version` (integer) — Optional optimistic-concurrency token. Read `version` from any PriceListResponse (or the `X-Price-Lists-Ver...
 
 **Request body:**
 - `application/json` **required** — schema: `PriceListReorderRequest`
@@ -6113,10 +6544,11 @@ _operationId_: `reorderPriceLists`
 **Responses:**
 - `200` — Reordered
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/price-lists/{id}` — Get a price list
+### `GET /api/v1/price-lists/{priceListId}` — Get a price list
 _operationId_: `getPriceList`
 
 **Responses:**
@@ -6125,49 +6557,71 @@ _operationId_: `getPriceList`
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/price-lists/{id}` — Update a price list
+### `PUT /api/v1/price-lists/{priceListId}` — Update a price list
 _operationId_: `updatePriceList`
 
+**Header parameters:**
+- `X-Price-Lists-Version` (integer) — Optional optimistic-concurrency token. Read `version` from any PriceListResponse (or the `X-Price-Lists-Ver...
+
 **Request body:**
 - `application/json` **required** — schema: `PriceListUpdateRequest`
-  - `currency` (object)
-  - `description` (object)
-  - `is_base` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `currency` (object) — ISO 4217 currency code.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `is_base` (object) — Whether base.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `version` (integer) — Company-wide price-lists version. Send it back as the `X-Price-Lists-Version` header on price-list writes f...
 
 **Responses:**
 - `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/price-lists/{id}` — Partially update a price list
+### `PATCH /api/v1/price-lists/{priceListId}` — Partially update a price list
 _operationId_: `patchPriceList`
 
+**Header parameters:**
+- `X-Price-Lists-Version` (integer) — Optional optimistic-concurrency token. Read `version` from any PriceListResponse (or the `X-Price-Lists-Ver...
+
 **Request body:**
 - `application/json` **required** — schema: `PriceListUpdateRequest`
-  - `currency` (object)
-  - `description` (object)
-  - `is_base` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `currency` (object) — ISO 4217 currency code.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `is_base` (object) — Whether base.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `name` (object) — Human-readable name.
+  - `order_index` (object) — Sort order within its collection (ascending).
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `version` (integer) — Company-wide price-lists version. Send it back as the `X-Price-Lists-Version` header on price-list writes f...
 
 **Responses:**
 - `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/price-lists/{id}` — Delete a price list
+### `DELETE /api/v1/price-lists/{priceListId}` — Delete a price list
 _operationId_: `deletePriceList`
+
+**Header parameters:**
+- `X-Price-Lists-Version` (integer) — Optional optimistic-concurrency token. Read `version` from any PriceListResponse (or the `X-Price-Lists-Ver...
 
 **Responses:**
 - `204` — Deleted
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ### `GET /api/v1/price-lists/{priceListId}/overrides` — List price list overrides
@@ -6205,9 +6659,9 @@ _operationId_: `createPriceOverride`
 
 **Request body:**
 - `application/json` **required** — schema: `PriceOverrideCreateRequest`
-  - `area_id` (integer) **required**
-  - `override_price` (object) **required** — Override price value
-  - `price_list_id` (integer) **required**
+  - `area_id` (integer) **required** — Identifier of the related area.
+  - `override_price` (string) **required** — Override price value. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as t...
+  - `price_list_id` (integer) **required** — Identifier of the related price list.
 
 **Responses:**
 - `201` — Created
@@ -6237,7 +6691,11 @@ _operationId_: `updatePriceOverride`
 
 **Request body:**
 - `application/json` **required** — schema: `PriceOverrideUpdateRequest`
-  - `override_price` (object)
+  - `area_id` (integer) — Identifier of the related area.
+  - `id` (integer) — Unique identifier.
+  - `option_id` (integer) — Identifier of the related option.
+  - `override_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+  - `price_list_id` (integer) — Identifier of the related price list.
 
 **Responses:**
 - `200` — Success
@@ -6251,7 +6709,11 @@ _operationId_: `patchPriceOverride`
 
 **Request body:**
 - `application/json` **required** — schema: `PriceOverrideUpdateRequest`
-  - `override_price` (object)
+  - `area_id` (integer) — Identifier of the related area.
+  - `id` (integer) — Unique identifier.
+  - `option_id` (integer) — Identifier of the related option.
+  - `override_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+  - `price_list_id` (integer) — Identifier of the related price list.
 
 **Responses:**
 - `200` — Success
@@ -6291,7 +6753,7 @@ _operationId_: `createModelLink`
 
 **Request body:**
 - `application/json` **required** — schema: `ModelLinkCreateRequest`
-  - `url` (string) **required**
+  - `url` (string) **required** — URL.
 
 **Responses:**
 - `201` — Created
@@ -6319,7 +6781,10 @@ _operationId_: `updateModelLink`
 
 **Request body:**
 - `application/json` **required** — schema: `ModelLinkUpdateRequest`
-  - `url` (object)
+  - `id` (integer) — Unique identifier.
+  - `order_index` (integer) — Sort order within its collection (ascending).
+  - `product_id` (integer) — Identifier of the related product.
+  - `url` (object) — URL.
 
 **Responses:**
 - `200` — Success
@@ -6353,7 +6818,7 @@ _operationId_: `createVideoLink`
 
 **Request body:**
 - `application/json` **required** — schema: `VideoLinkCreateRequest`
-  - `url` (string) **required**
+  - `url` (string) **required** — URL.
 
 **Responses:**
 - `201` — Created
@@ -6381,7 +6846,10 @@ _operationId_: `updateVideoLink`
 
 **Request body:**
 - `application/json` **required** — schema: `VideoLinkUpdateRequest`
-  - `url` (object)
+  - `id` (integer) — Unique identifier.
+  - `order_index` (integer) — Sort order within its collection (ascending).
+  - `product_id` (integer) — Identifier of the related product.
+  - `url` (object) — URL.
 
 **Responses:**
 - `200` — Success
@@ -6408,12 +6876,13 @@ Products are the top-level entities in your catalog. Each product contains areas
 ### `GET /api/v1/products` — List products
 _operationId_: `listProducts`
 
-Returns a paginated list of products for your company. Use `search` to filter by name and `status` to filter by lifecycle state.
+Returns a paginated list of products for your company. Use `search` to filter by name, `sku` for an exact article-number match, and `status` to filter by lifecycle state.
 
 **Query parameters:**
 - `cursor` (string) — Opaque cursor for the next page
 - `limit` (integer) — Items per page (server enforces configured maximum)
 - `search` (string) — Filter by name (case-insensitive partial match)
+- `sku` (string) — Exact match on the product's external article number (SKU).
 - `status` (string) — Filter: `active` (default), `inactive`, or `all`
 
 **Responses:**
@@ -6424,11 +6893,11 @@ Returns a paginated list of products for your company. Use `search` to filter by
 ### `POST /api/v1/products` — Create a product
 _operationId_: `createProduct`
 
-Create a new product in your catalog. Returns the created product with a `Location` header pointing to the new resource.
+Create a new product in your catalog. Returns the created product with a `Location` header pointing to the new resource. A duplicate `sku` returns 409.
 
 **Request body:**
 - `application/json` **required** — schema: `ProductCreateRequest`
-  - `base_price` (object) — Base price (string or number)
+  - `base_price` (string) — Base price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal...
   - `catalog_meta` (object) — Catalog display metadata (tags, badges, specs_summary, sort_priority, filters)
   - `currency` (object) — Accepted but ignored — currency is derived from the company's base price list
   - `description` (string) — Product description
@@ -6436,10 +6905,12 @@ Create a new product in your catalog. Returns the created product with a `Locati
   - `is_active` (boolean) — Whether the product is active
   - `language` (string) — Language code
   - `name` (string) **required** — Product name
+  - `sku` (object) — External article number / ERP join key. Unique per tenant; filter with GET /products?sku=. A duplicate SKU ...
 
 **Responses:**
 - `201` — Created
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
@@ -6456,7 +6927,7 @@ _operationId_: `reorderProducts`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/products/{id}` — Get a product
+### `GET /api/v1/products/{productId}` — Get a product
 _operationId_: `getProduct`
 
 Retrieve a single product by ID. Use `expand` to inline related resources. Supported expansions: `areas`, `areas.groups`, `areas.groups.options`, `gallery`.
@@ -6470,51 +6941,61 @@ Retrieve a single product by ID. Use `expand` to inline related resources. Suppo
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/products/{id}` — Update a product
+### `PUT /api/v1/products/{productId}` — Update a product
 _operationId_: `updateProduct`
 
 **Request body:**
 - `application/json` **required** — schema: `ProductUpdateRequest`
-  - `base_price` (object)
+  - `areas_version` (integer) — Server-managed version counter for optimistic concurrency.
+  - `background_url` (object) — URL.
+  - `base_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
   - `catalog_meta` (object) — Catalog display metadata (tags, badges, specs_summary, sort_priority, filters)
+  - `constraints_version` (integer) — Server-managed version counter for optimistic concurrency.
+  - `created_at` (object) — Timestamp (ISO 8601).
   - `currency` (object) — Accepted but ignored — currency is derived from the company's base price list
-  - `description` (object)
-  - `integration_metadata` (object)
-  - `is_active` (object)
-  - `language` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `description` (object) — Free-text description.
+  - `gallery_count` (integer) — Count.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - _...11 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/products/{id}` — Partially update a product
+### `PATCH /api/v1/products/{productId}` — Partially update a product
 _operationId_: `patchProduct`
 
 **Request body:**
 - `application/json` **required** — schema: `ProductUpdateRequest`
-  - `base_price` (object)
+  - `areas_version` (integer) — Server-managed version counter for optimistic concurrency.
+  - `background_url` (object) — URL.
+  - `base_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
   - `catalog_meta` (object) — Catalog display metadata (tags, badges, specs_summary, sort_priority, filters)
+  - `constraints_version` (integer) — Server-managed version counter for optimistic concurrency.
+  - `created_at` (object) — Timestamp (ISO 8601).
   - `currency` (object) — Accepted but ignored — currency is derived from the company's base price list
-  - `description` (object)
-  - `integration_metadata` (object)
-  - `is_active` (object)
-  - `language` (object)
-  - `name` (object)
-  - `order_index` (object)
+  - `description` (object) — Free-text description.
+  - `gallery_count` (integer) — Count.
+  - `id` (integer) — Unique identifier.
+  - `image_url` (object) — URL.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - _...11 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
+- `409` — Conflict (`application/json` → `ProblemDetails`)
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/products/{id}` — Delete a product
+### `DELETE /api/v1/products/{productId}` — Delete a product
 _operationId_: `deleteProduct`
 
 **Responses:**
@@ -6619,8 +7100,8 @@ _operationId_: `createProductPriceOverride`
 
 **Request body:**
 - `application/json` **required** — schema: `ProductPriceOverrideCreateRequest`
-  - `override_price` (object) **required** — Override price value
-  - `price_list_id` (integer) **required**
+  - `override_price` (string) **required** — Override price value. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as t...
+  - `price_list_id` (integer) **required** — Identifier of the related price list.
 
 **Responses:**
 - `201` — Created
@@ -6651,7 +7132,10 @@ _operationId_: `updateProductPriceOverride`
 
 **Request body:**
 - `application/json` **required** — schema: `ProductPriceOverrideUpdateRequest`
-  - `override_price` (object)
+  - `id` (integer) — Unique identifier.
+  - `override_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+  - `price_list_id` (integer) — Identifier of the related price list.
+  - `product_id` (integer) — Identifier of the related product.
 
 **Responses:**
 - `200` — Success
@@ -6665,7 +7149,10 @@ _operationId_: `patchProductPriceOverride`
 
 **Request body:**
 - `application/json` **required** — schema: `ProductPriceOverrideUpdateRequest`
-  - `override_price` (object)
+  - `id` (integer) — Unique identifier.
+  - `override_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+  - `price_list_id` (integer) — Identifier of the related price list.
+  - `product_id` (integer) — Identifier of the related product.
 
 **Responses:**
 - `200` — Success
@@ -6699,13 +7186,13 @@ _operationId_: `createPricingPreset`
 
 **Request body:**
 - `application/json` **required** — schema: `PricingPresetCreateRequest`
-  - `amount_type` (string) **required**
-  - `category` (string) **required**
+  - `amount_type` (string) **required** — Whether the amount is a fixed value or a percentage.
+  - `category` (string) **required** — Category.
   - `default_on` (boolean)
-  - `key` (string) **required**
-  - `label` (string) **required**
+  - `key` (string) **required** — Stable identifier key.
+  - `label` (string) **required** — Display label.
   - `taxable` (boolean)
-  - `value` (object)
+  - `value` (string) — Value.
 
 **Responses:**
 - `201` — Created
@@ -6734,12 +7221,18 @@ _operationId_: `updatePricingPreset`
 
 **Request body:**
 - `application/json` **required** — schema: `PricingPresetUpdateRequest`
-  - `amount_type` (object)
-  - `category` (object)
+  - `amount_type` (object) — Whether the amount is a fixed value or a percentage.
+  - `category` (object) — Category.
+  - `created_at` (object) — Timestamp (ISO 8601).
   - `default_on` (object)
-  - `label` (object)
+  - `id` (integer) — Unique identifier.
+  - `key` (string) — Stable identifier key.
+  - `label` (object) — Display label.
+  - `product_id` (integer) — Identifier of the related product.
+  - `sort_index` (integer)
   - `taxable` (object)
-  - `value` (object)
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `value` (object) — Value.
 
 **Responses:**
 - `200` — Success
@@ -6753,12 +7246,18 @@ _operationId_: `patchPricingPreset`
 
 **Request body:**
 - `application/json` **required** — schema: `PricingPresetUpdateRequest`
-  - `amount_type` (object)
-  - `category` (object)
+  - `amount_type` (object) — Whether the amount is a fixed value or a percentage.
+  - `category` (object) — Category.
+  - `created_at` (object) — Timestamp (ISO 8601).
   - `default_on` (object)
-  - `label` (object)
+  - `id` (integer) — Unique identifier.
+  - `key` (string) — Stable identifier key.
+  - `label` (object) — Display label.
+  - `product_id` (integer) — Identifier of the related product.
+  - `sort_index` (integer)
   - `taxable` (object)
-  - `value` (object)
+  - `updated_at` (object) — Timestamp (ISO 8601).
+  - `value` (object) — Value.
 
 **Responses:**
 - `200` — Success
@@ -6802,7 +7301,7 @@ _operationId_: `createPullRequest`
 
 **Request body:**
 - `application/json` **required** — schema: `PullRequestCreateRequest`
-  - `description` (object)
+  - `description` (object) — Free-text description.
   - `title` (string) **required** — Pull request title
 
 **Responses:**
@@ -6826,9 +7325,15 @@ _operationId_: `updatePullRequest`
 
 **Request body:**
 - `application/json` **required** — schema: `PullRequestUpdateRequest`
-  - `description` (object)
-  - `state` (object)
-  - `title` (object)
+  - `branch_id` (integer) — Identifier of the related branch.
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by` (object) — Identifier of the actor that created this record.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `state` (object) — Lifecycle state.
+  - `title` (object) — Title.
+  - `updated_at` (object) — Timestamp (ISO 8601).
 
 **Responses:**
 - `200` — Success
@@ -6842,9 +7347,15 @@ _operationId_: `patchPullRequest`
 
 **Request body:**
 - `application/json` **required** — schema: `PullRequestUpdateRequest`
-  - `description` (object)
-  - `state` (object)
-  - `title` (object)
+  - `branch_id` (integer) — Identifier of the related branch.
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by` (object) — Identifier of the actor that created this record.
+  - `description` (object) — Free-text description.
+  - `id` (integer) — Unique identifier.
+  - `links` (object) — HATEOAS links to this and related resources.
+  - `state` (object) — Lifecycle state.
+  - `title` (object) — Title.
+  - `updated_at` (object) — Timestamp (ISO 8601).
 
 **Responses:**
 - `200` — Success
@@ -6880,11 +7391,11 @@ Create a quote for an opportunity. If no opportunity_id is given but a customer_
 
 **Request body:**
 - `application/json` **required** — schema: `QuoteCreateRequest`
-  - `customer_id` (object)
-  - `integration_metadata` (object)
-  - `notes` (object)
-  - `opportunity_id` (object)
-  - `price_list_id` (integer) **required**
+  - `customer_id` (object) — Identifier of the related customer.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `notes` (object) — Free-text notes.
+  - `opportunity_id` (object) — Identifier of the related opportunity.
+  - `price_list_id` (integer) **required** — Identifier of the related price list.
   - `valid_from` (object)
   - `valid_until` (object)
 
@@ -6895,7 +7406,7 @@ Create a quote for an opportunity. If no opportunity_id is given but a customer_
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `GET /api/v1/quotes/{id}` — Get a quote
+### `GET /api/v1/quotes/{quoteId}` — Get a quote
 _operationId_: `getQuote`
 
 Returns the quote with embedded line items.
@@ -6906,19 +7417,24 @@ Returns the quote with embedded line items.
 - `404` — Not found (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PUT /api/v1/quotes/{id}` — Update a quote
+### `PUT /api/v1/quotes/{quoteId}` — Update a quote
 _operationId_: `updateQuote`
 
 **Request body:**
 - `application/json` **required** — schema: `QuoteUpdateRequest`
-  - `discount_amount` (object)
-  - `discount_percent` (object)
-  - `integration_metadata` (object)
-  - `notes` (object)
-  - `tax_amount` (object)
-  - `terms_and_conditions` (object)
-  - `valid_from` (object)
-  - `valid_until` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by_user_id` (object) — Identifier of the related created by user.
+  - `currency` (string) — ISO 4217 currency code.
+  - `customer_id` (object) — Identifier of the related customer.
+  - `customer_name` (object) — Customer name.
+  - `discount_amount` (object) — Discount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal s...
+  - `discount_percent` (object) — Percentage (0–100).
+  - `final_amount` (object) — Amount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sep...
+  - `id` (integer) — Unique identifier.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `is_primary` (boolean) — Whether primary.
+  - `line_item_count` (integer) — Count.
+  - _...15 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -6927,19 +7443,24 @@ _operationId_: `updateQuote`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `PATCH /api/v1/quotes/{id}` — Partially update a quote
+### `PATCH /api/v1/quotes/{quoteId}` — Partially update a quote
 _operationId_: `patchQuote`
 
 **Request body:**
 - `application/json` **required** — schema: `QuoteUpdateRequest`
-  - `discount_amount` (object)
-  - `discount_percent` (object)
-  - `integration_metadata` (object)
-  - `notes` (object)
-  - `tax_amount` (object)
-  - `terms_and_conditions` (object)
-  - `valid_from` (object)
-  - `valid_until` (object)
+  - `created_at` (object) — Timestamp (ISO 8601).
+  - `created_by_user_id` (object) — Identifier of the related created by user.
+  - `currency` (string) — ISO 4217 currency code.
+  - `customer_id` (object) — Identifier of the related customer.
+  - `customer_name` (object) — Customer name.
+  - `discount_amount` (object) — Discount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal s...
+  - `discount_percent` (object) — Percentage (0–100).
+  - `final_amount` (object) — Amount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sep...
+  - `id` (integer) — Unique identifier.
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `is_primary` (boolean) — Whether primary.
+  - `line_item_count` (integer) — Count.
+  - _...15 more — see `components.schemas` in `openapi.json`_
 
 **Responses:**
 - `200` — Success
@@ -6948,125 +7469,13 @@ _operationId_: `patchQuote`
 - `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
-### `DELETE /api/v1/quotes/{id}` — Delete a quote
+### `DELETE /api/v1/quotes/{quoteId}` — Delete a quote
 _operationId_: `deleteQuote`
 
 **Responses:**
 - `204` — Deleted
 - `401` — Authentication required (`application/json` → `ProblemDetails`)
 - `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/quotes/{id}/line-items` — List line items
-_operationId_: `listLineItems`
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `POST /api/v1/quotes/{id}/line-items` — Add a line item
-_operationId_: `createLineItem`
-
-**Request body:**
-- `application/json` **required** — schema: `LineItemCreateRequest`
-  - `configuration_code` (object)
-  - `discount_percent` (object)
-  - `integration_metadata` (object)
-  - `notes` (object)
-  - `product_id` (integer) **required**
-  - `quantity` (integer)
-  - `unit_price` (object)
-
-**Responses:**
-- `201` — Created
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PUT /api/v1/quotes/{id}/line-items/{item_id}` — Update a line item
-_operationId_: `updateLineItem`
-
-**Request body:**
-- `application/json` **required** — schema: `LineItemUpdateRequest`
-  - `discount_amount` (object)
-  - `discount_percent` (object)
-  - `integration_metadata` (object)
-  - `notes` (object)
-  - `position` (object)
-  - `quantity` (object)
-  - `unit_price` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PATCH /api/v1/quotes/{id}/line-items/{item_id}` — Partially update a line item
-_operationId_: `patchLineItem`
-
-**Request body:**
-- `application/json` **required** — schema: `LineItemUpdateRequest`
-  - `discount_amount` (object)
-  - `discount_percent` (object)
-  - `integration_metadata` (object)
-  - `notes` (object)
-  - `position` (object)
-  - `quantity` (object)
-  - `unit_price` (object)
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `DELETE /api/v1/quotes/{id}/line-items/{item_id}` — Remove a line item
-_operationId_: `deleteLineItem`
-
-**Responses:**
-- `204` — Deleted
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `POST /api/v1/quotes/{id}/revise` — Create a new revision
-_operationId_: `reviseQuote`
-
-Create a new version of this quote, incrementing the version number.
-
-**Responses:**
-- `201` — Created
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `GET /api/v1/quotes/{id}/revisions` — List quote revisions
-_operationId_: `listQuoteRevisions`
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `429` — Rate limited (`application/json` → `ProblemDetails`)
-
-### `PUT /api/v1/quotes/{id}/status` — Update quote status
-_operationId_: `updateQuoteStatus`
-
-**Request body:**
-- `application/json` **required** — schema: `QuoteStatusUpdateRequest`
-  - `status` (string) **required**
-
-**Responses:**
-- `200` — Success
-- `401` — Authentication required (`application/json` → `ProblemDetails`)
-- `404` — Not found (`application/json` → `ProblemDetails`)
-- `422` — Validation error (`application/json` → `ProblemDetails`)
 - `429` — Rate limited (`application/json` → `ProblemDetails`)
 
 ### `GET /api/v1/quotes/{quoteId}/contacts` — List quote contacts
@@ -7085,8 +7494,7 @@ _operationId_: `addQuoteContact`
 
 **Request body:**
 - `application/json` **required** — schema: `QuoteContactAddRequest`
-  - `contact_id` (integer) **required**
-  - `role` (string)
+  - `contact_id` (integer) **required** — ID of the customer contact person to attach to the quote.
 
 **Responses:**
 - `201` — Created
@@ -7123,10 +7531,10 @@ Create or update extended details for a quote.
 
 **Request body:**
 - `application/json` **required** — schema: `QuoteDetailsUpsertRequest`
-  - `custom_fields` (object)
+  - `custom_fields` (object) — Arbitrary user-defined fields.
   - `internal_notes` (string)
   - `payment_terms` (string)
-  - `shipping_cost` (string)
+  - `shipping_cost` (string) — Cost. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal separ...
   - `shipping_method` (string)
 
 **Responses:**
@@ -7141,11 +7549,123 @@ _operationId_: `patchQuoteDetails`
 
 **Request body:**
 - `application/json` **required** — schema: `QuoteDetailsUpsertRequest`
-  - `custom_fields` (object)
+  - `custom_fields` (object) — Arbitrary user-defined fields.
   - `internal_notes` (string)
   - `payment_terms` (string)
-  - `shipping_cost` (string)
+  - `shipping_cost` (string) — Cost. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal separ...
   - `shipping_method` (string)
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/quotes/{quoteId}/line-items` — List line items
+_operationId_: `listLineItems`
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/quotes/{quoteId}/line-items` — Add a line item
+_operationId_: `createLineItem`
+
+**Request body:**
+- `application/json` **required** — schema: `LineItemCreateRequest`
+  - `configuration_code` (object)
+  - `discount_percent` (object) — Percentage (0–100).
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `notes` (object) — Free-text notes.
+  - `product_id` (integer) **required** — Identifier of the related product.
+  - `quantity` (integer) — Quantity.
+  - `unit_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+
+**Responses:**
+- `201` — Created
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/quotes/{quoteId}/line-items/{item_id}` — Update a line item
+_operationId_: `updateLineItem`
+
+**Request body:**
+- `application/json` **required** — schema: `LineItemUpdateRequest`
+  - `discount_amount` (object) — Discount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal s...
+  - `discount_percent` (object) — Percentage (0–100).
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `notes` (object) — Free-text notes.
+  - `position` (object) — Position within its collection (0-based).
+  - `quantity` (object) — Quantity.
+  - `unit_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PATCH /api/v1/quotes/{quoteId}/line-items/{item_id}` — Partially update a line item
+_operationId_: `patchLineItem`
+
+**Request body:**
+- `application/json` **required** — schema: `LineItemUpdateRequest`
+  - `discount_amount` (object) — Discount. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal s...
+  - `discount_percent` (object) — Percentage (0–100).
+  - `integration_metadata` (object) — Arbitrary key/value metadata for your external integrations.
+  - `notes` (object) — Free-text notes.
+  - `position` (object) — Position within its collection (0-based).
+  - `quantity` (object) — Quantity.
+  - `unit_price` (object) — Price. Monetary value as a **decimal string**, e.g. `"12.50"` — a plain number with `.` as the decimal sepa...
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `422` — Validation error (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `DELETE /api/v1/quotes/{quoteId}/line-items/{item_id}` — Remove a line item
+_operationId_: `deleteLineItem`
+
+**Responses:**
+- `204` — Deleted
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `POST /api/v1/quotes/{quoteId}/revise` — Create a new revision
+_operationId_: `reviseQuote`
+
+Create a new version of this quote, incrementing the version number.
+
+**Responses:**
+- `201` — Created
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `GET /api/v1/quotes/{quoteId}/revisions` — List quote revisions
+_operationId_: `listQuoteRevisions`
+
+**Responses:**
+- `200` — Success
+- `401` — Authentication required (`application/json` → `ProblemDetails`)
+- `404` — Not found (`application/json` → `ProblemDetails`)
+- `429` — Rate limited (`application/json` → `ProblemDetails`)
+
+### `PUT /api/v1/quotes/{quoteId}/status` — Update quote status
+_operationId_: `updateQuoteStatus`
+
+**Request body:**
+- `application/json` **required** — schema: `QuoteStatusUpdateRequest`
+  - `status` (string) **required** — Lifecycle status.
 
 **Responses:**
 - `200` — Success
@@ -7319,7 +7839,7 @@ Update an entry; a supplied `translations` map fully replaces the existing one. 
 ### `PATCH /api/v1/translations/dictionary/{entry_id}` — Partially update a dictionary entry
 _operationId_: `patchDictionaryEntry`
 
-Same semantics as PUT — a supplied `translations` map replaces (does not merge). Scope: `products:write`.
+Merge update — a supplied `translations` map is merged into the existing one (only the locales you send change; omitted locales are kept). Use PUT to replace the whole map. Scope: `products:write`.
 
 **Request body:**
 - `application/json` **required**
@@ -7367,9 +7887,9 @@ Create a subscription for one or more event types. If you provide a `secret`, ea
 **Request body:**
 - `application/json` **required** — schema: `WebhookCreateRequest`
   - `events` (array<string>) **required**
-  - `name` (object)
+  - `name` (object) — Human-readable name.
   - `secret` (object)
-  - `url` (string) **required**
+  - `url` (string) **required** — URL.
 
 **Responses:**
 - `201` — Created
@@ -7411,9 +7931,9 @@ _operationId_: `updateWebhook`
 **Request body:**
 - `application/json` **required** — schema: `WebhookUpdateRequest`
   - `events` (object)
-  - `is_active` (object)
-  - `name` (object)
-  - `url` (object)
+  - `is_active` (object) — Whether active.
+  - `name` (object) — Human-readable name.
+  - `url` (object) — URL.
 
 **Responses:**
 - `200` — Success
@@ -7428,9 +7948,9 @@ _operationId_: `patchWebhook`
 **Request body:**
 - `application/json` **required** — schema: `WebhookUpdateRequest`
   - `events` (object)
-  - `is_active` (object)
-  - `name` (object)
-  - `url` (object)
+  - `is_active` (object) — Whether active.
+  - `name` (object) — Human-readable name.
+  - `url` (object) — URL.
 
 **Responses:**
 - `200` — Success
