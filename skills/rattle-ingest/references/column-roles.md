@@ -80,8 +80,8 @@ The shape disambiguates what a single column cannot. In a `one-row-per-bom-line`
 | **DE keywords** | Artikelnummer, Artikelnr, Art.-Nr, Sachnummer, Materialnummer, MatNr, ERP-ID |
 | **EN keywords** | sku, item number, item no, article number, product code, erp id |
 | **Value shape** | `distinct_ratio ≥ 0.90`, digit-bearing, short strings |
-| **Target** | **`product.integration_metadata.<key>`** — a free-form object ("Metadata for external integrations"). |
-| **Critical** | **Rattle has no `Product.sku` field.** `ProductCreateRequest` exposes `name`, `description`, `base_price`, `currency`, `is_active`, `language`, `catalog_meta`, `integration_metadata` — and nothing else. `extra="forbid"` returns 422 for an invented `sku`. Carry the customer's article number in `integration_metadata` and say so in `notes`. |
+| **Target** | **`product.sku`** — the ERP article-number join key. |
+| **Now available** | **`Product.sku` now exists** — `ProductCreateRequest` / `ProductUpdateRequest` accept it (`string ≤255`, unique per tenant → `409`, filter `GET /products?sku=`). Map the customer's article number to `product.sku`; use `integration_metadata.<key>` only for *secondary* identifiers. |
 
 ### `area_name`
 
@@ -253,7 +253,7 @@ The shape disambiguates what a single column cannot. In a `one-row-per-bom-line`
 | **EN keywords** | image, picture, photo, img, url |
 | **Value shape** | Every sample matches `\.(png|jpe?g|webp|gif|svg)$` or `^https?://` |
 | **Target** | Multipart upload: `POST /options/{optionId}/image` (and `/options/{optionId}/image/areas/{areaId}` for a per-area override), `POST /products/{productId}/image`, `POST /areas/{areaId}/image`. |
-| **Critical** | **There is no public upload route for `Part.part_img`.** The field appears on `PartResponse` but no REST route sets it; for parts created via the public API it stays NULL. Do not map a part-image column — record it in `unmapped_columns` with that reason. |
+| **Part images** | `Part` images **now have an upload route**: `POST /parts/{partId}/image` (multipart), resolved to `image_url` on `PartResponse`. A part-image column can be mapped and uploaded once the part exists (spare-parts catalogues, exploded-view BOMs) — it no longer belongs in `unmapped_columns`. |
 
 ### `locale`
 
@@ -277,11 +277,11 @@ The shape disambiguates what a single column cannot. In a `one-row-per-bom-line`
 
 ## Fields that do not exist
 
-Grep `docs/openapi.json` before naming any field. These four mistakes are the easy ones to make:
+Grep `docs/openapi.json` before naming any field. Some tempting names are still traps; two former gaps have since been filled — verify against the current spec:
 
 | Tempting | Reality |
 |---|---|
-| `product.sku` | Does not exist. Use `product.integration_metadata`. `extra="forbid"` → 422. |
+| `product.sku` | **Now exists** — first-class on `ProductCreateRequest` / `ProductUpdateRequest` (`string ≤255`, the ERP article-number join key; unique per tenant, duplicate → `409`; filter with `GET /products?sku=`). Map the ERP article number **here**, not to `integration_metadata`. |
 | `product.currency` (writable) | Accepted but **ignored** — derived from the company base price list. |
-| `part.part_img` (uploadable) | No public upload route. Read-only on `PartResponse`. |
+| `part.part_img` | Surfaced as `image_url` on `PartResponse`, and there **is** now an upload route: `POST /parts/{partId}/image` (multipart). |
 | `part.part_cost` (decimal) | **Integer**, `ge=0`. A `12,50` cost column must be rounded → raise `part-cost-rounded`. |

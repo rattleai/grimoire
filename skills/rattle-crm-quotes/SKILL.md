@@ -1,6 +1,6 @@
 ---
 name: rattle-crm-quotes
-description: Use this skill whenever a Rattle configuration has to turn into money — quote, quotation, Angebot, offer, customer, Kunde, contact, opportunity, pipeline, CRM, line item, Position, discount, Rabatt, revise, revision, quote status, sales, Vertrieb, quote-to-cash. Covers the 49 Customers / Opportunities / Quotes / Configurations operations and the 11-step funnel: get-or-create the customer on their ERP customer_id, contacts, opportunity, finalize the configuration BEFORE quoting it, POST the quote (price_list_id is the only required field), line items carrying configuration_code, PATCH the update-only commercials, render a quote template attaching dynamic:document_line_items, then status, then revise. Leads with the locking rule — an unfinalized configuration on a quote line is a quote that can silently change after it was sent. States plainly that quote status and opportunity stage are free strings with no enum anywhere: read the tenant's vocabulary, never invent one.
+description: Use this skill whenever a Rattle configuration has to turn into money — quote, quotation, Angebot, offer, customer, Kunde, contact, opportunity, pipeline, CRM, line item, Position, discount, Rabatt, revise, revision, quote status, sales, Vertrieb, quote-to-cash. Covers the 50 Customers / Opportunities / Quotes / Configurations operations and the 11-step funnel: get-or-create the customer on their ERP customer_id, contacts, opportunity, finalize the configuration BEFORE quoting it, POST the quote (price_list_id is the only required field), line items carrying configuration_code, PATCH the update-only commercials, render a quote template attaching dynamic:document_line_items, then status, then revise. Leads with the locking rule — an unfinalized configuration on a quote line is a quote that can silently change after it was sent. States plainly that quote status and opportunity stage are free strings with no enum anywhere: read the tenant's vocabulary, never invent one.
 license: MIT
 ---
 
@@ -8,7 +8,7 @@ license: MIT
 
 Every other skill in this bundle builds a configurator. **None of them can quote from it.** `rattle-onboarding` creates the tenant, `rattle-ingest` maps the pricelist, `rattle-suggest-config` designs the groups, `rattle-apply-config` writes them, `rattle-bom-builder` explodes the BOM — and then the customer configures a machine and there is nowhere for the number to go. This skill is the path from a saved configuration to a signed quote.
 
-It covers **49 operations across four resources**: Customers (14), Opportunities (7), Quotes (20), Configurations (8).
+It covers **50 operations across four resources**: Customers (14), Opportunities (7), Quotes (20), Configurations (9).
 
 Quoting **writes to a live tenant** — and unlike a wrong group, a wrong quote is a document that has already been *sent to a customer*. Every write here is idempotent get-or-create matched by a natural key, exactly as in `rattle-apply-config`. Two of the transitions (`status`, `revise`) are not idempotent at all and are gated accordingly.
 
@@ -42,14 +42,26 @@ Two different entities wear the word "configuration", and confusing them wastes 
 
 | | `ConfigurationStateResponse` | `ConfigurationResponse` |
 |---|---|---|
-| Returned by | `POST /configurations/calculate` (**201**), `GET /configurations/states/*` | `GET /configurations`, `GET /configurations/{id}`, `POST /configurations/{id}/finalize` |
+| Returned by | `POST /configurations/calculate` (**201**), `GET /configurations/states/*` | **`POST /configurations` (201)**, `GET /configurations`, `GET /configurations/{id}`, `POST /configurations/{id}/finalize` |
 | Identified by | `config_code`, `config_hash` | `id`, `config_token`, `display_code` |
 | Carries | `price_snapshot`, `is_valid`, `validation_errors`, `product_id` | `customer_id`, `opportunity_id`, `price_list_id`, **`is_finalized`**, `offer_language` |
 | Mutable? | **Immutable.** "States are immutable." (ETag / `If-None-Match` supported.) | Mutable until finalized |
 
 `POST /configurations/calculate` (required `product_id`; plus `selected_options`, `option_amounts`, `price_list_id`, `enabled_areas`, `disabled_areas`, `wishlist_options`, `validate_config` default `true`) is a **calculator**. It resolves constraints, prices the selection, and hands back a *state*. It does **not** return an `id`, so you cannot finalize what it returns.
 
-> **There is no `POST /configurations`.** The public API has **no write path that creates a saved configuration.** Saved configurations arrive from the configurator UI, where the end customer built them. An agent finds them read-only:
+> **`POST /configurations` creates a saved configuration — headless quote-to-cash now has a write path.** Earlier revisions of the API had no such route (a saved configuration could only come from the configurator UI); that gap is closed. It persists a selection set as an addressable, immutable `ConfigurationResponse`, prices and validates it exactly like `/calculate`, and returns the `display_code` a quote line item's `configuration_code` refers to.
+>
+> ```
+> POST /api/v1/configurations   ConfigurationCreateRequest
+>   required: product_id
+>   optional: selected_options {group_id→[option_id]}, option_amounts {numbered_option_id→amount},
+>             price_list_id, customer_id, opportunity_id, enabled_areas, disabled_areas,
+>             wishlist_options, offer_language, validate_config (default true),
+>             finalize (default false — set true to create it ALREADY LOCKED, folding step 4 in)
+>   → 201 ConfigurationResponse (id, display_code, is_finalized)
+> ```
+>
+> Saved configurations also still arrive from the **configurator UI**, and are readable the same way:
 >
 > ```
 > GET /api/v1/customers/{customerId}/configurations   → this customer's configurations
@@ -57,7 +69,7 @@ Two different entities wear the word "configuration", and confusing them wastes 
 > GET /api/v1/configurations?product_id=              → cursor, limit, product_id (no customer_id filter)
 > ```
 >
-> **Do not try to create one.** If the user expects an agent to configure a product end-to-end and quote it, tell them plainly: the agent can *calculate* a price (`/calculate`), but the saved, finalizable, quotable configuration is produced by the configurator, not by this API.
+> So an agent **can** now build a configuration end-to-end and quote it: `POST /configurations` (optionally `finalize: true`) → put its `configuration_code` on the line item. If you did not finalize on create, finalize before quoting (above).
 
 **Always check `is_valid` and `validation_errors` on the state before quoting it.** A configuration that violates a constraint will price perfectly happily. `validate_config` defaults to `true` on calculate; leave it there.
 
@@ -161,7 +173,7 @@ Upsert. `QuoteDetailsUpsertRequest`: `payment_terms` (≤500), `shipping_method`
 >
 > **The only defence is to read it back.** `GET /quotes/{quoteId}/details` after every write and diff what you sent against what came back. This is exactly the discipline `rattle-onboarding` applies to the 19 configurator-settings flags, for exactly the same reason.
 
-**8b · Quote contacts** — `POST /quotes/{quoteId}/contacts`. `QuoteContactAddRequest`: **required `contact_id`** (the contact must already exist under the customer, from step 2), optional `role` (free string ≤100 — *another* undeclared vocabulary). Same `additionalProperties` hole. This is **the only operation in the CRM surface that declares a `409`** — adding the same contact twice conflicts. Treat 409 as "already linked" → noop, not an error.
+**8b · Quote contacts** — `POST /quotes/{quoteId}/contacts`. `QuoteContactAddRequest`: **required `contact_id`** (the contact must already exist under the customer, from step 2) — and, in the current spec, **nothing else**. The old optional `role` field has been **removed from the write request**, which now sets `additionalProperties: false`, so **sending `role` returns `422`**. (`role` is still *readable* on `QuoteContactResponse` — it is simply no longer settable here.) This is **the only operation in the CRM surface that declares a `409`** — adding the same contact twice conflicts. Treat 409 as "already linked" → noop, not an error.
 
 ### 9 · Document — the quote PDF
 
@@ -203,7 +215,7 @@ QuoteResponse.status             { "type": "string", "default": "draft" }
 OpportunityCreateRequest.stage   { "type": "string", "default": "qualification", "maxLength": 50 }
 OpportunityResponse.stage        { "type": "string" }
 OpportunityResponse.status       { "type": "string", "default": "open" }      // not settable at all
-QuoteContactAddRequest.role      { "type": "string", "maxLength": 100 }
+QuoteContactResponse.role        { "type": "string", "maxLength": 100 }        // read-only; removed from POST /quotes/{quoteId}/contacts
 ```
 
 **No enum. Anywhere.** `GET /quotes?status=` accepts a filter whose legal values are documented nowhere. `PUT /quotes/{id}/status` accepts **any string up to 50 characters** — `"aproved"` is a schema-valid request. (audit § **P2-1b**)
@@ -230,7 +242,7 @@ Four findings from `docs/API_AUDIT.md` land squarely in this funnel. Each is sil
 | **P3-2** | **`discount_amount`, `discount_percent`, `tax_amount`, `terms_and_conditions` are update-only** — on `QuoteUpdateRequest`, absent from `QuoteCreateRequest`. | **You cannot create a discounted quote in one call.** POST then PATCH. A failure between them leaves a full-price quote that looks entirely intentional. Same asymmetry on line items: `discount_amount` and `position` are update-only there too. |
 | **P0-5** | **Money is encoded seven ways.** `LineItemCreateRequest.unit_price` is `number\|string\|null`. `QuoteResponse.total_amount` / `final_amount` are decimal **strings**. `QuoteAnalyticsSnapshotResponse.total_amount` is a **float**. `QuoteDetailsUpsertRequest.shipping_cost` is a **string**. `PartCreateRequest.part_cost` is an **integer**. | **Never do float arithmetic on money.** Keep decimal-as-string end to end; parse to `Decimal`, never to `float`; send `"1250.00"`, not `1250.0`. A float sum over a long BOM returns a plausible-but-wrong number with a `200 OK`, and it lands directly on the customer's invoice. |
 | **P0-8** | **`QuoteDetailsUpsertRequest` and `QuoteContactAddRequest` do not set `additionalProperties: false`** — 2 of only 8 such schemas out of 124. | **A typo'd field is silently swallowed with a `200`.** Everywhere else in Rattle a bad field `422`s, so the agent has *learned* that a bad field errors — and that lesson is wrong exactly here. **Read every details write back and diff it.** |
-| **P2-1** | **`QuoteLineItemResponse.product_sku` exists, is read-only, and has no writer anywhere in the API** — because there is no `Product.sku`. | **It renders `null` on every quote line, forever.** Do not promise the customer a SKU column on the quote PDF. The article number lives in `product.integration_metadata.<key>` (the day-0 convention from `rattle-onboarding`) and must be joined in client-side. Say this out loud when someone asks why the SKU is blank. |
+| **P2-1 ✓** | **`Product.sku` now exists** (`string ≤255`, unique per tenant → `409`, filter `?sku=`) and populates `QuoteLineItemResponse.product_sku`. | **A SKU column on the quote PDF works** — set `Product.sku` and it flows to the line item. If `product_sku` is `null`, the underlying product simply has no `sku` set (or a pre-`sku` tenant kept its article number in `product.integration_metadata.<key>` — backfill it into `sku`). |
 
 ## Output contract
 

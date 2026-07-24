@@ -6,32 +6,19 @@ These 19 flags govern the **entire customer-capture UX** of the configurator: wh
 
 ---
 
-## ⚠ These flags are not in the OpenAPI spec
+## These flags — now in the OpenAPI spec, and worth reading anyway
 
-This is not an oversight you can work around by reading harder. It is the reason this file exists.
+For most of this feature's life the configurator settings were an **orphan**: the `PATCH`/`PUT` bodies were an inline `{"type": "object", "additionalProperties": true}` schema (no field names, no types), `ConfiguratorSettingsResponse` declared five properties (`custom_css`, `default_currency`, `require_login`, `show_prices`, `show_stock`) that were **disjoint from the flags that actually matter**, and a typo'd flag name was accepted with a `200 OK` and silently did nothing (audit § **P3-4**). This file exists because an agent could not discover the real flags from the spec.
 
-**Fact 1 — the request body has no schema.** The `PATCH` and `PUT` bodies are declared as an **inline** schema:
+**The current spec has fixed this.** The settings are now named schemas:
 
-```json
-{"type": "object", "additionalProperties": true}
-```
+- **Write:** `PATCH` / `PUT /company/configurator-settings` take **`ConfiguratorSettingsUpdateRequest`**, which **sets `additionalProperties: false`** — so a **typo'd flag name now returns `422`**, not a silent `200`.
+- **Read:** **`ConfiguratorSettingsResponse`** now declares the customer-gate flags themselves (`allow_*`, `require_customer_*`, `show_customer_*`, `customer_search_fields`, `start_search_digits`, …). The five old, disjoint properties are gone.
 
-It is not in `components.schemas`. No field names. No types. No validation. It is one of the orphan/inline schemas flagged in `docs/API_AUDIT.md` (P3-4: *"5 orphan schemas … the endpoints exist but use inline schemas — which is also why they escaped the `additionalProperties: false` policy in P0-7"*).
+Two things still hold, so keep the discipline below:
 
-**Consequence:** a **typo'd flag name is accepted with a `200 OK` and does nothing.** There is no `422` to protect you, unlike the 116 request schemas that do set `additionalProperties: false`. **Always read the settings back after a write** — that is the only validation available.
-
-**Fact 2 — the response schema in the spec does not match the live API.** `ConfiguratorSettingsResponse` declares exactly five properties:
-
-```json
-{"custom_css": "string|null", "default_currency": "string|null",
- "require_login": "boolean", "show_prices": "boolean", "show_stock": "boolean"}
-```
-
-**None of those five is one of the 19 flags below.** The two sets are **disjoint**. The schema declares no `required` fields and does not set `additionalProperties: false`, so a live response returning a superset does not contradict it — but an agent reading the spec will see five fields that are not the ones that matter, and none of the nineteen that are.
-
-> **Provenance, stated plainly.** The **19 flags below were verified against a live tenant.** The **5 spec-declared fields above were read from the spec and were _not_ verified against a live tenant** — this skill does not know their live behaviour, whether they are still honoured, or whether they coexist with the 19. Do not set them on the strength of this document. If you need them, `GET /company/configurator-settings` on a real tenant and look.
-
-An agent cannot discover the 19 flags from the spec. That is why they are enumerated here.
+- **Read the settings back after every write.** The schema now catches an unknown *key*, but it cannot catch a *wrong value* (a flag set `true` where you meant `false`), and this is company-wide UI behaviour — verify it landed.
+- **The enumeration below is still the useful part.** The spec now lists the field names and types; it still does not tell you what each flag *does to the salesperson's screen*, which combinations trip each other up, or what a sane default is. That is what the table gives you.
 
 ---
 

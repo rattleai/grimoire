@@ -348,11 +348,11 @@ POST /api/v1/products/{productId}/price-overrides/replace
 
 **Three problems, compounding (audit § P0-1):**
 
-1. **The spec declares ZERO header parameters** across all 463 operations. A spec-driven client — codegen, SDK, MCP tool, agent — is *structurally incapable* of sending the header.
+1. **No price-override `/replace` endpoint declares the header.** The current spec *does* declare `X-Price-Lists-Version` — but only on **price-list CRUD** (`POST/PATCH/PUT/DELETE /price-lists`), **not on a single `/replace`**. A spec-driven client — codegen, SDK, MCP tool, agent — is still *structurally incapable* of sending it to the endpoint that wipes overrides.
 2. **No `/replace` declares a `409`.** So even a client that sends the header has no declared conflict response to handle.
-3. **"Read the current version from a GET response" is unfollowable.** **`PriceListResponse` carries no version field.** Its complete field set: `id`, `name`, `currency`, `description`, `is_base`, `order_index`, `created_at`, `updated_at`, `links`. There is nothing to read.
+3. **"Read the current version from a GET response" is now followable — for price-lists.** **`PriceListResponse` now carries a `version` field** (its field set: `id`, `name`, `currency`, `description`, `is_base`, `order_index`, `version`, `created_at`, `updated_at`, `links`), and price-list CRUD declares `X-Price-Lists-Version` to send it back in. **The gap that remains is the `/replace` endpoints themselves:** they replace price *overrides*, declare no version header and no `409`, so there is still no declared way to lock the very operation that does the damage.
 
-   The only candidate anywhere in the pricing surface is **`ProductResponse.pricing_version`** (`integer`, default `0`) — one of the 13 server-computed fields the API sends and refuses back (audit § **P0-2**). **That it is the value `X-Price-Lists-Version` wants is an INFERENCE. It is not documented, and it is not stated here as fact.**
+   (`ProductResponse.pricing_version` — `integer`, default `0`, one of the server-computed fields from audit § **P0-2** — also exists. **Which value `X-Price-Lists-Version` wants is not documented**; do not guess, and prefer `PriceListResponse.version` where the header is actually declared.)
 
 **The consequence, stated plainly:**
 
@@ -363,7 +363,7 @@ POST /api/v1/products/{productId}/price-overrides/replace
 - **Never run a `/replace` without explicit human confirmation naming the tenant.** The `rattle-pricing-architect` agent refuses to, and that refusal has no override.
 - **Prefer the granular `POST` / `PATCH` / `DELETE` path.** It touches one row. `/replace` touches all of them. The bulk endpoint saves requests and risks the catalogue; unless you are genuinely installing a complete, authoritative set, it is the wrong tool.
 - **Send `X-Price-Lists-Version` if you can establish a value**, and handle `409` even though none is declared — the `X-Constraints-Version` sibling *does* return one at runtime, with `Version conflict:` in the `detail` (`rattle-apply-config` § 6). Retry once.
-- **Respect the documented rate limit:** **`Price override replace | 30/minute`**, independent of plan. No `Retry-After` is declared anywhere (audit § **P3-3**) — the prose describes `X-RateLimit-Limit` / `-Remaining` / `-Reset` response headers, but **the spec declares no response headers at all except `Location`**. Back off exponentially.
+- **Respect the documented rate limit:** **`Price override replace | 30/minute`**, independent of plan. The current spec now declares **`Retry-After`** and **`X-RateLimit-Limit` / `-Remaining` / `-Reset`** on `429` responses (audit § **P3-3**, resolved) — **honour `Retry-After` when present**, and fall back to exponential backoff otherwise.
 - **The area `/replace` body declares no `maxItems`** while the option and product bodies cap at 500. Do not read that as "unlimited" — read it as "unspecified", and stay under 500.
 
 ---

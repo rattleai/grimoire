@@ -168,8 +168,8 @@ When several identical products with **the same** configuration are genuinely wa
 QuoteLineItemResponse.product_sku   { "anyOf": [{"type": "string"}, {"type": "null"}], "default": null }
 ```
 
-**The field exists on the customer-facing quote line. There is no writer for it anywhere in the API, because there is no `Product.sku`.** `sku` appears zero times as a settable field in the entire spec. It reads back `null` on every line item, forever, and nothing you do will change that.
+**`product_sku` is populated from `Product.sku` — which now exists** as a settable field on `ProductCreateRequest` / `ProductUpdateRequest` (`string ≤255`, the ERP article-number join key; unique per tenant, a duplicate returns `409`; filter with `GET /products?sku=`). Set the product's `sku` and it flows through to the line item's `product_sku`.
 
-- **Do not promise a SKU column on the quote PDF.** It will be blank.
-- **The article number lives in `product.integration_metadata.<key>`** — the day-0 convention (`rattle-onboarding`, `article-number-key`). It must be fetched per product and joined **client-side**; there is no `?sku=` filter and no expand.
+- **A SKU column on the quote PDF works** — as long as the underlying product carries a `sku`. If `product_sku` reads back `null`, the product simply has no `sku` set; the field is no longer unwritable.
+- **The article number lives in `product.sku`** (unique per tenant; filter with `GET /products?sku=`), and flows to `QuoteLineItemResponse.product_sku`. A pre-`sku` tenant may still carry it in `product.integration_metadata.<key>` (the `article-number-key` day-0 convention) — backfill it into `sku`.
 - When a user asks why the SKU column is empty, **say this**. It is the single most commercially significant gap in the API, it is Rattle's to fix, and it is not a bug in the tenant's data.

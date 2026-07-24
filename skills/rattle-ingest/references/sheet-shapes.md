@@ -29,7 +29,7 @@ The output grain in every case is the same: a **flat list of dicts** keyed by ro
    product_sku    product_name    base_price      description
 ```
 
-**Normalization.** One row → one `record_type: "product"`. `base_price` through `decimal_de`. `product_sku` into `product.integration_metadata` (there is no `Product.sku`).
+**Normalization.** One row → one `record_type: "product"`. `base_price` through `decimal_de`. `product_sku` maps to `product.sku` (it now exists — the canonical ERP join key, unique per tenant; `integration_metadata` only for secondary keys).
 
 ```json
 {"record_type": "product", "product_name": "Widget Pro", "product_sku": "WP-1000",

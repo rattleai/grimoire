@@ -150,7 +150,7 @@ Some tenants override defaults (e.g. "never set custom keys", "always set German
 
 ## Related skills
 
-- `rattle-api` — REST API surface (auth, pagination, 462 operations across 257 paths)
+- `rattle-api` — REST API surface (auth, pagination, 472 operations across 260 paths)
 - `rattle-pricelist-analysis` — workflow for analysing pricelists
 - `rattle-suggest-config` — workflow for generating BOM-aware recommendations
 - `rattle-document-templates` — workflow for building offer templates

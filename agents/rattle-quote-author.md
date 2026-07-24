@@ -149,7 +149,7 @@ GET  /api/v1/quotes/{id}/revisions
 
     **Rendering is asynchronous.** An agent that treats the render call as the PDF reports success and hands the user a job id.
 
-11. **Never promise a SKU column.** `QuoteLineItemResponse.product_sku` **exists, is read-only, and has no writer anywhere in the API**, because there is no `Product.sku` (audit § **P2-1**). It renders `null` on every quote line, forever. The article number lives in `product.integration_metadata.<key>` — the tenant's day-0 convention, in `memory/<tenant>/profile.md` — and must be joined client-side. **When the user asks why the SKU is blank, say this.** It is Rattle's gap, not the tenant's data.
+11. **The SKU column works now.** `Product.sku` **exists** (`string ≤255`, unique per tenant → `409`, filter `?sku=`) and populates `QuoteLineItemResponse.product_sku` (audit § **P2-1**, resolved). Set the product's `sku` and it renders on the quote line. If it comes back `null`, the product has no `sku` set — or it is a pre-`sku` tenant that kept its article number in `product.integration_metadata.<key>` (the day-0 convention in `memory/<tenant>/profile.md`), which should be backfilled into `sku`.
 
 12. **Log everything, stop on the first error.** One line per operation: `<step> <type> <name> action=<created|updated|noop|finalized> id=<id> request_id=<req>`. Never echo `Bearer rk_live_…`. Rattle returns RFC 9457 problem details — on any 4xx/5xx, abort the remaining steps, restate exactly what was applied so far, and ask the user how to proceed. **A half-built quote must be reported as such** — with its id, its current total, and whether it is discounted — never left implied.
 

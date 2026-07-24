@@ -178,7 +178,7 @@ Get an **explicit human answer** to each. Do not default silently. These are wri
 
 | ☐ | Decision | The question to ask the customer |
 |---|---|---|
-| ☐ | **Article-number key** | *"There is no SKU field on a Rattle product. Your article number has to live in `integration_metadata` under a key you choose. What should it be — `article_number`, `sku`, `sachnummer`? Whatever we pick, every product must use it forever; changing it later means re-importing everything."* |
+| ☐ | **Article-number home** | *"Rattle now has a `Product.sku` field — unique per tenant, filterable with `?sku=`. Your ERP article number should go there. Do you also have any *secondary* identifiers that need a home in `integration_metadata`, and under what key?"* |
 | ☐ | **`part_cost` money unit** | *"`part_cost` is an integer — the API cannot store €12.50. Do we round to whole euros, or store cents as an integer? Costs roll up through the BOM, so this cannot change later without rescaling every part by 100×."* |
 | ☐ | **Numbered-option unit** | *"Do you sell anything by length, area, weight or volume? Numbered options are integer-only — 2.5 m is unrepresentable. We model in mm and divide back in the BOM factor. The customer will see `3000` where they think `3 m`. Confirm the unit now; it is baked into every scaling afterwards."* |
 | ☐ | **Custom keys** | *"Do groups and options need a `key` for an ERP join? If yes, we set them from the very first option. If no, we record `custom-keys: never` and the audit will flag any that appear."* |

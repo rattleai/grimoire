@@ -18,6 +18,7 @@ REST endpoints for parts, placements, and BomItems. All require `products:read` 
 | POST | `/api/v1/parts/{id}/placements` | Create a placement |
 | GET | `/api/v1/parts/{id}/bom` | List the parent's BOM children |
 | POST | `/api/v1/parts/{id}/bom` | Create a BomItem |
+| PUT | `/api/v1/parts/{id}/bom` | **Replace a part's BOM children — bulk, declarative.** Send the desired child set (`BomSyncRequest {bom_items, prune}`); the server diffs against current state and creates / updates / deletes (with `prune`, the default) to match. The idempotent way to import or re-apply an assembly. |
 | GET | `/api/v1/parts/{id}/bom/tree` | Hierarchical explosion tree |
 | GET | `/api/v1/parts/{id}/bom/flat` | Flat explosion list |
 | POST | `/api/v1/parts/{id}/bom/explode` | Explode the BOM (configuration-aware) |
@@ -26,7 +27,7 @@ REST endpoints for parts, placements, and BomItems. All require `products:read` 
 | POST | `/api/v1/parts/{id}/ghost/materialize` | Materialise a resolved phantom |
 | GET | `/api/v1/parts/export` | Bulk export (returns JSON document) |
 
-> **Bulk authoring: use `POST /api/v1/parts/batch` and `POST /api/v1/bom/batch`.** There is no endpoint *named* `/parts/import`, which earlier revisions of this file wrongly read as "there is no bulk import at all" — there is, and it is good. The batch endpoints take up to 100 operations, are savepoint-isolated per item, return `207 Multi-Status` with per-item results so you can retry only the failures, and support `action: "upsert"` with a `match` field (find-or-create). Prefer them over a loop of single creates.
+> **Bulk authoring: use `POST /api/v1/parts/batch`, `POST /api/v1/bom/batch` and `POST /api/v1/placements/batch`** (the last matches `upsert` on `(part_id, area_id, usage_subclauses)`, so an import is safe to retry). For a *whole* assembly or area at once, prefer the declarative `PUT /api/v1/parts/{id}/bom` and `PUT /api/v1/areas/{id}/placements` syncs, which diff+prune to the desired set with no read-then-decide loop. There is no endpoint *named* `/parts/import`, which earlier revisions of this file wrongly read as "there is no bulk import at all" — there is, and it is good. The batch endpoints take up to 100 operations, are savepoint-isolated per item, return `207 Multi-Status` with per-item results so you can retry only the failures, and support `action: "upsert"` with a `match` field (find-or-create). Prefer them over a loop of single creates.
 >
 > **Caveat:** `BatchOperationRequest.match` is typed `additionalProperties: true` in the spec, so the legal match keys per resource are undocumented — verify against a test tenant before relying on a given key. Export is `GET /api/v1/parts/export` (NDJSON).
 
@@ -68,7 +69,7 @@ Body (Create part) — every field accepted by `PartCreateRequest` (`extra="forb
 | `custom_fields` | no | JSON object (default `{}`) | Tenant-defined extensions; ≤ 16 KB serialised, ≤ 100 keys, key pattern `[a-zA-Z0-9][a-zA-Z0-9_]{0,49}` |
 | `integration_metadata` | no | JSON object\|null | ERP / external-system pass-through |
 
-> **Notable absences from the create schema.** `PartCreateRequest` does NOT accept `part_img`. The field is exposed on `PartResponse` (resolved as a URL) but **there is no public REST upload route for `Part.part_img` today** — `app/routes/api_v1/images.py` only has upload routes for products, areas, and options. `part_img` is set only by the connector ingest pipeline (`app/connectors/engine.py`); for parts created via the public API, the field stays NULL. `extra="forbid"` returns 422 on any unknown field on POST/PATCH. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
+> **Notable notes on the create schema.** `PartCreateRequest` does NOT accept `part_img` inline — but `Part` images **now have a public upload route**: `POST /api/v1/parts/{partId}/image` (multipart), resolved to `image_url` on `PartResponse`. `extra="forbid"` returns 422 on any unknown field on POST/PATCH. Ghost parts (`bom_structure="ghost"`) are forced to `part_cost=0` server-side; cost rolls up from children at explosion time.
 
 ## Part placements
 
